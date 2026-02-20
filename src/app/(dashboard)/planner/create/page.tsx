@@ -21,7 +21,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  IconButton,
 } from "@mui/material";
+import CloseIcon from '@mui/icons-material/Close';
 
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
@@ -31,7 +33,8 @@ import { getAllSchoolVans } from "@/store/reducers/van-slice";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import MapComponent from "@/components/MapSelection";
-// import GoogleMapsProvider from "@/components/GoogleMapsProvider";
+import useSocket from "@/lib/sockets/socket";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 type FormValues = {
   vanId: string;
@@ -49,6 +52,8 @@ type FormValues = {
 export default function AddRouteForm(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const { token } = useAuthContext();
+  const socket = useSocket(token);
 
   const { loading, success, error } = useSelector((state: RootState) => state.route);
   const { vans, loading: vansLoading } = useSelector((state: RootState) => state.van);
@@ -216,74 +221,94 @@ export default function AddRouteForm(): React.JSX.Element {
 
               {/* Trip Days */}
               <Grid item xs={12}>
-                <FormGroup row>
-                  {Object.keys(tripDays).map((day) => (
-                    <FormControlLabel
-                      key={day}
-                      control={
-                        <Checkbox
-                          checked={tripDays[day as keyof typeof tripDays]}
-                          onChange={() => handleDayChange(day)}
+                <FormControl component="fieldset" fullWidth>
+                      <InputLabel>Trip Days</InputLabel>
+                  <Typography
+                    variant="h6"
+                    sx={{ 
+                      mb: 2, 
+                      fontWeight: 600,
+                      color: '#2c3e50',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1
+                    }}
+                  >
+                  </Typography>
+
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)', md: 'repeat(7, 1fr)' },
+                      gap: 1,
+                      p: 2,
+                    }}
+                  >
+                    {Object.keys(tripDays).map((day) => (
+                      <Box
+                        key={day}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          p: 1,
+                          borderRadius: 1,
+                          backgroundColor: tripDays[day as keyof typeof tripDays] ? '#e3f2fd' : 'transparent',
+                          border: tripDays[day as keyof typeof tripDays] ? '2px solid #2196f3' : '1px solid #dee2e6',
+                          transition: 'all 0.2s ease',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: '#f5f5f5',
+                            transform: 'translateY(-1px)'
+                          }
+                        }}
+                        onClick={() => handleDayChange(day)}
+                      >
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={tripDays[day as keyof typeof tripDays]}
+                              onChange={() => handleDayChange(day)}
+                              sx={{
+                                color: '#2196f3',
+                                '&.Mui-checked': {
+                                  color: '#2196f3',
+                                }
+                              }}
+                            />
+                          }
+                          label={
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: tripDays[day as keyof typeof tripDays] ? 600 : 400,
+                                color: tripDays[day as keyof typeof tripDays] ? '#1976d2' : '#6c757d'
+                              }}
+                            >
+                              {day.charAt(0).toUpperCase() + day.slice(1)}
+                            </Typography>
+                          }
+                          sx={{ margin: 0 }}
                         />
-                      }
-                      label={day.charAt(0).toUpperCase() + day.slice(1)}
-                    />
-                  ))}
-                </FormGroup>
+                      </Box>
+                    ))}
+                  </Box>
+                </FormControl>
               </Grid>
 
+
               {/* Start Location */}
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <Button variant="outlined" onClick={() => setOpenPicker("start")}>
                   Pick Start Location on Map
                 </Button>
               </Grid>
 
-              <Grid item xs={6} sm={3}>
-                <Controller
-                  name="startLat"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField label="Start Latitude" fullWidth {...field} />
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={6} sm={3}>
-                <Controller
-                  name="startLong"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField label="Start Longitude" fullWidth {...field} />
-                  )}
-                />
-              </Grid>
-
               {/* End Location */}
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <Button variant="outlined" onClick={() => setOpenPicker("end")}>
                   Pick End Location on Map
                 </Button>
-              </Grid>
-
-              <Grid item xs={6} sm={3}>
-                <Controller
-                  name="endLat"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField label="End Latitude" fullWidth {...field} />
-                  )}
-                />
-              </Grid>
-
-              <Grid item xs={6} sm={3}>
-                <Controller
-                  name="endLong"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField label="End Longitude" fullWidth {...field} />
-                  )}
-                />
               </Grid>
 
               {/* Submit */}
@@ -304,11 +329,44 @@ export default function AddRouteForm(): React.JSX.Element {
       </Card>
 
       {/* Map Picker Dialog */}
-      <Dialog fullWidth maxWidth="md" open={!!openPicker} onClose={() => setOpenPicker(null)} style={{zIndex:60}}>
-        <DialogTitle>Select Location</DialogTitle>
-        
-        <DialogContent>
-                {/* <GoogleMapsProvider> */}
+      <Dialog 
+        open={!!openPicker} 
+        onClose={() => setOpenPicker(null)} 
+        maxWidth={false}
+        fullWidth
+        PaperProps={{
+          style: {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            right: '0',
+            bottom: '0',
+            margin: '0',
+            width: '100vw',
+            height: '100vh',
+            maxWidth: 'none',
+            maxHeight: 'none',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }
+        }}
+      >
+        <DialogContent sx={{ 
+          width: '90%', 
+          height: '80%', 
+          maxWidth: '1000px',
+          maxHeight: '700px',
+          margin: 'auto',
+          backgroundColor: 'transparent',
+          borderRadius: 0,
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          boxShadow: 'none'
+        }}>
           <MapComponent
             onPositionChange={(lat, lng) => {
               if (openPicker === "start") {
@@ -318,10 +376,11 @@ export default function AddRouteForm(): React.JSX.Element {
                 setValue("endLat", lat.toString());
                 setValue("endLong", lng.toString());
               }
-              // setOpenPicker(null);
             }}
+            onLocationSelect={() => setOpenPicker(null)}
+            initialLat={openPicker === 'start' ? watch('startLat') : watch('endLat')}
+            initialLng={openPicker === 'start' ? watch('startLong') : watch('endLong')}
           />
-      {/* </GoogleMapsProvider> */}
         </DialogContent>
       </Dialog>
     </Box>

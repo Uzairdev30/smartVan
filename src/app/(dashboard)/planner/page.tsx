@@ -132,11 +132,20 @@ export default function RoutePlannerPage(): React.JSX.Element {
   }, [dispatch, page, limit, filters]);
 
   const columns: ColumnDef<TripRecord>[] = [
+    // {
+    //   name: "Van ID",
+    //   width: "120px",
+    //   formatter: (row) => (
+    //     <Typography variant="body2">{row.vanId}</Typography>
+    //   ),
+    // },
     {
-      name: "Van ID",
+      name: "S.No",
       width: "120px",
-      formatter: (row) => (
-        <Typography variant="body2">{row.vanId}</Typography>
+      formatter: (row, index) => (
+        <Typography variant="body2">
+          {(page - 1) * limit + index + 1}
+        </Typography>
       ),
     },
     {
@@ -186,39 +195,71 @@ export default function RoutePlannerPage(): React.JSX.Element {
         />
       ),
     },
-  {
-  name: "Trip Days",
-  width: "200px",
-  formatter: (row) => {
-    const days = Object.entries(row.tripDays || {})
-      .filter(([_, enabled]) => enabled === true) // only true values
-      .map(([key]) =>
-        key.charAt(0).toUpperCase() + key.slice(1, 3) // Mon, Tue, Wed
-      )
-      .join(", ");
+    {
+      name: "Trip Days",
+      width: "300px",
+      formatter: (row) => {
+        const days = Object.entries(row.tripDays || {})
+          .filter(([_, enabled]) => enabled === true && _ !== '_id') // only true values and exclude _id
+          .map(([key]) => key);
 
-    return <Typography variant="body2">{days || "—"}</Typography>;
-  },
-}
-,
-    {
-      name: "Start Point",
-      width: "150px",
-      formatter: (row) => (
-        <Typography variant="body2">
-          {row.startPoint.lat}, {row.startPoint.long}
-        </Typography>
-      ),
+        if (days.length === 0) {
+          return <Typography variant="body2">—</Typography>;
+        }
+
+        return (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {days.map((day) => (
+              <Box
+                key={day}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
+                  backgroundColor: '#e3f2fd',
+                  border: '1px solid #2196f3',
+                  transition: 'all 0.2s ease',
+                  minWidth: '45px',
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 600,
+                    color: '#1976d2',
+                    fontSize: '0.75rem',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {day.charAt(0).toUpperCase() + day.slice(1, 3)}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        );
+      },
     },
-    {
-      name: "End Point",
-      width: "150px",
-      formatter: (row) => (
-        <Typography variant="body2">
-          {row.endPoint.lat}, {row.endPoint.long}
-        </Typography>
-      ),
-    },
+    // {
+    //   name: "Start Point",
+    //   width: "150px",
+    //   formatter: (row) => (
+    //     <Typography variant="body2">
+    //       {row.startPoint.lat}, {row.startPoint.long}
+    //     </Typography>
+    //   ),
+    // },
+    // {
+    //   name: "End Point",
+    //   width: "150px",
+    //   formatter: (row) => (
+    //     <Typography variant="body2">
+    //       {row.endPoint.lat}, {row.endPoint.long}
+    //     </Typography>
+    //   ),
+    // },
     {
       name: "Actions",
       width: "100px",

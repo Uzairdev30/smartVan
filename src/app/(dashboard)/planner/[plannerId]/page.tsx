@@ -23,7 +23,7 @@ import { House as HouseIcon } from "@phosphor-icons/react/dist/ssr/House";
 import { getRouteById } from "@/store/reducers/route-slice";
 import { paths } from "@/paths";
 
-// 🔹 Reusable DetailItem
+// 🔹 Simple DetailItem
 function DetailItem({ label, value }: { label: string; value: any }) {
   return (
     <Box sx={{ mb: 2 }}>

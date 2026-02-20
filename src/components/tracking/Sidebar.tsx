@@ -48,6 +48,7 @@ export function Sidebar({
     return (
       <Box
         sx={{
+          bgcolor: '#F6F7F9',
           borderRight: '1px solid var(--mui-palette-divider)',
           display: { xs: 'none', md: 'block' },
           flex: '0 0 auto',
@@ -62,7 +63,7 @@ export function Sidebar({
 
   return (
     <Drawer
-      PaperProps={{ sx: { maxWidth: '100%', width: 320, height: '100vh' } }} // <-- fix: full viewport height
+      PaperProps={{ sx: { maxWidth: '100%', width: 320, height: '100vh', bgcolor: '#F6F7F9' } }} // <-- fix: full viewport height
       onClose={onClose}
       open={open}
     >

@@ -44,7 +44,7 @@ export function SideNav({ color = 'evident', items = [] }: SideNavProps): React.
     <Box
       sx={{
         ...styles,
-        bgcolor: '#F6F7F9',
+        bgcolor: '#F6F7F9 !important',
         borderRight: 'var(--SideNav-border)',
         color: 'var(--SideNav-color)',
         display: { xs: 'none', lg: 'flex' },

@@ -2,6 +2,43 @@ import type { NavItemConfig } from "@/types/nav";
 import { paths } from "@/paths";
 import type { RootState } from "@/store";
 
+import * as React from "react";
+import {
+  Box,
+  Card,
+  Stack,
+  Typography,
+  TextField,
+  Grid,
+  Button,
+  CircularProgress,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Paper,
+  Divider,
+  IconButton,
+  Chip,
+  alpha,
+  useTheme,
+} from "@mui/material";
+import {
+  LocationOn,
+  AccessTime,
+  DirectionsBus,
+  CalendarToday,
+  Close,
+  CheckCircle,
+} from "@mui/icons-material";
+
 export interface LayoutConfig {
   navItems: NavItemConfig[];
 }
