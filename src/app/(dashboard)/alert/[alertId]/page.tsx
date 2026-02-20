@@ -6,21 +6,28 @@ import {
   Box,
   Card,
   CardContent,
+  CardHeader,
   Grid,
   Stack,
   Typography,
   Divider,
-  LinearProgress,
+  Button,
   Chip,
+  CircularProgress,
+  LinearProgress,
   Link,
 } from "@mui/material";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { ArrowLeft as ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
 import { User as UserIcon } from "@phosphor-icons/react/dist/ssr/User";
+import { Bell as BellIcon } from "@phosphor-icons/react/dist/ssr/Bell";
+import { Calendar as CalendarIcon } from "@phosphor-icons/react/dist/ssr/Calendar";
+import { GraduationCap as SchoolIcon } from "@phosphor-icons/react/dist/ssr/GraduationCap";
+import { PencilSimple as EditIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
 
 import { paths } from "@/paths";
 import { getAlertById } from "@/store/reducers/alert-slice";
@@ -43,6 +50,7 @@ function DetailItem({ label, value }: { label: string; value: any }) {
 export default function AlertDetailPage(): React.JSX.Element {
   const params = useParams<{ alertId: string }>();
   const alertId = params?.alertId;
+  const router = useRouter();
 
   const dispatch = useDispatch<AppDispatch>();
   const { alertDetail, detailLoading } = useSelector((s: RootState) => s.alert);
@@ -54,121 +62,196 @@ export default function AlertDetailPage(): React.JSX.Element {
   const statusLabel = (alertDetail?.status || "").trim().toLowerCase();
   const isSent = statusLabel === "sent";
 
-  const statusChip = (
-    <Chip
-      label={
-        statusLabel
-          ? statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)
-          : "Pending"
-      }
-      size="small"
-      variant="outlined"
-      color={isSent ? "success" : "default"}
-    />
-  );
+  const getStatusColor = (status: string) => {
+    const statusLower = status?.toLowerCase() || 'pending';
+    return statusLower === 'sent' ? 'success' : statusLower === 'active' ? 'warning' : 'default';
+  };
 
-  if (detailLoading)
+  if (detailLoading && !alertDetail)
     return <LinearProgress sx={{ p: 4 }} />;
 
   if (!alertDetail)
     return (
-      <Typography sx={{ p: 4 }}>
-        No alert details found for ID: {alertId}
-      </Typography>
+      <Box sx={{ p: 4, textAlign: 'center' }}>
+        <Typography variant="h6" mb={2}>
+          Alert not found
+        </Typography>
+        <Button variant="outlined" onClick={() => router.back()}>
+          Back to Alerts
+        </Button>
+      </Box>
     );
 
   return (
-    <Card sx={{ p: 3 }}>
-      <CardContent>
-        {/* Back Button */}
-        <Link
-          href={paths.dashboard.alert}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            textDecoration: "none",
-          }}
-        >
-          <ArrowLeftIcon />
-          <Typography variant="subtitle2" color="text.primary">
-            Back to Alerts
-          </Typography>
-        </Link>
+    <Box sx={{ p: 4 }}>
+      {/* Back Button */}
+      <Button 
+        startIcon={<ArrowLeftIcon />} 
+        onClick={() => router.back()}
+        sx={{ mb: 3 }}
+      >
+        Back to Alerts
+      </Button>
 
-        <Divider sx={{ my: 2 }} />
+      <Stack spacing={3}>
+        {/* Main Alert Card */}
+        <Card sx={{ p: 2 }}>
+          <CardContent>
+            {/* Top: Avatar + Alert Info + Status */}
+            <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+              {/* Left: Avatar + Info */}
+              <Box display="flex" alignItems="center" gap={2}>
+                <Avatar
+                  sx={{ 
+                    width: 56, 
+                    height: 56, 
+                    bgcolor: '#1976d2',
+                    color: '#fff'
+                  }}
+                >
+                  <BellIcon size={24} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h6" fontWeight="bold">
+                    {alertDetail.alertType || 'Untitled Alert'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Alert ID: {alertDetail._id}
+                  </Typography>
+                </Box>
+              </Box>
 
-        {/* HEADER */}
-        <Stack direction="row" spacing={2} alignItems="center" mb={3}>
-          <Avatar sx={{ width: 60, height: 60 }}>
-            <UserIcon />
-          </Avatar>
+              {/* Right: Status + Actions */}
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Chip
+                  label={
+                    statusLabel
+                      ? statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)
+                      : "Pending"
+                  }
+                  color={getStatusColor(alertDetail.status)}
+                  size="small"
+                />
+                {/* <Button 
+                  variant="outlined" 
+                  size="small" 
+                  startIcon={<EditIcon />}
+                  onClick={() => router.push(`${paths.dashboard.alert}/edit/${alertId}`)}
+                >
+                  Edit
+                </Button> */}
+              </Stack>
+            </Box>
+          </CardContent>
+        </Card>
 
-          <Box>
-            <Typography variant="h5" fontWeight="bold">
-              {alertDetail.alertType}
-            </Typography>
+        {/* Alert Information Card */}
+        <Card>
+          <CardHeader 
+            title="Alert Information" 
+            // avatar={<BellIcon color="#1976d2" />}
+          />
+          <CardContent>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">Alert ID</Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>{alertDetail._id || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">Alert Type</Typography>
+                <Typography variant="body1">{alertDetail.alertType || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">Recipient Type</Typography>
+                <Typography variant="body1">{formatLabel(alertDetail.recipientType) || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">Status</Typography>
+                <Chip
+                  label={
+                    statusLabel
+                      ? statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)
+                      : "Pending"
+                  }
+                  color={getStatusColor(alertDetail.status)}
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">Message</Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>{alertDetail.message || '—'}</Typography>
+              </Grid>
 
-            <Typography variant="subtitle2" color="text.secondary">
-              Alert ID: {alertDetail._id}
-            </Typography>
-          </Box>
-        </Stack>
+            </Grid>
+          </CardContent>
+        </Card>
 
-        <Divider sx={{ mb: 3 }} />
+        {/* School Information Card */}
+        <Card>
+          <CardHeader 
+            title="School Information" 
+            // avatar={<SchoolIcon color="#1976d2" />}
+          />
+          <CardContent>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">School ID</Typography>
+                <Typography variant="body1">{alertDetail.schoolId || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">School Name</Typography>
+                <Typography variant="body1">{alertDetail.schoolName || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">Date/Time</Typography>
+                <Typography variant="body2">
+                  {alertDetail.date
+                    ? new Date(alertDetail.date).toLocaleString()
+                    : "—"}
+                </Typography>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
-        {/* ==========================
-            ALERT INFORMATION
-        =========================== */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Alert Information
-        </Typography>
+        {/* System Information Card */}
+        {/* <Card>
+          <CardHeader 
+            title="System Information" 
+            avatar={<CalendarIcon color="#1976d2" />}
+          />
+          <CardContent>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" color="text.secondary">Alert ID</Typography>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{alertDetail._id || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" color="text.secondary">Created Date</Typography>
+                <Typography variant="body2">
+                  {alertDetail.date
+                    ? new Date(alertDetail.date).toLocaleString()
+                    : "—"}
+                </Typography>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card> */}
 
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Alert ID" value={alertDetail._id} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Alert Type" value={alertDetail.alertType} />
-          </Grid>
-
-          <Grid item xs={12}>
-            <DetailItem label="Message" value={alertDetail.message} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem
-              label="Recipient Type"
-              value={formatLabel(alertDetail.recipientType)}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="School ID" value={alertDetail.schoolId} />
-          </Grid>
-
-          {/* 🔥 Added School Name Here */}
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="School Name" value={alertDetail.schoolName} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Status" value={statusChip} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem
-              label="Date"
-              value={
-                alertDetail.date
-                  ? new Date(alertDetail.date).toLocaleString()
-                  : "—"
-              }
-            />
-          </Grid>
-        </Grid>
-      </CardContent>
-    </Card>
+        {/* Action Buttons */}
+        {/* <Stack direction="row" justifyContent="flex-end" spacing={2}>
+          <Button variant="outlined" onClick={() => router.back()}>
+            Back
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<EditIcon />}
+            onClick={() => router.push(`${paths.dashboard.alert}/edit/${alertId}`)}
+          >
+            Edit Alert
+          </Button>
+        </Stack> */}
+      </Stack>
+    </Box>
   );
 }

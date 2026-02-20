@@ -97,16 +97,22 @@ export default function AlertPage(): React.JSX.Element {
   );
 
   const [selectedAlerts, setSelectedAlerts] = React.useState<AlertRecord[]>([]);
+  const [page, setPage] = React.useState<number>(1);
+  const [limit, setLimit] = React.useState<number>(10);
 
   React.useEffect(() => {
-    dispatch(getAllAlerts({ page: 1, limit: 10 }));
-  }, [dispatch]);
+    dispatch(getAllAlerts({ page, limit }));
+  }, [dispatch, page, limit]);
 
   const columns: ColumnDef<AlertRecord>[] = [
     {
-      name: "Alert ID",
-      width: "100px",
-      formatter: (row) => <Typography variant="body2">{row._id}</Typography>,
+      name: "S.No",
+      width: "80px",
+      formatter: (row, index) => (
+        <Typography variant="body2">
+          {(page - 1) * limit + index + 1}
+        </Typography>
+      ),
     },
     {
       name: "Alert Title",
@@ -212,16 +218,19 @@ export default function AlertPage(): React.JSX.Element {
 
           <CustomersPagination
             count={pagination?.total}
-            page={Math.max(0, pagination.page - 1)}
-            rowsPerPage={pagination.limit}
+            page={Math.max(0, page - 1)}
+            rowsPerPage={limit}
             onPaginationChange={(_, newPage) => {
+              setPage(newPage + 1);
               dispatch(
-                getAllAlerts({ page: newPage + 1, limit: pagination.limit })
+                getAllAlerts({ page: newPage + 1, limit })
               );
               setSelectedAlerts([]);
             }}
             onRowsPerPageChange={(event) => {
               const newLimit = parseInt(event.target.value, 10);
+              setLimit(newLimit);
+              setPage(1);
               dispatch(getAllAlerts({ page: 1, limit: newLimit }));
               setSelectedAlerts([]);
             }}
