@@ -6,19 +6,28 @@ import {
   Box,
   Card,
   CardContent,
+  CardHeader,
   Grid,
   Stack,
   Typography,
   Divider,
+  Button,
+  Chip,
+  CircularProgress,
   LinearProgress,
   Link,
 } from "@mui/material";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft as ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
 import { House as HouseIcon } from "@phosphor-icons/react/dist/ssr/House";
+import { PencilSimple as EditIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
+import { MapPin as MapPinIcon } from "@phosphor-icons/react/dist/ssr/MapPin";
+import { Clock as ClockIcon } from "@phosphor-icons/react/dist/ssr/Clock";
+import { Van as VanIcon } from "@phosphor-icons/react/dist/ssr/Van";
+import { User as UserIcon } from "@phosphor-icons/react/dist/ssr/User";
 
 import { getRouteById } from "@/store/reducers/route-slice";
 import { paths } from "@/paths";
@@ -40,6 +49,7 @@ function DetailItem({ label, value }: { label: string; value: any }) {
 export default function PlannerDetailPage(): React.JSX.Element {
   const params = useParams<{ plannerId: string }>();
   const plannerId = params?.plannerId;
+  const router = useRouter();
 
   const dispatch = useDispatch<AppDispatch>();
   const { routeDetails, loading } = useSelector((s: RootState) => s.route);
@@ -52,171 +62,250 @@ export default function PlannerDetailPage(): React.JSX.Element {
     routeDetails?.tripDays &&
     Object.entries(routeDetails.tripDays)
       .filter(([key, value]) => value && key !== "_id")
-      .map(([day]) => day.charAt(0).toUpperCase() + day.slice(1))
-      .join(", ");
+      .map(([day]) => day);
 
-  if (loading) return <LinearProgress sx={{ mb: 2 }} />;
+  const getTripTypeColor = (type: string) => {
+    return type === "morning" ? "warning" : "info";
+  };
+
+  if (loading && !routeDetails) return <LinearProgress sx={{ mb: 2 }} />;
 
   if (!routeDetails)
     return (
-      <Typography sx={{ p: 4 }}>
-        No route details found for ID: {plannerId}
-      </Typography>
+      <Box sx={{ p: 4, textAlign: 'center' }}>
+        <Typography variant="h6" mb={2}>
+          Route not found
+        </Typography>
+        <Button variant="outlined" onClick={() => router.back()}>
+          Back to Routes
+        </Button>
+      </Box>
     );
 
   return (
-    <Card sx={{ p: 3 }}>
-      <CardContent>
-        {/* Back Button */}
-        <Link
-          href={paths.dashboard.planner}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            textDecoration: "none",
-          }}
-        >
-          <ArrowLeftIcon />
-          <Typography variant="subtitle2" color="text.primary">
-            Back to Route Planner
-          </Typography>
-        </Link>
+    <Box sx={{ p: 4 }}>
+      {/* Back Button */}
+      <Button 
+        startIcon={<ArrowLeftIcon />} 
+        onClick={() => router.back()}
+        sx={{ mb: 3 }}
+      >
+        Back to Routes
+      </Button>
 
-        <Divider sx={{ my: 2 }} />
+      <Stack spacing={3}>
+        {/* Main Route Card */}
+        <Card sx={{ p: 2 }}>
+          <CardContent>
+            {/* Top: Avatar + Route Info + Status */}
+            <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+              {/* Left: Avatar + Info */}
+              <Box display="flex" alignItems="center" gap={2}>
+                <Avatar
+                  sx={{ 
+                    width: 56, 
+                    height: 56, 
+                    bgcolor: '#1976d2',
+                    color: '#fff'
+                  }}
+                >
+                  <HouseIcon size={24} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h6" fontWeight="bold">
+                    {routeDetails.title || 'Untitled Route'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Route ID: {routeDetails._id}
+                  </Typography>
+                </Box>
+              </Box>
 
-        {/* HEADER */}
-        <Stack direction="row" spacing={2} alignItems="center" mb={3}>
-          <Avatar sx={{ width: 60, height: 60 }}>
-            <HouseIcon />
-          </Avatar>
+              {/* Right: Status + Actions */}
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Chip
+                  label={routeDetails.tripType?.toUpperCase() || 'UNKNOWN'}
+                  color={getTripTypeColor(routeDetails.tripType)}
+                  size="small"
+                />
+                {/* <Button 
+                  variant="outlined" 
+                  size="small" 
+                  startIcon={<EditIcon />}
+                  onClick={() => router.push(`${paths.dashboard.planner}/edit/${plannerId}`)}
+                >
+                  Edit
+                </Button> */}
+              </Stack>
+            </Box>
+          </CardContent>
+        </Card>
 
-          <Box>
-            <Typography variant="h5" fontWeight="bold">
-              {routeDetails.title}
-            </Typography>
-            <Typography variant="subtitle2" color="text.secondary">
-              Trip Type: {routeDetails.tripType}
-            </Typography>
-          </Box>
-        </Stack>
+        {/* Trip Information Card */}
+        <Card>
+          <CardHeader 
+            title="Trip Information" 
+            // avatar={<ClockIcon color="#1976d2" />}
+          />
+          <CardContent>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={6}>
+                <Typography variant="subtitle1" color="text.secondary">Start Time</Typography>
+                <Typography variant="body1">{routeDetails.startTime || '—'}</Typography>
+              </Grid>
+              {/* <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">Trip Type</Typography>
+                <Chip
+                  label={routeDetails.tripType || '—'}
+                  color={getTripTypeColor(routeDetails.tripType)}
+                  size="small"
+                />
+              </Grid> */}
+              <Grid item xs={12} sm={6} md={6}>
+                <Typography variant="subtitle1" color="text.secondary">Trip Days</Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                  {tripDays?.length > 0 ? (
+                    tripDays.map((day) => (
+                      <Box
+                        key={day}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          backgroundColor: '#e3f2fd',
+                          border: '1px solid #2196f3',
+                          minWidth: '45px',
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 600,
+                            color: '#1976d2',
+                            fontSize: '0.75rem',
+                            textTransform: 'capitalize',
+                          }}
+                        >
+                          {day.charAt(0).toUpperCase() + day.slice(1, 3)}
+                        </Typography>
+                      </Box>
+                    ))
+                  ) : (
+                    <Typography variant="body2">—</Typography>
+                  )}
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
-        <Divider sx={{ mb: 3 }} />
+        {/* Vehicle Information Card */}
+        <Card>
+          <CardHeader 
+            title="Vehicle Information" 
+            // avatar={<VanIcon color="#1976d2" />}
+          />
+          <CardContent>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">Van ID</Typography>
+                <Typography variant="body1">{routeDetails.vanId || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">Car Number</Typography>
+                <Typography variant="body1">{routeDetails.carNumber || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Typography variant="subtitle1" color="text.secondary">Driver Name</Typography>
+                <Typography variant="body1">{routeDetails.driverName || '—'}</Typography>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
-        {/* SECTION 1: Trip Information */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Trip Information
-        </Typography>
+        {/* Route Points Card */}
+        <Card>
+          <CardHeader 
+            title="Route Points" 
+            // avatar={<MapPinIcon color="#1976d2" />}
+          />
+          <CardContent>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" color="text.secondary">Start Point</Typography>
+                <Box>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 1 }}>
+                    {routeDetails.startPoint
+                      ? `${routeDetails.startPoint.lat}, ${routeDetails.startPoint.long}`
+                      : "—"}
+                  </Typography>
+                  <Typography variant="body2" color="primary" sx={{ fontStyle: 'italic' }}>
+                    {routeDetails.startPoint?.areaName || 'Loading area name...'}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" color="text.secondary">End Point</Typography>
+                <Box>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', mb: 1 }}>
+                    {routeDetails.endPoint
+                      ? `${routeDetails.endPoint.lat}, ${routeDetails.endPoint.long}`
+                      : "—"}
+                  </Typography>
+                  <Typography variant="body2" color="primary" sx={{ fontStyle: 'italic' }}>
+                    {routeDetails.endPoint?.areaName || 'Loading area name...'}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Route ID" value={routeDetails._id} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Title" value={routeDetails.title} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Trip Type" value={routeDetails.tripType} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Start Time" value={routeDetails.startTime} />
-          </Grid>
-          <Grid item xs={12} sm={12}>
-            <DetailItem label="Trip Days" value={tripDays || "—"} />
-          </Grid>
-        </Grid>
+        {/* System Information Card */}
+        <Card>
+          <CardHeader 
+            title="System Information" 
+            // avatar={<UserIcon color="#1976d2" />}
+          />
+          <CardContent>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" color="text.secondary">Created At</Typography>
+                <Typography variant="body2">
+                  {routeDetails.createdAt
+                    ? new Date(routeDetails.createdAt).toLocaleString()
+                    : "—"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" color="text.secondary">Updated At</Typography>
+                <Typography variant="body2">
+                  {routeDetails.updatedAt
+                    ? new Date(routeDetails.updatedAt).toLocaleString()
+                    : "—"}
+                </Typography>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
-        <Divider sx={{ my: 3 }} />
-
-        {/* SECTION 2: Vehicle Information */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Vehicle Information
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Van ID" value={routeDetails.vanId} />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Car Number" value={routeDetails.carNumber} />
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* SECTION 3: Driver Information */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Driver Information
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Driver Name" value={routeDetails.driverName} />
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* SECTION 4: Route Points */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Route Points
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem
-              label="Start Point"
-              value={
-                routeDetails.startPoint
-                  ? `${routeDetails.startPoint.lat}, ${routeDetails.startPoint.long}`
-                  : "—"
-              }
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem
-              label="End Point"
-              value={
-                routeDetails.endPoint
-                  ? `${routeDetails.endPoint.lat}, ${routeDetails.endPoint.long}`
-                  : "—"
-              }
-            />
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* SECTION 5: Timestamps */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          System Information
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem
-              label="Created At"
-              value={
-                routeDetails.createdAt
-                  ? new Date(routeDetails.createdAt).toLocaleString()
-                  : "—"
-              }
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem
-              label="Updated At"
-              value={
-                routeDetails.updatedAt
-                  ? new Date(routeDetails.updatedAt).toLocaleString()
-                  : "—"
-              }
-            />
-          </Grid>
-        </Grid>
-      </CardContent>
-    </Card>
+        {/* Action Buttons */}
+        {/* <Stack direction="row" justifyContent="flex-end" spacing={2}>
+          <Button variant="outlined" onClick={() => router.back()}>
+            Back
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<EditIcon />}
+            onClick={() => router.push(`${paths.dashboard.planner}/edit/${plannerId}`)}
+          >
+            Edit Route
+          </Button>
+        </Stack> */}
+      </Stack>
+    </Box>
   );
 }
