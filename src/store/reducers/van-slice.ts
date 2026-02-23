@@ -242,6 +242,26 @@ export const deleteVans = createAsyncThunk<
   }
 );
 
+// Delete single van by ID
+interface DeleteVanByIdPayload {
+  vanId: string;
+}
+export const deleteVanById = createAsyncThunk<
+  { success: boolean },
+  DeleteVanByIdPayload,
+  { rejectValue: string }
+>(
+  "van/deleteVanById",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await api.post(VAN.DELETE_VAN, { vanId: payload.vanId });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to delete van");
+    }
+  }
+);
+
 // Remove driver from van
 interface RemoveDriverPayload {
   driverId: string;
@@ -426,6 +446,24 @@ const vanSlice = createSlice({
         state.deleteVanLoading = false;
         state.deleteVanSuccess = false;
         state.deleteVanError = action.payload || "Failed to delete van(s)";
+      });
+
+    // ─── Delete van by ID ───
+    builder
+      .addCase(deleteVanById.pending, (state) => {
+        state.deleteVanLoading = true;
+        state.deleteVanSuccess = false;
+        state.deleteVanError = null;
+      })
+      .addCase(deleteVanById.fulfilled, (state) => {
+        state.deleteVanLoading = false;
+        state.deleteVanSuccess = true;
+        // Note: We'll refresh the list from the component
+      })
+      .addCase(deleteVanById.rejected, (state, action) => {
+        state.deleteVanLoading = false;
+        state.deleteVanSuccess = false;
+        state.deleteVanError = action.payload || "Failed to delete van";
       });
 
     // ─── Remove driver ───

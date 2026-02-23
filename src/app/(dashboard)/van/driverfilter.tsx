@@ -274,13 +274,6 @@ export function VanFilter({
             </ListItemIcon>
             <ListItemText>InActive</ListItemText>
           </MenuItemComponent>
-
-          <MenuItemComponent onClick={handleBulkDelete}>
-            <ListItemIcon>
-              <Trash weight="fill" />
-            </ListItemIcon>
-            <ListItemText>Delete</ListItemText>
-          </MenuItemComponent>
         </Menu>
       </Stack>
     </div>

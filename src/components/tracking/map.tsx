@@ -216,11 +216,6 @@ export function Map({ selectedLocations = [], currentVehicle, status }: any) {
 
   const center = path[0] || { lat: 24.8607, lng: 67.0011 };
 
-  // ✅ Provider already loads Google Maps
-  if (typeof window === "undefined" || !window.google) {
-    return <div style={{ height: "100%" }}>Loading…</div>;
-  }
-
   return (
     <Box sx={{ width: "100%", height: "100%" }}>
       <GoogleMap

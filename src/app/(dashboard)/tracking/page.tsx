@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getAllTrips } from '@/store/reducers/trip-slice';
 import { RootState, AppDispatch } from '@/store';
 import { TrackingView } from '@/components/tracking';
+import GoogleMapsProvider from '@/components/GoogleMapsProvider';
 
 export default function Page(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
@@ -32,31 +33,33 @@ console.log("trips",trips)
 
       return {
         id: String(trip._id),
-        name: trip.driverName || 'Unknown Driver',
-        avatar: trip?.driverImage ||'/assets/avatar-placeholder.png',
-        vehicleModel: trip.carNumber || '',
-        plate: trip.carNumber || '',
+        name: trip.driver?.fullname || trip.driverName || 'Unknown Driver',
+        avatar: trip.driverImage || trip?.driver?.image ||'/assets/avatar-placeholder.png',
+        vehicleModel: trip.van?.vehicleType || trip.carName || '',
+        plate: trip.van?.carNumber || trip.carNumber || '',
         status: trip.status || 'unknown',
         latitude: lastLocation?.lat || 0,
         longitude: lastLocation?.long || 0,
         tripStart: trip?.tripStart?.startTime ? new Date(trip?.tripStart?.startTime) : undefined,
-        driverId: trip?.driverId,
+        driverId: trip?.driver?._id || trip?.driverId,
         tripId: trip?._id,
-        driverName: trip?.driverName,
+        driverName: trip.driver?.fullname || trip?.driverName,
         locations:trip?.locations || [],
-        carName:trip?.carName || '',
-        routeTitle:trip?.routeTitle || '',
-        routeTripType:trip?.routeTripType || ''
+        carName:trip.van?.vehicleType || trip?.carName || '',
+        routeTitle:trip.route?.title || trip?.routeTitle || '',
+        routeTripType:trip.route?.tripType || trip?.routeTripType || ''
       };
     });
   }, [trips]);
 
   return (
-    <TrackingView
-      vehicles={vehicles}
-      status={status}
-      onStatusChange={setStatus}
-      loading={loading}
-    />
+    <GoogleMapsProvider>
+      <TrackingView
+        vehicles={vehicles}
+        status={status}
+        onStatusChange={setStatus}
+        loading={loading}
+      />
+    </GoogleMapsProvider>
   );
 }

@@ -18,12 +18,21 @@ import {
   ListItemText,
   MenuItem,
   Select,
-  Button
+  Button,
+  Tooltip,
+  Card,
+  CardContent,
+  Grid,
+  IconButton,
+  TextField
 } from '@mui/material';
 
 import { Phone as PhoneIcon } from '@mui/icons-material';
 import AirportShuttleIcon from '@mui/icons-material/AirportShuttle';
 import HomeIcon from '@mui/icons-material/Home';
+import PersonIcon from '@mui/icons-material/Person';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import SchoolIcon from '@mui/icons-material/School';
 
 import { Map } from './map';
 import { Sidebar } from './Sidebar';
@@ -35,6 +44,7 @@ export function TrackingView({ vehicles, status, onStatusChange, loading }: any)
 
   const [kidsModalOpen, setKidsModalOpen] = React.useState(false);
   const [selectedLocations,setSelectedLocations]=React.useState([])
+  const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0]);
   const { tripKids, tripKidsLoading } = useSelector((state) => state.trip);
   const kidsArray = tripKids?.kids ?? [];
 
@@ -146,18 +156,33 @@ console.log("selec",selectedLocations)
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="h6">Driver Details</Typography>
 
-              {/* FILTER DROPDOWN ALWAYS VISIBLE */}
-              <Select
-                value={status}
-                onChange={(e) => onStatusChange(e.target.value)}
-                size="small"
-                sx={{ minWidth: 150, background: 'white', borderRadius: 1 }}
-              >
-                <MenuItem value="">All Trips</MenuItem>
-                <MenuItem value="start">Started</MenuItem>
-                <MenuItem value="ongoing">Ongoing</MenuItem>
-                <MenuItem value="end">Completed</MenuItem>
-              </Select>
+              {/* DATE PICKER AND FILTER */}
+              <Stack direction="row" spacing={1} alignItems="center">
+                <TextField
+                  type="date"
+                  size="small"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  sx={{
+                    background: 'white',
+                    borderRadius: 1,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1,
+                    }
+                  }}
+                />
+                <Select
+                  value={status}
+                  onChange={(e) => onStatusChange(e.target.value)}
+                  size="small"
+                  sx={{ minWidth: 150, background: 'white', borderRadius: 1 }}
+                >
+                  <MenuItem value="">All Trips</MenuItem>
+                  <MenuItem value="start">Started</MenuItem>
+                  <MenuItem value="ongoing">Ongoing</MenuItem>
+                  <MenuItem value="end">Completed</MenuItem>
+                </Select>
+              </Stack>
             </Stack>
 
             {/* No Vehicle State */}
@@ -208,21 +233,31 @@ console.log("selec",selectedLocations)
                   </Box>
 
                   <Box>
-                    <Typography variant="body2" color="#191970">School Route:</Typography>
-                    <Typography variant="body2">{currentVehicle.routeName || '105'}</Typography>
+                    <Typography variant="body2" fontWeight="bold" color="#191970">
+                      School Route:
+                      </Typography>
+                    <Typography variant="body2">{currentVehicle.routeTitle || 'N/A'}</Typography>
                   </Box>
 
-                  <Button
-                    variant="contained"
-                    startIcon={<PhoneIcon sx={{ color: 'white' }} />}
-                    sx={{
-                      backgroundColor: '#1FA959',
-                      color: 'white',
-                      '&:hover': { backgroundColor: '#178a48' },
-                    }}
-                  >
-                    Call Driver
-                  </Button>
+                  <Tooltip title={` ${currentVehicle.driver?.phoneNo || currentVehicle.phoneNo || 'N/A'}`} arrow placement="top">
+                    <Button
+                      variant="contained"
+                      startIcon={<PhoneIcon sx={{ color: 'white' }} />}
+                      sx={{
+                        backgroundColor: '#1FA959',
+                        color: 'white',
+                        '&:hover': { backgroundColor: '#178a48' },
+                      }}
+                      onClick={() => {
+                        const phoneNo = currentVehicle.driver?.phoneNo || currentVehicle.phoneNo;
+                        if (phoneNo) {
+                          window.open(`tel:${phoneNo}`);
+                        }
+                      }}
+                    >
+                      Call Driver
+                    </Button>
+                  </Tooltip>
                 </Stack>
               </>
             )}
@@ -247,62 +282,6 @@ console.log("selec",selectedLocations)
 
             {currentVehicle && (
               <>
-                {/* Progress bar */}
-                <Box sx={{ position: 'relative', width: '100%', height: 50 }}>
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: 0,
-                      width: completedWidth,
-                      height: 2,
-                      bgcolor: 'green',
-                      transform: 'translateY(-50%)',
-                    }}
-                  />
-
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: completedWidth,
-                      width: `calc(${remainingWidth} - 15px)`,
-                      borderTop: '2px dotted #8CC63E',
-                      transform: 'translateY(-50%)',
-                    }}
-                  />
-
-                  {/* Points */}
-                  {routePoints.map((p) => {
-                    const left =
-                      p.type === 'van'
-                        ? `${vanLeftPercent}%`
-                        : `${(p.distance / totalDistance) * 100}%`;
-
-                    return (
-                      <Box
-                        key={p.id}
-                        sx={{
-                          position: 'absolute',
-                          left,
-                          top: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          width: p.type === 'start' || p.type === 'end' ? 20 : 12,
-                          height: p.type === 'start' || p.type === 'end' ? 20 : 12,
-                          bgcolor: 'green',
-                          borderRadius: '50%',
-                          zIndex: p.type === 'van' ? 5 : 1,
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
-                      >
-                        {p.type === 'end' && <HomeIcon sx={{ color: 'white', fontSize: 14 }} />}
-                        {p.type === 'van' && <AirportShuttleIcon sx={{ fontSize: 30 }} />}
-                      </Box>
-                    );
-                  })}
-                </Box>
                 <Box sx={{display:'flex',gap:20}}>
                      <Typography variant="body2" color="text.secondary">
                  <span style={{fontWeight:'bold'}}> Route Name: </span> {currentVehicle?.routeTitle}
@@ -364,25 +343,83 @@ console.log("selec",selectedLocations)
       </Box>
 
       {/* STUDENTS MODAL */}
-      <Dialog open={kidsModalOpen} onClose={() => setKidsModalOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Students to be Picked</DialogTitle>
-        <DialogContent dividers>
+      <Dialog 
+        open={kidsModalOpen} 
+        onClose={() => setKidsModalOpen(false)} 
+        fullWidth 
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ 
+          backgroundColor: '#191970', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <SchoolIcon />
+          Students to be Picked ({kidsArray.length})
+        </DialogTitle>
+        <DialogContent sx={{ p: 2, backgroundColor: '#ffffff' }}>
           {tripKidsLoading ? (
-            <Typography>Loading kids...</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <Typography>Loading students...</Typography>
+            </Box>
           ) : kidsArray.length === 0 ? (
-            <Typography>No kids found.</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <Typography color="text.secondary">No students found.</Typography>
+            </Box>
           ) : (
-            <List>
-              {kidsArray.map((kid: any) => (
-                <ListItem key={kid._id}>
-                  <ListItemAvatar>
-                    <Avatar>{kid.name?.charAt(0)}</Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={kid.name}
-                    secondary={kid.parent?.address || 'N/A'}
-                  />
-                </ListItem>
+            <List sx={{ p: 0 }}>
+              {kidsArray.map((kid: any, index: number) => (
+                <React.Fragment key={kid._id}>
+                  <ListItem 
+                    sx={{ 
+                      px: 2,
+                      py: 1.5,
+                      borderBottom: index < kidsArray.length - 1 ? '1px solid #e0e0e0' : 'none',
+                      '&:hover': { backgroundColor: '#f8f9fa' }
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar sx={{ bgcolor: '#1FA959' }}>
+                        {kid.name?.charAt(0)?.toUpperCase()}
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Typography variant="subtitle1" fontWeight="bold" color="#191970">
+                          {kid.name}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            📍 {kid.parent?.address || 'Address not available'}
+                          </Typography>
+                          {kid.parent?.name && (
+                            <Typography variant="body2" color="text.secondary">
+                              👤 Parent: {kid.parent.name}
+                            </Typography>
+                          )}
+                        </Box>
+                      }
+                    />
+                    {kid.parent?.phone && (
+                      <Tooltip title={`Call parent: ${kid.parent.phone}`}>
+                        <IconButton 
+                          sx={{ 
+                            bgcolor: '#1FA959',
+                            color: 'white',
+                            '&:hover': { bgcolor: '#178a48' }
+                          }}
+                          onClick={() => window.open(`tel:${kid.parent.phone}`)}
+                        >
+                          <PhoneIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </ListItem>
+                </React.Fragment>
               ))}
             </List>
           )}

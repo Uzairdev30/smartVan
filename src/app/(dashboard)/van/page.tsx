@@ -18,6 +18,10 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Plus as PlusIcon, DotsThreeVertical as MoreIcon } from "@phosphor-icons/react";
@@ -25,11 +29,12 @@ import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-import { getAllSchoolVans, bulkUpdateVanStatus, deleteVans, resetBulkStatus, resetDeleteVan, removeDriverFromVan, resetRemoveDriver } from "@/store/reducers/van-slice";
+import { getAllSchoolVans, bulkUpdateVanStatus, deleteVans, resetBulkStatus, resetDeleteVan, removeDriverFromVan, resetRemoveDriver, deleteVanById } from "@/store/reducers/van-slice";
 import { VanFilter, type VanFilters } from "./driverfilter";
 import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
 import { Pencil as EditIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { UserMinus as RemoveDriverIcon } from "@phosphor-icons/react/dist/ssr/UserMinus";
+import { Trash as DeleteIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { CheckCircleIcon, MinusIcon } from "@/components/icons";
 
 export default function Page(): React.JSX.Element {
@@ -47,6 +52,8 @@ export default function Page(): React.JSX.Element {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [selectedRow, setSelectedRow] = React.useState<any>(null);
   const [updatingStatus, setUpdatingStatus] = React.useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [vanToDelete, setVanToDelete] = React.useState<any>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, row: any) => {
     setAnchorEl(event.currentTarget);
@@ -101,6 +108,41 @@ export default function Page(): React.JSX.Element {
 
   const handleBulkStatusUpdate = (vanIds: string[], status: string) => {
     dispatch(bulkUpdateVanStatus({ vanIds, status }));
+  };
+
+  const handleDelete = () => {
+    if (selectedRow) {
+      setVanToDelete(selectedRow);
+      setDeleteDialogOpen(true);
+    }
+    handleMenuClose();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (vanToDelete?.van?._id || vanToDelete?.van?.id) {
+      try {
+        const vanId = vanToDelete?.van?._id || vanToDelete?.van?.id;
+        await dispatch(deleteVanById({ vanId })).unwrap();
+        
+        // Refresh the list
+        dispatch(
+          getAllSchoolVans({
+            page,
+            limit,
+            ...filters,
+          })
+        );
+      } catch (error) {
+        console.error("Failed to delete van:", error);
+      }
+    }
+    setDeleteDialogOpen(false);
+    setVanToDelete(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setVanToDelete(null);
   };
 
   const handleBulkDelete = async (vanIds: string[]) => {
@@ -390,6 +432,12 @@ export default function Page(): React.JSX.Element {
               </ListItemIcon>
               <ListItemText primary="Edit" />
             </MenuItem>
+            <MenuItem onClick={handleDelete}>
+              <ListItemIcon>
+                <DeleteIcon size={18} />
+              </ListItemIcon>
+              <ListItemText primary="Delete" />
+            </MenuItem>
           </Menu>
         </Stack>
       ),
@@ -494,6 +542,36 @@ export default function Page(): React.JSX.Element {
             }}
           />
         </Card>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={handleCancelDelete}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogContent sx={{ pb: 2 }}>
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <Typography variant="body1" color="text.primary" fontSize="1.1rem">
+                Are you sure you want to delete this van?
+              </Typography>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCancelDelete} disabled={deleteVanLoading}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmDelete} 
+              variant="contained" 
+              color="error"
+              disabled={deleteVanLoading}
+              startIcon={deleteVanLoading ? <CircularProgress size={16} /> : <DeleteIcon size={18} />}
+            >
+              {deleteVanLoading ? 'Deleting...' : 'Delete Van'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Stack>
     </Box>
   );
