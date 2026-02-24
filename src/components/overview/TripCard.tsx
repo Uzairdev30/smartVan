@@ -122,7 +122,9 @@ export function TripCard({
                 onClick={() => onSelectTrip && onSelectTrip(trip)}  // 🔹 yahan se parent ko trip ja raha
               >
                 <Stack direction="row" spacing={2} alignItems="flex-start">
-                  <Avatar sx={{ width: 48, height: 48 }}>{trip.driverName[0]}</Avatar>
+                  <Avatar sx={{ width: 48, height: 48 }}>
+                    {trip.driverName ? trip.driverName[0] : 'D'}
+                  </Avatar>
 
                   <Box flex={1}>
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -143,7 +145,7 @@ export function TripCard({
                       <Stack direction="row" spacing={1}>
                         <Typography variant="caption" color="text.secondary">Kids Count:</Typography>
                         <Typography variant="caption" fontWeight={400} color="text.primary">
-                          {trip.kids.length}
+                          {trip.kids ? trip.kids.length : 0}
                         </Typography>
                       </Stack>
 

@@ -57,6 +57,9 @@ interface RouteState {
   success: boolean;
   pagination: PaginationMeta;
   filters: RouteFilters;
+  deleteRouteLoading: boolean;
+  deleteRouteSuccess: boolean;
+  deleteRouteError: string | null;
 }
 
 // ─── Initial State ──────────────────────────────────────
@@ -71,6 +74,9 @@ const initialState: RouteState = {
   success: false,
   pagination: { total: 0, page: 1, limit: 10 },
   filters: {},
+  deleteRouteLoading: false,
+  deleteRouteSuccess: false,
+  deleteRouteError: null,
 };
 
 // ─── Thunks ──────────────────────────────────────────────
@@ -199,6 +205,25 @@ export const updateRoute = createAsyncThunk<
   }
 });
 
+// ✅ Delete route by ID (single route only)
+interface DeleteRoutePayload {
+  routeId: string;
+}
+export const deleteRouteByAdmin = createAsyncThunk<
+  { success: boolean },
+  DeleteRoutePayload,
+  { rejectValue: string }
+>("route/deleteRouteByAdmin", async (payload, { rejectWithValue }) => {
+  try {
+    const response = await api.post(ROUTE.DELETE_ROUTE, { routeId: payload.routeId });
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(
+      error?.response?.data?.message || "Failed to delete route"
+    );
+  }
+});
+
 // ─── Slice ──────────────────────────────────────────────
 
 const routeSlice = createSlice({
@@ -211,6 +236,11 @@ const routeSlice = createSlice({
     },
     clearRouteDetails: (state) => {
       state.routeDetails = null;
+    },
+    resetDeleteRoute: (state) => {
+      state.deleteRouteLoading = false;
+      state.deleteRouteSuccess = false;
+      state.deleteRouteError = null;
     },
   },
   extraReducers: (builder) => {
@@ -331,8 +361,28 @@ const routeSlice = createSlice({
       state.error =
         (action.payload as string) || "Failed to update route";
     });
+
+    // ── Delete route by ID ────────────────────────────────
+    builder.addCase(deleteRouteByAdmin.pending, (state) => {
+      state.deleteRouteLoading = true;
+      state.deleteRouteSuccess = false;
+      state.deleteRouteError = null;
+    });
+
+    builder.addCase(deleteRouteByAdmin.fulfilled, (state) => {
+      state.deleteRouteLoading = false;
+      state.deleteRouteSuccess = true;
+      // Note: We'll refresh the list from the component
+    });
+
+    builder.addCase(deleteRouteByAdmin.rejected, (state, action) => {
+      state.deleteRouteLoading = false;
+      state.deleteRouteSuccess = false;
+      state.deleteRouteError =
+        (action.payload as string) || "Failed to delete route";
+    });
   },
 });
 
-export const { clearRouteStatus, clearRouteDetails } = routeSlice.actions;
+export const { clearRouteStatus, clearRouteDetails, resetDeleteRoute } = routeSlice.actions;
 export default routeSlice.reducer;

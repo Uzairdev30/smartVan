@@ -15,6 +15,10 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
@@ -30,6 +34,7 @@ import { AppDispatch, RootState } from "@/store";
 import {
   getAllRoutes,
   getRouteById,
+  deleteRouteByAdmin,
   type TripRecord,
   type RouteFilters,
 } from "@/store/reducers/route-slice";
@@ -43,7 +48,11 @@ const RouteActions = ({ row }: { row: TripRecord }) => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const open = Boolean(anchorEl);
+
+  // Get delete loading state from Redux
+  const { deleteRouteLoading } = useSelector((state: RootState) => state.route);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) =>
     setAnchorEl(event.currentTarget);
@@ -67,47 +76,85 @@ const RouteActions = ({ row }: { row: TripRecord }) => {
     handleMenuClose();
   };
 
-  // const handleDelete = async () => { ... }
+  const handleConfirmDelete = async () => {
+    try {
+      await dispatch(deleteRouteByAdmin({ routeId: row._id })).unwrap();
+      // Refresh the routes list
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to delete route:", error);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+  };
 
   return (
-    <Stack direction="row" spacing={0} sx={{ justifyContent: "flex-end" }}>
-      <IconButton size="small" onClick={handleMenuOpen}>
-        <MoreVertIcon />
-      </IconButton>
+    <>
+      <Stack direction="row" spacing={0} sx={{ justifyContent: "flex-end" }}>
+        <IconButton size="small" onClick={handleMenuOpen}>
+          <MoreVertIcon />
+        </IconButton>
 
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleMenuClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        <Menu
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleMenuClose}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <MenuItem onClick={handleView}>
+            <ListItemIcon>
+              <EyeIcon size={18} />
+            </ListItemIcon>
+            <ListItemText primary="View" />
+          </MenuItem>
+          <MenuItem onClick={handleEdit}>
+            <ListItemIcon>
+              <EditIcon size={18} />
+            </ListItemIcon>
+            <ListItemText primary="Edit" />
+          </MenuItem>
+          <MenuItem onClick={() => { setDeleteDialogOpen(true); handleMenuClose(); }}>
+            <ListItemIcon>
+              <TrashIcon size={18} color="red" />
+            </ListItemIcon>
+            <ListItemText primary="Delete" />
+          </MenuItem>
+        </Menu>
+      </Stack>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCancelDelete}
+        maxWidth="sm"
+        fullWidth
       >
-        <MenuItem onClick={handleView}>
-          <ListItemIcon>
-            <EyeIcon size={18} />
-          </ListItemIcon>
-          <ListItemText primary="View" />
-        </MenuItem>
-        <MenuItem onClick={handleEdit}>
-          <ListItemIcon>
-            <EditIcon size={18} />
-          </ListItemIcon>
-          <ListItemText primary="Edit" />
-        </MenuItem>
-        <MenuItem onClick={handleDelete}>
-          <ListItemIcon>
-            <DeleteIcon size={18} />
-          </ListItemIcon>
-          <ListItemText primary="Delete" />
-        </MenuItem>
-        {/* <MenuItem onClick={handleDelete}>
-          <ListItemIcon>
-            <TrashIcon size={18} color="red" />
-          </ListItemIcon>
-          <ListItemText primary="Delete" />
-        </MenuItem> */}
-      </Menu>
-    </Stack>
+        <DialogContent sx={{ pb: 2 }}>
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Typography variant="body1" color="text.primary" fontSize="1.1rem">
+              Are you sure you want to delete this route "{row.title}"?
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete} disabled={deleteRouteLoading}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleConfirmDelete} 
+            variant="contained" 
+            color="error"
+            disabled={deleteRouteLoading}
+            startIcon={deleteRouteLoading ? <CircularProgress size={16} /> : <TrashIcon size={18} />}
+          >
+            {deleteRouteLoading ? 'Deleting...' : 'Delete Route'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 

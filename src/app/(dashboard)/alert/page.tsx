@@ -140,26 +140,26 @@ export default function AlertPage(): React.JSX.Element {
         </Typography>
       ),
     },
-    {
-      name: "Status",
-      width: "120px",
-      formatter: (row) => {
-        const color =
-          row.status === "Active"
-            ? "green"
-            : row.status === "Sent"
-            ? "blue"
-            : "gray";
-        return (
-          <Chip
-            label={row.status}
-            size="small"
-            style={{ borderColor: color, color }}
-            variant="outlined"
-          />
-        );
-      },
-    },
+    // {
+    //   name: "Status",
+    //   width: "120px",
+    //   formatter: (row) => {
+    //     const color =
+    //       row.status === "Active"
+    //         ? "green"
+    //         : row.status === "Sent"
+    //         ? "blue"
+    //         : "gray";
+    //     return (
+    //       <Chip
+    //         label={row.status}
+    //         size="small"
+    //         style={{ borderColor: color, color }}
+    //         variant="outlined"
+    //       />
+    //     );
+    //   },
+    // },
     {
       name: "Actions",
       width: "100px",

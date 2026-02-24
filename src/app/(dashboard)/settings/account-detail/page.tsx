@@ -9,13 +9,10 @@ import { Privacy } from '@/components/dashboard/settings/privacy';
 import { ThemeSwitch } from '@/components/dashboard/settings/theme-switch';
 import AccountDetails from '@/components/dashboard/settings/account-details';
 
-export const metadata = { title: `Account | ${config.site.name}` } satisfies Metadata;
+export const metadata = { title: `${config.site.name} | Account` } satisfies Metadata;
 export default function Page(): React.JSX.Element {
   return (
     <Stack spacing={4}>
-      <div>
-        <Typography variant="h4">Profile</Typography>
-      </div>
       <Stack spacing={4}>
         <AccountDetails />
         {/* <ThemeSwitch />

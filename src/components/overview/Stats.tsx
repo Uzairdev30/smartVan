@@ -15,6 +15,7 @@ import { Truck } from "@phosphor-icons/react/dist/ssr/Truck";
 import { Users } from "@phosphor-icons/react/dist/ssr/Users";
 import { Student } from "@phosphor-icons/react/dist/ssr/Student";
 import { RoadHorizon } from "@phosphor-icons/react/dist/ssr/RoadHorizon";
+import { Calendar } from "@phosphor-icons/react/dist/ssr/Calendar";
 import {
   ResponsiveContainer,
   BarChart,
@@ -159,7 +160,7 @@ export function Stats({
                       color: "var(--mui-palette-text-primary)",
                     }}
                   >
-                    <ChartPieIcon fontSize="var(--icon-fontSize-lg)" />
+                    <Calendar fontSize="var(--icon-fontSize-lg)" />
                   </Avatar>
                   <Typography variant="body1">
                     {filterType === "yearly"

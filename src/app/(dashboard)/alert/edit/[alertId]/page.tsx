@@ -31,7 +31,7 @@ export default function EditAlertPage(): React.JSX.Element {
   const { alertDetail, loading, success, error } = useSelector(
     (state: RootState) => state.alert
   );
-  console.log("alertDetail",alertDetail)
+  console.log("alertDetail", alertDetail)
   const { vans, loading: vansLoading } = useSelector((state: RootState) => state.van);
 
   const [alertType, setAlertType] = React.useState("");
@@ -66,26 +66,26 @@ export default function EditAlertPage(): React.JSX.Element {
   }, [recipientType, dispatch]);
 
   const handleSubmit = async () => {
-  if (!alertType || !recipientType || !message) {
-    alert("Please fill in all required fields!");
-    return;
-  }
+    if (!alertType || !recipientType || !message) {
+      alert("Please fill in all required fields!");
+      return;
+    }
 
-  const data: any = {
-    alertId,
-    alertType,
-    recipientType,
-    vanId: vanId || undefined, // optional if not selected
-    message,
+    const data: any = {
+      alertId,
+      alertType,
+      recipientType,
+      vanId: vanId || undefined, // optional if not selected
+      message,
+    };
+
+    try {
+      await dispatch(updateAlert(data)).unwrap(); // unwrap to catch errors
+      router.push("/alert"); // navigate back to alert list
+    } catch (err: any) {
+      console.error("Failed to update alert:", err);
+    }
   };
-
-  try {
-    await dispatch(updateAlert(data)).unwrap(); // unwrap to catch errors
-    router.push("/alert"); // navigate back to alert list
-  } catch (err: any) {
-    console.error("Failed to update alert:", err);
-  }
-};
 
 
   // Handle success or error
@@ -151,26 +151,26 @@ export default function EditAlertPage(): React.JSX.Element {
                 <Grid item xs={12} sm={6}>
                   <FormControl fullWidth>
                     <InputLabel id="van-select-label">Select Van</InputLabel>
-                 <Select
-  labelId="van-select-label"
-  value={vanId}
-  onChange={(e) => setVanId(e.target.value)}
-  label="Select Van"
-  MenuProps={{
-    PaperProps: {
-      style: {
-        maxHeight: 300, // max height in px
-        width: 250,     // optional, to control width of dropdown
-      },
-    },
-  }}
->
-  {mappedVans.map((v) => (
-    <MenuItem key={v._id} value={v._id}>
-      {v.vehicleType} - {v.carNumber} ({v.driverName})
-    </MenuItem>
-  ))}
-</Select>
+                    <Select
+                      labelId="van-select-label"
+                      value={vanId}
+                      onChange={(e) => setVanId(e.target.value)}
+                      label="Select Van"
+                      MenuProps={{
+                        PaperProps: {
+                          style: {
+                            maxHeight: 300, // max height in px
+                            width: 250,     // optional, to control width of dropdown
+                          },
+                        },
+                      }}
+                    >
+                      {mappedVans.map((v) => (
+                        <MenuItem key={v._id} value={v._id}>
+                          {v.vehicleType} - {v.carNumber} ({v.driverName})
+                        </MenuItem>
+                      ))}
+                    </Select>
 
                   </FormControl>
                 </Grid>

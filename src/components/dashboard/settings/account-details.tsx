@@ -10,21 +10,58 @@ import {
   Stack,
   Typography,
   Divider,
+  Chip,
+  Paper,
 } from "@mui/material";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import BusinessIcon from '@mui/icons-material/Business';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import RouteIcon from '@mui/icons-material/Route';
+import PeopleIcon from '@mui/icons-material/People';
+import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
 
-
-// 🔹 Safe standalone DetailItem
-function DetailItem({ label, value }: { label: string; value: any }) {
+// 🔹 Modern Detail Item Component
+function DetailItem({ label, value, icon }: { label: string; value: any; icon?: React.ReactNode }) {
   return (
-    <Box sx={{ mb: 2 }}>
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-      <Typography variant="subtitle1" fontWeight={600}>
-        {value || "—"}
-      </Typography>
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2,
+      p: 2,
+      borderRadius: 2,
+      bgcolor: 'grey.50',
+      border: '1px solid',
+      borderColor: 'divider',
+      transition: 'all 0.2s ease-in-out',
+      '&:hover': {
+        bgcolor: 'primary.50',
+        transform: 'translateY(-2px)',
+        boxShadow: 2
+      }
+    }}>
+      {icon && (
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'primary.main',
+          minWidth: 40
+        }}>
+          {icon}
+        </Box>
+      )}
+      <Box sx={{ flex: 1 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', mb: 0.5 }}>
+          {label}
+        </Typography>
+        <Typography variant="body1" fontWeight="600" color="text.primary">
+          {value || "—"}
+        </Typography>
+      </Box>
     </Box>
   );
 }
@@ -34,120 +71,191 @@ export default function SchoolDetails() {
   const school = useSelector((state: RootState) => state.auth.userProfile);
 
   if (!school) {
-    return <Typography>Loading...</Typography>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <Typography variant="h6" color="text.secondary">Loading...</Typography>
+      </Box>
+    );
   }
 
   return (
-    <Card sx={{ p: 3 }}>
-      <CardContent>
-        {/* Header */}
-        <Stack direction="row" spacing={2} alignItems="center" mb={3}>
-          <Avatar src={school?.schoolImage} sx={{ width: 60, height: 60 }} />
-          <Box>
-            <Typography variant="h5" fontWeight="bold">
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+      {/* Profile Header */}
+      <Paper
+        elevation={3}
+        sx={{
+          p: 4,
+          mb: 4,
+          borderRadius: 3,
+        }}
+      >
+        <Stack direction="row" spacing={3} alignItems="center">
+          <Avatar
+            src={school?.schoolImage}
+            sx={{
+              width: 80,
+              height: 80,
+              border: '3px solid white',
+              boxShadow: 2
+            }}
+          />
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
               {school.schoolName}
             </Typography>
-            <Typography variant="subtitle2" color="text.secondary">
+            <Typography variant="h6" sx={{ opacity: 0.9 }}>
               {school.branchName}
             </Typography>
           </Box>
+          <Chip
+            label="Active"
+            color="success"
+            variant="filled"
+            sx={{
+              fontWeight: 'bold',
+              px: 2,
+              py: 1
+            }}
+          />
         </Stack>
+      </Paper>
 
-        <Divider sx={{ mb: 3 }} />
-
-        {/* School Info */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          School Information
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="School Name" value={school.schoolName} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Email" value={school.schoolEmail} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Branch" value={school.branchName} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Contact Number" value={school.contactNumber} />
-          </Grid>
-
-          <Grid item xs={12}>
-            <DetailItem label="Address" value={school.address} />
-          </Grid>
+      {/* Main Content Grid */}
+      <Grid container spacing={3}>
+        {/* School Information */}
+        <Grid item xs={12} md={6}>
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 3, height: '100%' }}>
+            <Typography variant="h6" sx={{ mb: 3, color: 'primary.main', fontWeight: 'bold' }}>
+              {/* <BusinessIcon sx={{ mr: 1, verticalAlign: 'middle' }} /> */}
+              School Information
+            </Typography>
+            <Stack spacing={2}>
+              <DetailItem
+                label="School Name"
+                value={school.schoolName}
+                icon={<BusinessIcon />}
+              />
+              <DetailItem
+                label="Email"
+                value={school.schoolEmail}
+                icon={<EmailIcon />}
+              />
+              <DetailItem
+                label="Branch"
+                value={school.branchName}
+                icon={<LocationOnIcon />}
+              />
+              <DetailItem
+                label="Contact Number"
+                value={school.contactNumber}
+                icon={<PhoneIcon />}
+              />
+              <DetailItem
+                label="Address"
+                value={school.address}
+                icon={<LocationOnIcon />}
+              />
+            </Stack>
+          </Paper>
         </Grid>
 
-        <Divider sx={{ my: 3 }} />
-
-        {/* Subscription */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Subscription Details
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Current Plan" value={school.currentPlan} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Billing Cycle" value={school.billingCycle} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem
-              label="Auto Renew"
-              value={school.autoRenew ? "Enabled" : "Disabled"}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Payment Method" value={school.paymentMethod} />
-          </Grid>
+        {/* Subscription Details */}
+        <Grid item xs={12} md={6}>
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 3, height: '100%' }}>
+            <Typography variant="h6" sx={{ mb: 3, color: 'primary.main', fontWeight: 'bold' }}>
+              {/* <CreditCardIcon sx={{ mr: 1, verticalAlign: 'middle' }} /> */}
+              Subscription Details
+            </Typography>
+            <Stack spacing={2}>
+              <DetailItem
+                label="Current Plan"
+                value={school.currentPlan}
+                icon={<CreditCardIcon />}
+              />
+              <DetailItem
+                label="Billing Cycle"
+                value={school.billingCycle}
+                icon={<CreditCardIcon />}
+              />
+              <DetailItem
+                label="Auto Renew"
+                value={school.autoRenew ? "Enabled" : "Disabled"}
+                icon={
+                  <Chip
+                    label={school.autoRenew ? "ON" : "OFF"}
+                    color={school.autoRenew ? "success" : "default"}
+                    size="small"
+                  />
+                }
+              />
+              <DetailItem
+                label="Payment Method"
+                value={school.paymentMethod}
+                icon={<CreditCardIcon />}
+              />
+            </Stack>
+          </Paper>
         </Grid>
 
-        <Divider sx={{ my: 3 }} />
-
-        {/* Limits */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Usage Limits
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}>
-            <DetailItem label="Allowed Routes" value={school.allowedRoutes} />
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
-            <DetailItem label="Allowed Students" value={school.allowedStudents} />
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
-            <DetailItem label="Allowed Vans" value={school.allowedVans} />
-          </Grid>
+        {/* Usage Limits */}
+        <Grid item xs={12}>
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
+            <Typography variant="h6" sx={{ mb: 3, color: 'primary.main', fontWeight: 'bold' }}>
+              {/* <RouteIcon sx={{ mr: 1, verticalAlign: 'middle' }} /> */}
+              Usage Limits
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={4}>
+                <DetailItem
+                  label="Allowed Routes"
+                  value={school.allowedRoutes}
+                  icon={<RouteIcon />}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <DetailItem
+                  label="Allowed Students"
+                  value={school.allowedStudents}
+                  icon={<PeopleIcon />}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <DetailItem
+                  label="Allowed Vans"
+                  value={school.allowedVans}
+                  icon={<DirectionsBusIcon />}
+                />
+              </Grid>
+            </Grid>
+          </Paper>
         </Grid>
-
-        <Divider sx={{ my: 3 }} />
 
         {/* Location */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Location
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Latitude" value={school.lat} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Longitude" value={school.long} />
-          </Grid>
+        <Grid item xs={12}>
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
+            <Typography variant="h6" sx={{ mb: 3, color: 'primary.main', fontWeight: 'bold' }}>
+              {/* <LocationOnIcon sx={{ mr: 1, verticalAlign: 'middle' }} /> */}
+              Location
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <DetailItem
+                  label="Latitude"
+                  value={school.lat}
+                  icon={<LocationOnIcon />}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <DetailItem
+                  label="Longitude"
+                  value={school.long}
+                  icon={<LocationOnIcon />}
+                />
+              </Grid>
+            </Grid>
+          </Paper>
         </Grid>
-      </CardContent>
-    </Card>
+      </Grid>
+    </Box>
   );
 }

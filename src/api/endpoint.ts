@@ -55,9 +55,7 @@ export const ROUTE = {
     CREATE_ROUTE:'Route/createRoute',
     GET_ROUTE_BY_ID: '/Route/getRouteById',
     UPDATE_ROUTE: 'Route/editRoute',
-
-
-
+    DELETE_ROUTE: `${BASE_URL}/Route/deleteRouteByAdmin`,
 
 }
 export const SUADMIN={
