@@ -289,7 +289,7 @@ console.log("selec",selectedLocations)
                 <Typography variant="body2" color="text.secondary">
                    <span style={{fontWeight:'bold'}}> Route Trip Type: </span> 
                     {currentVehicle?.routeTripType}
-                </Typography>
+                </Typography> 
                   
                 </Box>
                 <Typography variant="body2" color="text.secondary">
@@ -329,7 +329,7 @@ console.log("selec",selectedLocations)
           </Box>
 
           {/* MAP ALWAYS SHOW */}
-          <Box sx={{ flex: 1, borderRadius: 2, overflow: 'hidden' }}>
+          <Box sx={{ flex: 1, borderRadius: 2, overflow: 'hidden', minHeight: '500px' }}>
             <Map
             status={status}
             currentVehicle={currentVehicle}

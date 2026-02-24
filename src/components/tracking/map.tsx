@@ -150,6 +150,7 @@ import { connectSocket } from "@/socket/socket";
 const containerStyle = {
   width: "100%",
   height: "100%",
+  minHeight: "400px",
 };
 
 export function Map({ selectedLocations = [], currentVehicle, status }: any) {
@@ -183,9 +184,29 @@ export function Map({ selectedLocations = [], currentVehicle, status }: any) {
 
     const socket = socketRef.current;
 
+    console.log("Socket Connection Attempt:", {
+      tripId,
+      status,
+      socketId: socket.id,
+      token: token ? "Present" : "Missing"
+    });
+
     socket.emit("joinTrip", { tripId });
 
+    socket.on("joinedTrip", (response: any) => {
+      console.log("Successfully joined trip:", response);
+    });
+    
+    socket.on("joinTripError", (error: any) => {
+      console.error("Failed to join trip:", error);
+    });
+
     const handleLiveUpdate = (loc: any) => {
+      console.log("Location Update Received:", {
+        location: loc,
+        timestamp: new Date().toISOString(),
+        totalPoints: livePath.length + 1
+      });
       setLivePath((prev) => [
         ...prev,
         {
@@ -199,9 +220,27 @@ export function Map({ selectedLocations = [], currentVehicle, status }: any) {
 
     socket.on("locationUpdated", handleLiveUpdate);
 
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected");
+    });
+
+    socket.on("connect_error", (error: any) => {
+      console.error("Socket connection error:", error);
+    });
+
     return () => {
       if (socket) {
+        console.log("Cleaning up socket listeners...");
         socket.off("locationUpdated", handleLiveUpdate);
+        socket.off("joinedTrip");
+        socket.off("joinTripError");
+        socket.off("connect");
+        socket.off("disconnect");
+        socket.off("connect_error");
         socket.disconnect();
         socketRef.current = null;
       }
@@ -215,6 +254,17 @@ export function Map({ selectedLocations = [], currentVehicle, status }: any) {
   }));
 
   const center = path[0] || { lat: 24.8607, lng: 67.0011 };
+
+  // Debug: Log path data
+  console.log("Map Debug Info:", {
+    livePathLength: livePath.length,
+    pathLength: path.length,
+    livePath: livePath.slice(0, 3), // First 3 points
+    path: path.slice(0, 3), // First 3 points
+    center,
+    status,
+    tripId
+  });
 
   return (
     <Box sx={{ width: "100%", height: "100%" }}>

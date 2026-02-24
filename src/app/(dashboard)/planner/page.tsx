@@ -94,6 +94,12 @@ const RouteActions = ({ row }: { row: TripRecord }) => {
           </ListItemIcon>
           <ListItemText primary="Edit" />
         </MenuItem>
+        <MenuItem onClick={handleDelete}>
+          <ListItemIcon>
+            <DeleteIcon size={18} />
+          </ListItemIcon>
+          <ListItemText primary="Delete" />
+        </MenuItem>
         {/* <MenuItem onClick={handleDelete}>
           <ListItemIcon>
             <TrashIcon size={18} color="red" />
