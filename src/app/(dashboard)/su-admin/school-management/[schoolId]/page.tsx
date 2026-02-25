@@ -13,25 +13,37 @@ import {
   Button,
   Chip,
   CircularProgress,
+  IconButton,
 } from "@mui/material";
-
+import {
+  ArrowLeft as ArrowLeftIcon,
+  Building,
+  Envelope,
+  Phone,
+  MapPin,
+  Clock,
+  Users,
+  CreditCard,
+  Edit as EditIcon,
+} from "@phosphor-icons/react";
 import Link from "next/link";
-import { ArrowLeftIcon } from "@mui/x-date-pickers/icons";
-
 import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { getSchoolById } from "@/store/reducers/suadmin-slice";
 
-function DetailItem({ label, value }: { label: any; value: any }) {
+function DetailItem({ label, value, icon }: { label: string; value: any; icon?: React.ReactNode }) {
   return (
     <Box sx={{ mb: 2 }}>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
         {label}
       </Typography>
-      <Typography variant="subtitle1" fontWeight={600}>
-        {value || "—"}
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        {icon}
+        <Typography variant="subtitle1" fontWeight={600}>
+          {value || "—"}
+        </Typography>
+      </Box>
     </Box>
   );
 }
@@ -64,16 +76,15 @@ export default function SchoolDetailsPage() {
 
   if (!school) return <Typography>Loading...</Typography>;
 
-  const initials =
-    school?.schoolName
-      ?.split(" ")
-      .map((x) => x[0]?.toUpperCase())
-      .join("") || "SC";
+  const initials = school?.schoolName
+    ?.split(" ")
+    .map((x) => x[0]?.toUpperCase())
+    .join("") || "SC";
 
   return (
-    <Card sx={{ p: 3 }}>
-      <CardContent>
-        {/* HEADER */}
+    <Box sx={{ p: 3, bgcolor: "var(--mui-palette-background-level1)" }}>
+      {/* HEADER */}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
         <Link
           href="/su-admin/school-management"
           style={{
@@ -81,203 +92,225 @@ export default function SchoolDetailsPage() {
             alignItems: "center",
             gap: 8,
             textDecoration: "none",
+            color: "text.primary",
           }}
         >
-          <ArrowLeftIcon />
+          <ArrowLeftIcon size={20} />
           <Typography variant="subtitle2" color="text.primary">
             Back to Schools
           </Typography>
         </Link>
 
-        <Divider sx={{ my: 2 }} />
-
-        {/* Top Profile */}
-        <Stack direction="row" spacing={2} alignItems="center" mb={3}>
-          <Avatar
-            src={school.logo || undefined}
-            sx={{
-              width: 60,
-              height: 60,
-              bgcolor: !school.logo ? "#1976d2" : "transparent",
-              color: "#fff",
-              fontSize: 22,
-              fontWeight: "bold",
-            }}
-          >
-            {!school.logo ? initials : null}
-          </Avatar>
-
-          <Box>
-            <Typography variant="h5" fontWeight="bold">
-              {school.schoolName}
-            </Typography>
-            <Chip
-              label={school.status?.toUpperCase()}
-              size="small"
-              color={school.status === "active" ? "success" : "default"}
-            />
-          </Box>
-        </Stack>
-
-        <Divider sx={{ mb: 3 }} />
-
-        {/* =========================
-             SCHOOL INFORMATION
-        ========================== */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          School Information
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="School Name" value={school.schoolName} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="School ID" value={school._id} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Email" value={school.schoolEmail} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Contact Number" value={school.contactNumber} />
-          </Grid>
-
-          <Grid item xs={12} sm={12}>
-            <DetailItem label="Address" value={school.address} />
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* =========================
-             ADMIN INFORMATION
-        ========================== */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Admin Information
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Admin Name" value={school.admin?.name} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Admin Email" value={school.admin?.email} />
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* =========================
-             ROUTE & GEO LOCATION
-        ========================== */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Route & Geo Location
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Latitude" value={school.lat} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Longitude" value={school.long} />
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* =========================
-             TIMINGS & LIMITS
-        ========================== */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          School Timing & Limits
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Start Time" value={school.startTime} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="End Time" value={school.endTime} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem
-              label="Max Trip Duration"
-              value={school.maxTripDuration + " mins"}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem
-              label="Buffer Time"
-              value={school.bufferTime + " mins"}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Allowed Vans" value={school.allowedVans} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Allowed Students" value={school.allowedStudents} />
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* =========================
-             BILLING & PLAN
-        ========================== */}
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Plan & Billing
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Current Plan" value={school.currentPlan} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Billing Cycle" value={school.billingCycle} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem label="Payment Method" value={school.paymentMethod} />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <DetailItem
-              label="Auto Renew"
-              value={school.autoRenew ? "Enabled" : "Disabled"}
-            />
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* =========================
-             FOOTER ACTIONS
-        ========================== */}
-        <Stack direction="row" justifyContent="flex-end" spacing={2}>
-          <Button variant="outlined" onClick={() => router.back()}>
-            Back
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() =>
-              router.push(`/su-admin/school-management/edit/${schoolId}`)
+        <Button
+          variant="contained"
+          startIcon={<EditIcon size={18} />}
+          onClick={() => router.push(`/su-admin/school-management/edit/${schoolId}`)}
+          sx={{
+            background: "#FFA500",
+            "&:hover": {
+              background: "#FF8C00",
             }
-          >
-            Edit
-          </Button>
-        </Stack>
-      </CardContent>
-    </Card>
+          }}
+        >
+          Edit School
+        </Button>
+      </Stack>
+
+      {/* MAIN CARD */}
+      <Card sx={{ borderRadius: 3, boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)" }}>
+        <CardContent sx={{ p: 4 }}>
+          {/* SCHOOL HEADER */}
+          <Box sx={{ mb: 4 }}>
+            <Stack direction="row" alignItems="center" spacing={3}>
+              <Avatar
+                src={school.schoolImage || undefined}
+                sx={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 2,
+                  border: "2px solid #E0E2E7",
+                  bgcolor: "#F6F7F9",
+                  fontSize: 28,
+                  fontWeight: "bold",
+                  color: "#616161",
+                }}
+              >
+                {!school.schoolImage ? (
+                  <Building size={32} color="#616161" />
+                ) : null}
+              </Avatar>
+
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h4" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>
+                  {school.schoolName}
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Chip
+                    label={school.status?.toUpperCase()}
+                    size="small"
+                    sx={{
+                      bgcolor: school.status === "active" ? "#E8F5E8" : "#FEE2E2",
+                      color: school.status === "active" ? "#2E7D32" : "#D32F2F",
+                      fontWeight: 600,
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    ID: {school._id}
+                  </Typography>
+                </Box>
+              </Box>
+            </Stack>
+          </Box>
+
+          <Divider sx={{ mb: 4 }} />
+
+          <Grid container spacing={4}>
+            {/* SCHOOL INFORMATION */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" sx={{ mb: 3, color: "#1560BD", fontWeight: 600 }}>
+                School Information
+              </Typography>
+              
+              <DetailItem 
+                label="School Name" 
+                value={school.schoolName} 
+                icon={<Building size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="School Email" 
+                value={school.schoolEmail} 
+                icon={<Envelope size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="Contact Number" 
+                value={school.contactNumber} 
+                icon={<Phone size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="Address" 
+                value={school.address} 
+                icon={<MapPin size={18} color="#616161" />}
+              />
+            </Grid>
+
+            {/* ADMIN INFORMATION */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" sx={{ mb: 3, color: "#1560BD", fontWeight: 600 }}>
+                Admin Information
+              </Typography>
+              
+              <DetailItem 
+                label="Admin Name" 
+                value={school.admin?.name} 
+                icon={<Users size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="Admin Email" 
+                value={school.admin?.email} 
+                icon={<Envelope size={18} color="#616161" />}
+              />
+            </Grid>
+
+            {/* ROUTE & TIMING INFORMATION */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" sx={{ mb: 3, color: "#1560BD", fontWeight: 600 }}>
+                Route & Timing
+              </Typography>
+              
+              <DetailItem 
+                label="Start Time" 
+                value={school.startTime} 
+                icon={<Clock size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="End Time" 
+                value={school.endTime} 
+                icon={<Clock size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="Max Trip Duration" 
+                value={school.maxTripDuration + " mins"} 
+                icon={<Clock size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="Buffer Time" 
+                value={school.bufferTime + " mins"} 
+                icon={<Clock size={18} color="#616161" />}
+              />
+            </Grid>
+
+            {/* LIMITS */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" sx={{ mb: 3, color: "#1560BD", fontWeight: 600 }}>
+                Limits
+              </Typography>
+              
+              <DetailItem 
+                label="Allowed Vans" 
+                value={school.allowedVans} 
+                icon={<Users size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="Allowed Routes" 
+                value={school.allowedRoutes} 
+                icon={<MapPin size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="Allowed Students" 
+                value={school.allowedStudents} 
+                icon={<Users size={18} color="#616161" />}
+              />
+            </Grid>
+
+            {/* BILLING & PLAN */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" sx={{ mb: 3, color: "#1560BD", fontWeight: 600 }}>
+                Plan & Billing
+              </Typography>
+              
+              <DetailItem 
+                label="Current Plan" 
+                value={school.currentPlan} 
+                icon={<CreditCard size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="Billing Cycle" 
+                value={school.billingCycle} 
+                icon={<Clock size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="Payment Method" 
+                value={school.paymentMethod} 
+                icon={<CreditCard size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="Auto Renew" 
+                value={school.autoRenew ? "Enabled" : "Disabled"} 
+                icon={<CreditCard size={18} color="#616161" />}
+              />
+            </Grid>
+
+            {/* LOCATION */}
+            <Grid item xs={12} md={6}>
+              <Typography variant="h6" sx={{ mb: 3, color: "#1560BD", fontWeight: 600 }}>
+                Location
+              </Typography>
+              
+              <DetailItem 
+                label="Latitude" 
+                value={school.lat} 
+                icon={<MapPin size={18} color="#616161" />}
+              />
+              <DetailItem 
+                label="Longitude" 
+                value={school.long} 
+                icon={<MapPin size={18} color="#616161" />}
+              />
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+    </Box>
   );
 }

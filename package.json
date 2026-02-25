@@ -61,6 +61,7 @@
     "embla-carousel-react": "8.3.0",
     "firebase": "10.14.1",
     "formik": "^2.4.6",
+    "framer-motion": "^12.34.3",
     "i18next": "23.16.2",
     "lodash": "^4.17.21",
     "mapbox-gl": "3.7.0",

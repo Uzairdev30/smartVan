@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -11,18 +11,42 @@ import {
   Divider,
   TextField,
   IconButton,
-  Avatar,
   Table,
   TableHead,
   TableRow,
   TableCell,
   TableBody,
+  MenuItem,
+  Switch,
+  FormControlLabel,
+  Grid,
+  Paper,
+  Avatar,
+  Chip,
+  CircularProgress,
 } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import RoomOutlinedIcon from "@mui/icons-material/RoomOutlined";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import Link from "next/link";
+import RouterLink from "next/link";
+import { useRouter, useParams } from "next/navigation";
+import { ArrowLeft as ArrowLeftIcon, Building, MapPin, Clock, CreditCard, Users } from "@phosphor-icons/react/dist/ssr";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  useForm,
+  Controller,
+  FormProvider,
+  useFormContext,
+} from "react-hook-form";
+import { TimePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "@/store";
+import { editSchool, getSchoolById } from "@/store/reducers/suadmin-slice";
+import { uploadImage } from "@/utils/uploadImage";
+
+/* ===================== TABS ===================== */
 
 type TabKey =
   | "profile"
@@ -41,245 +65,922 @@ const tabsList: { key: TabKey; label: string; order: number }[] = [
   { key: "route_rules", label: "Route Rules", order: 1 },
   { key: "limits", label: "Limits", order: 2 },
   { key: "subscription", label: "Subscription & Billing", order: 3 },
-  // we can expose more later if you want
 ];
 
-export default function Page() {
-  // which tab you're viewing in edit mode
-  const [activeTab, setActiveTab] = useState<TabKey>("profile");
+/* ===================== PER-TAB FIELD MAP ===================== */
 
-  const activeTabOrder =
-    tabsList.find((t) => t.key === activeTab)?.order ?? 0;
+const fieldsByTab: Record<TabKey, (keyof FormValues)[]> = {
+  profile: [
+    "schoolImage",
+    "adminName",
+    "schoolName",
+    "address",
+    "adminEmail",
+    "schoolEmail",
+    "contactNumber",
+  ],
+  route_rules: [
+    "pickupStartTime",
+    "dropoffStartTime",
+    "maxTripDuration",
+    "bufferTime",
+    "routeLatitude",
+    "routeLongitude",
+  ],
+  limits: ["allowedVans", "allowedRoutes", "allowedStudents"],
+  subscription: [
+    "plan",
+    "billingCycle",
+    "nextInvoice",
+    "paymentMethod",
+    "pickDropExceptionsActive",
+  ],
+  admins: [],
+  access: [],
+  onboarding: [],
+  audit: [],
+  notes: [],
+  branches: [],
+};
 
-  // figure out which footer we render
-  const isSubscriptionFlow = activeTab === "subscription";
+/* ===================== RHF HELPERS ===================== */
+
+function RHFTextField({
+  name,
+  label,
+  placeholder,
+  type = "text",
+  select = false,
+  children,
+}: {
+  name: keyof FormValues;
+  label: string;
+  placeholder?: string;
+  type?: React.InputHTMLAttributes<unknown>["type"];
+  select?: boolean;
+  children?: React.ReactNode;
+}) {
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext<FormValues>();
+  const err = (errors as any)[name]?.message as string | undefined;
 
   return (
-    <Box
-      sx={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        p: 3,
-        bgcolor: "background.default",
-      }}
-    >
-      {/* ── HEADER: Back / Status / Title / Progress chips ───────── */}
-      <Stack
-        direction="row"
-        alignItems="flex-start"
-        justifyContent="space-between"
-        sx={{ mb: 2 }}
+    <Box>
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        {label}
+      </Typography>
+      <TextField
+        fullWidth
+        size="small"
+        placeholder={placeholder}
+        type={type}
+        select={select}
+        error={!!err}
+        helperText={err}
+        InputProps={{ sx: { borderRadius: 1, py: 1 } }}
+        inputProps={
+          type === "number"
+            ? { inputMode: "decimal", step: "any" }
+            : undefined
+        }
+        {...register(name)}
       >
-        <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
-          {/* back + Active chip */}
-          <Stack direction="row" spacing={1} alignItems="center">
-            <IconButton
-              size="small"
-              sx={{
-                borderRadius: 1,
-                px: 0,
-                color: "text.secondary",
-              }}
-            >
-              <ArrowBackIcon fontSize="small" />
-            </IconButton>
-
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ cursor: "pointer" }}
-            >
-              Back
-            </Typography>
-
-            <Box
-              sx={{
-                ml: "auto",
-                border: "1px solid #4CAF50",
-                borderRadius: "4px",
-                px: 1,
-                py: 0.5,
-                fontSize: "12px",
-                lineHeight: 1.2,
-                color: "#2e7d32",
-                bgcolor: "rgba(76,175,80,0.08)",
-                fontWeight: 500,
-              }}
-            >
-              Active
-            </Box>
-          </Stack>
-
-          {/* title row */}
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-            <Typography variant="h6" fontWeight={600}>
-              Beaconhouse International School
-            </Typography>
-
-            {/* edit CTA (only for later tabs if you want it conditional, keeping your logic) */}
-            {activeTab !== "profile" &&
-              activeTab !== "route_rules" &&
-              activeTab !== "limits" && (
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={0.5}
-                  sx={{
-                    ml: "auto",
-                    cursor: "pointer",
-                    color: "primary.main",
-                    fontSize: "13px",
-                  }}
-                >
-                  <EditOutlinedIcon
-                    sx={{ fontSize: 16, color: "primary.main" }}
-                  />
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: "primary.main",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Edit Profile
-                  </Typography>
-                </Stack>
-              )}
-          </Stack>
-
-          {/* School summary header block:
-             In "add school" we only showed this after first steps.
-             For an edit screen, we actually DO want to show it always.
-             I'll show it ALWAYS under the title now. */}
-          <SchoolSummaryHeader />
-
-          {/* Progress / tabs chips row */}
-          <Stack
-            direction="column"
-            flexWrap="wrap"
-            alignItems="start"
-            spacing={1}
-            sx={{ mt: 2 }}
-          >
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontWeight: 500 }}
-            >
-              SCHOOL SETUP
-            </Typography>
-
-            <Stack direction="row" flexWrap="wrap" sx={{ rowGap: 1 }} useFlexGap>
-              {tabsList.map((tab) => {
-                const isActive = tab.key === activeTab;
-                const isCompleted = tab.order < activeTabOrder;
-                const isUpcoming = tab.order > activeTabOrder;
-
-                // base styles
-                let bg = "#F6F7F9";
-                let textColor = "#000";
-                let dotColor = "#787878";
-                let borderColor = "#E0E2E7";
-
-                if (isActive) {
-                  // current
-                  bg = "#1560BD";
-                  textColor = "#fff";
-                  dotColor = "#FFB800";
-                  borderColor = "transparent";
-                } else if (isCompleted) {
-                  // done
-                  bg = "#000";
-                  textColor = "#fff";
-                  dotColor = "#FFB800";
-                  borderColor = "transparent";
-                }
-
-                return (
-                  <Box
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    sx={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      mr: 1,
-                      mb: 1,
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      lineHeight: 1.4,
-                      fontWeight: 500,
-                      cursor: "pointer",
-                      backgroundColor: bg,
-                      color: textColor,
-                      border: "1px solid",
-                      borderColor: isUpcoming ? borderColor : "transparent",
-                      userSelect: "none",
-                      minHeight: "26px",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "999px",
-                        backgroundColor: dotColor,
-                        mr: 1,
-                        flexShrink: 0,
-                      }}
-                    />
-                    {tab.label}
-                  </Box>
-                );
-              })}
-            </Stack>
-          </Stack>
-        </Stack>
-
-        {/* right side actions (none for now) */}
-        <Stack direction="row" spacing={1} alignItems="flex-start" sx={{ ml: 2 }} />
-      </Stack>
-
-      {/* ── MAIN CARD (form with existing data pre-filled) ───────── */}
-      <Card
-        variant="outlined"
-        sx={{
-          borderRadius: 1.5,
-          boxShadow: "0px 1px 3px rgba(0,0,0,0.06)",
-        }}
-      >
-        <CardContent sx={{ p: 2.5 }}>
-          {activeTab === "profile" && <ProfileSectionFilled />}
-
-          {activeTab === "route_rules" && <RouteRulesSectionFilled />}
-
-          {activeTab === "limits" && <LimitsSectionFilled />}
-
-          {activeTab === "subscription" && <SubscriptionBillingSectionFilled />}
-
-          {/* If you later re-enable admins/access tabs, just reuse the old AdminsSection / AccessSection
-             but maybe mark read-only or prefilled. */}
-        </CardContent>
-
-        <Divider />
-
-        {/* footer */}
-        {isSubscriptionFlow ? (
-          <FooterSubscriptionEdit />
-        ) : (
-          <FooterEditDefault />
-        )}
-      </Card>
+        {children}
+      </TextField>
     </Box>
   );
 }
 
+function RHFTimePicker({
+  name,
+  label,
+}: {
+  name: keyof FormValues;
+  label: string;
+}) {
+  const {
+    control,
+    formState: { errors },
+  } = useFormContext<FormValues>();
+  const err = (errors as any)[name]?.message as string | undefined;
+
+  return (
+    <Box>
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        {label}
+      </Typography>
+      <Controller
+        name={name}
+        control={control}
+        render={({ field }) => (
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <TimePicker
+              value={field.value ? dayjs(field.value as Date) : null}
+              onChange={(v) => field.onChange(v ? v.toDate() : null)}
+              slotProps={{
+                textField: {
+                  size: "small",
+                  fullWidth: true,
+                  error: !!err,
+                  helperText: err,
+                  InputProps: { sx: { borderRadius: 1 } },
+                },
+              }}
+            />
+          </LocalizationProvider>
+        )}
+      />
+    </Box>
+  );
+}
+
+function RHFSwitch({
+  name,
+  label,
+}: {
+  name: keyof FormValues;
+  label: string;
+}) {
+  const { control } = useFormContext<FormValues>();
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field }) => (
+        <FormControlLabel
+          control={
+            <Switch
+              checked={!!field.value}
+              onChange={(e) => field.onChange(e.target.checked)}
+            />
+          }
+          label={label}
+        />
+      )}
+    />
+  );
+}
+
+/* ===================== ZOD SCHEMA (UPDATED) ===================== */
+
+const schema = z.object({
+  schoolImage: z.string().optional(),
+
+  // Profile
+  adminName: z.string().min(1, "Admin name is required"),
+  schoolName: z.string().min(1, "School name is required"),
+  address: z.string().min(1, "Address is required"),
+  adminEmail: z.string().email("Invalid admin email"),
+  schoolEmail: z.string().email("Invalid school email"),
+  contactNumber: z.string().min(6, "Contact number is required"),
+
+  // Route Rules
+  pickupStartTime: z.date().optional().nullable(),
+  dropoffStartTime: z.date().optional().nullable(),
+  maxTripDuration: z.string().min(1, "Required"),
+  bufferTime: z.string().min(1, "Required"),
+  routeLatitude: z
+    .coerce.number({ invalid_type_error: "Latitude must be a number" })
+    .min(-90, "Min -90")
+    .max(90, "Max 90"),
+  routeLongitude: z
+    .coerce.number({ invalid_type_error: "Longitude must be a number" })
+    .min(-180, "Min -180")
+    .max(180, "Max 180"),
+
+  // Limits
+  allowedVans: z.coerce.number().min(1, "Min 1"),
+  allowedRoutes: z.coerce.number().min(1, "Min 1"),
+  allowedStudents: z.coerce.number().min(1, "Min 1"),
+
+  // Subscription & Billing
+  plan: z.enum(["premium", "standard"]),
+  billingCycle: z.enum(["weekly", "monthly", "quarterly"]),
+  nextInvoice: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), {
+      message: "Use YYYY-MM-DD",
+    }),
+  paymentMethod: z.enum(["cash", "bank"]),
+  pickDropExceptionsActive: z.boolean().optional(),
+});
+
+type FormValues = z.infer<typeof schema>;
+
+export default function Page() {
+  const router = useRouter();
+  const params = useParams();
+  const dispatch = useDispatch<AppDispatch>();
+  const [activeTab, setActiveTab] = useState<TabKey>("profile");
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  const { school, loading, error } = useSelector((s: RootState) => s.suadmin);
+  const schoolId = params.id as string;
+
+  const methods = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      schoolImage: "",
+      adminName: "",
+      schoolName: "",
+      address: "",
+      adminEmail: "",
+      schoolEmail: "",
+      contactNumber: "",
+      pickupStartTime: null,
+      dropoffStartTime: null,
+      maxTripDuration: "",
+      bufferTime: "",
+      routeLatitude: 0,
+      routeLongitude: 0,
+      allowedVans: 1,
+      allowedRoutes: 1,
+      allowedStudents: 1,
+      plan: "standard",
+      billingCycle: "monthly",
+      nextInvoice: "",
+      paymentMethod: "cash",
+      pickDropExceptionsActive: false,
+    },
+    mode: "onTouched",
+  });
+
+  const {
+    handleSubmit,
+    trigger,
+    formState: { errors },
+    watch,
+    setValue,
+    reset,
+  } = methods;
+
+  // Fetch school data on mount
+  useEffect(() => {
+    if (schoolId) {
+      dispatch(getSchoolById(schoolId));
+    }
+  }, [dispatch, schoolId]);
+
+  // Populate form when school data is loaded
+  useEffect(() => {
+    if (school) {
+      reset({
+        schoolImage: school.schoolImage || "",
+        adminName: school.contactPerson || school.admin?.name || "",
+        schoolName: school.schoolName || school.name || "",
+        address: school.address || "",
+        adminEmail: school.admin?.email || "",
+        schoolEmail: school.schoolEmail || "",
+        contactNumber: school.contactNumber || "",
+        pickupStartTime: school.startTime ? dayjs(school.startTime, "hh:mm A").toDate() : null,
+        dropoffStartTime: school.endTime ? dayjs(school.endTime, "hh:mm A").toDate() : null,
+        maxTripDuration: school.maxTripDuration?.toString() || "",
+        bufferTime: school.bufferTime?.toString() || "",
+        routeLatitude: school.lat || 0,
+        routeLongitude: school.long || 0,
+        allowedVans: school.allowedVans || 1,
+        allowedRoutes: school.allowedRoutes || 1,
+        allowedStudents: school.allowedStudents || 1,
+        plan: school.currentPlan?.toLowerCase() === "premium" ? "premium" : "standard",
+        billingCycle: school.billingCycle?.toLowerCase() || "monthly",
+        nextInvoice: school.nextInvoice || "",
+        paymentMethod: school.paymentMethod?.toLowerCase() === "bank" ? "bank" : "cash",
+        pickDropExceptionsActive: school.autoRenew || false,
+      });
+    }
+  }, [school, reset]);
+
+  const activeTabOrder = tabsList.find((t) => t.key === activeTab)?.order ?? 0;
+
+  // Logo upload handlers
+  const handleSelectImage = () => inputRef.current?.click();
+
+  const handleImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const url = await uploadImage(file);
+      setValue("schoolImage", url, { shouldValidate: true });
+    } catch (err) {
+      console.error("UPLOAD ERROR:", err);
+    }
+  };
+
+  /* Tab Error Logic */
+  const tabHasErrors = useMemo(() => {
+    const eKeys = Object.keys(errors) as (keyof FormValues)[];
+    const map: Partial<Record<TabKey, boolean>> = {};
+    (Object.keys(fieldsByTab) as TabKey[]).forEach((tab) => {
+      map[tab] = eKeys.some((k) => fieldsByTab[tab]?.includes(k));
+    });
+    return map;
+  }, [errors]);
+
+  const orderedTabs = useMemo(
+    () => [...tabsList].sort((a, b) => a.order - b.order),
+    []
+  );
+
+  /* Step navigation */
+  const goNext = async () => {
+    const current = orderedTabs.find((t) => t.key === activeTab);
+    if (!current) return;
+
+    const next = orderedTabs.find((t) => t.order === current.order + 1);
+
+    const valid = await trigger(fieldsByTab[activeTab]);
+    if (!valid) return;
+
+    if (next) setActiveTab(next.key);
+  };
+
+  const goPrev = () => {
+    const current = orderedTabs.find((t) => t.key === activeTab);
+    if (!current) return;
+
+    const prev = orderedTabs.find((t) => t.order === current.order - 1);
+    if (prev) setActiveTab(prev.key);
+  };
+
+  /* Submit handler */
+  const onSubmit = async (data: FormValues) => {
+    const formattedData = {
+      schoolId,
+      schoolInfo: {
+        schoolImage: data.schoolImage,
+        schoolName: data.schoolName,
+        schoolEmail: data.schoolEmail,
+        contactPerson: data.adminName,
+        address: data.address,
+        startTime: data.pickupStartTime
+          ? dayjs(data.pickupStartTime).format("hh:mm A")
+          : "08:00 AM",
+        endTime: data.dropoffStartTime
+          ? dayjs(data.dropoffStartTime).format("hh:mm A")
+          : "02:00 PM",
+        maxTripDuration: Number(data.maxTripDuration),
+        bufferTime: Number(data.bufferTime),
+        allowedVans: Number(data.allowedVans),
+        allowedStudents: Number(data.allowedStudents),
+        allowedRoutes: Number(data.allowedRoutes),
+        currentPlan:
+          data.plan === "premium" ? "Premium" : "Standard",
+        billingCycle:
+          data.billingCycle.charAt(0).toUpperCase() +
+          data.billingCycle.slice(1),
+        paymentMethod:
+          data.paymentMethod === "bank"
+            ? "Bank Transfer"
+            : "Cash",
+        lat: data.routeLatitude,
+        long: data.routeLongitude,
+        autoRenew: !!data.pickDropExceptionsActive,
+        contactNumber: data.contactNumber,
+      },
+    };
+
+    try {
+      await dispatch(editSchool(formattedData)).unwrap();
+      router.push("/su-admin/school-management");
+    } catch (err) {
+      console.error("❌ Edit failed:", err);
+    }
+  };
+
+  const isLastStep = activeTab === "subscription";
+
+  if (loading && !school) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography color="error" variant="h6">
+          Error loading school data: {error}
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <FormProvider {...methods}>
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          p: 3,
+        }}
+      >
+        {/* TOP AREA */}
+        <Stack direction="row" justifyContent="space-between">
+          <Stack>
+            <Link
+              color="text.primary"
+              component={RouterLink}
+              href={"/su-admin/school-management"}
+              sx={{ alignItems: "center", display: "inline-flex", gap: 1 }}
+            >
+              <ArrowLeftIcon fontSize="var(--icon-fontSize-md)" />
+            </Link>
+
+            {/* ENHANCED TABS */}
+            <Box sx={{ mt: 3 }}>
+              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                {orderedTabs.map((tab, index) => {
+                  const isActive = tab.key === activeTab;
+                  const isCompleted = tab.order < activeTabOrder;
+                  const hasError = tabHasErrors[tab.key];
+
+                  const getTabIcon = (key: TabKey) => {
+                    switch (key) {
+                      case 'profile': return <Building size={16} />;
+                      case 'route_rules': return <MapPin size={16} />;
+                      case 'limits': return <Users size={16} />;
+                      case 'subscription': return <CreditCard size={16} />;
+                      default: return null;
+                    }
+                  };
+
+                  return (
+                    <Box
+                      key={tab.key}
+                      onClick={async () => {
+                        const current = orderedTabs.find(
+                          (t) => t.key === activeTab
+                        );
+                        if (
+                          current &&
+                          tab.order > current.order &&
+                          !(await trigger(fieldsByTab[activeTab]))
+                        ) {
+                          return;
+                        }
+                        setActiveTab(tab.key);
+                      }}
+                      sx={{
+                        position: 'relative',
+                        px: 2,
+                        py: 1.5,
+                        borderRadius: 2,
+                        cursor: "pointer",
+                        background: isActive
+                          ? "linear-gradient(135deg, #1560BD 0%, #0D47A1 100%)"
+                          : isCompleted
+                            ? "linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)"
+                            : "#F5F5F5",
+                        color: isActive || isCompleted ? "#fff" : "#616161",
+                        fontSize: "14px",
+                        fontWeight: isActive ? 600 : 500,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        transition: "all 0.3s ease",
+                        boxShadow: isActive ? "0 4px 12px rgba(21, 96, 189, 0.3)" : "none",
+                        border: hasError ? "2px solid #E53935" : "none",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          boxShadow: isActive ? "0 6px 16px rgba(21, 96, 189, 0.4)" : "0 4px 12px rgba(0, 0, 0, 0.1)",
+                        }
+                      }}
+                    >
+                      {/* Step Number */}
+                      <Box
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: "50%",
+                          background: isActive || isCompleted ? "rgba(255, 255, 255, 0.2)" : "#E0E0E0",
+                          color: isActive || isCompleted ? "#fff" : "#757575",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {index + 1}
+                      </Box>
+
+                      {/* Tab Icon */}
+                      {getTabIcon(tab.key)}
+
+                      {/* Tab Label */}
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                          {tab.label}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8, fontSize: "11px" }}>
+                          {isCompleted ? "Completed" : isActive ? "In Progress" : "Pending"}
+                        </Typography>
+                      </Box>
+
+                      {/* Error Indicator */}
+                      {hasError && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: -4,
+                            right: -4,
+                            width: 12,
+                            height: 12,
+                            borderRadius: "50%",
+                            background: "#E53935",
+                            border: "2px solid #fff",
+                          }}
+                        />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
+
+              {/* Progress Bar */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                {orderedTabs.map((tab, index) => {
+                  const isActive = tab.key === activeTab;
+                  const isCompleted = tab.order < activeTabOrder;
+                  const isLast = index === orderedTabs.length - 1;
+
+                  return (
+                    <>
+                      <Box
+                        sx={{
+                          flex: 1,
+                          height: 4,
+                          borderRadius: 2,
+                          background: isActive || isCompleted
+                            ? "linear-gradient(90deg, #1560BD, #0D47A1)"
+                            : "#E0E0E0",
+                        }}
+                      />
+                      {!isLast && (
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: isActive || isCompleted ? "#1560BD" : "#E0E0E0",
+                          }}
+                        />
+                      )}
+                    </>
+                  );
+                })}
+              </Box>
+            </Box>
+          </Stack>
+        </Stack>
+
+        {/* MAIN CONTENT AREA */}
+        <Grid container spacing={3} sx={{ mt: 1 }}>
+          {/* LOGO CARD - COL-4 */}
+          <Grid item xs={12} md={4}>
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                border: "1px solid #dee2e6",
+                height: "fit-content"
+              }}
+            >
+              <Stack spacing={4} alignItems="center">
+                {/* Logo Display */}
+                <Box sx={{ position: 'relative' }}>
+                  <Avatar
+                    src={watch("schoolImage") || school?.schoolImage || undefined}
+                    sx={{
+                      width: 150,
+                      height: 150,
+                      borderRadius: 4,
+                      border: "1px solid",
+                      bgcolor: "#fafafa",
+                    }}
+                  >
+                    <Building size={60} color="#757575" />
+                  </Avatar>
+                </Box>
+
+                {/* Upload Button */}
+                <Button
+                  variant="contained"
+                  onClick={handleSelectImage}
+                  size="large"
+                  sx={{
+                    px: 4,
+                    py: 2,
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    borderRadius: 2,
+                    background: "linear-gradient(135deg, #1976d2, #0d47a1)",
+                    textTransform: "none",
+                    boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                    "&:hover": {
+                      boxShadow: "0 6px 20px rgba(25, 118, 210, 0.5)",
+                    }
+                  }}
+                >
+                  Change School Logo
+                </Button>
+
+                {/* Hidden File Input */}
+                <input
+                  hidden
+                  ref={inputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+              </Stack>
+            </Paper>
+          </Grid>
+
+          {/* FORM CARD - COL-8 */}
+          <Grid item xs={12} md={8}>
+            <Card sx={{ borderRadius: 3, boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)" }}>
+              <CardContent sx={{ p: 3 }}>
+                {activeTab === "profile" && <ProfileSection />}
+                {activeTab === "route_rules" && <RouteRulesSection />}
+                {activeTab === "limits" && <LimitsSection />}
+                {activeTab === "subscription" && (
+                  <SubscriptionBillingSection />
+                )}
+              </CardContent>
+
+              <Divider />
+
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                sx={{ p: 3 }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={goPrev}
+                  disabled={activeTab === "profile"}
+                  sx={{ 
+                    px: 3, 
+                    py: 1,
+                    borderColor: "#FFA500",
+                    color: "#FFA500",
+                    "&:hover": {
+                      borderColor: "#FF8C00",
+                      color: "#FF8C00",
+                      bgcolor: "rgba(255, 165, 0, 0.04)"
+                    }
+                  }}
+                >
+                  Previous
+                </Button>
+
+                {isLastStep ? (
+                  <Button
+                    variant="contained"
+                    onClick={async () => {
+                      if (!(await trigger(fieldsByTab[activeTab]))) return;
+                      handleSubmit(onSubmit)();
+                    }}
+                    sx={{
+                      px: 4,
+                      py: 1,
+                      background: "#FFA500",
+                      "&:hover": {
+                        background: "#FF8C00",
+                      }
+                    }}
+                  >
+                    Update School
+                  </Button>
+                ) : (
+                  <Button
+                    variant="contained"
+                    onClick={goNext}
+                    sx={{
+                      px: 4,
+                      py: 1,
+                      background: "#FFA500",
+                      "&:hover": {
+                        background: "#FF8C00",
+                      }
+                    }}
+                  >
+                    Next
+                  </Button>
+                )}
+              </Stack>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
+    </FormProvider>
+  );
+}
+
+/* ===================== PROFILE SECTION ===================== */
+
+function ProfileSection() {
+  return (
+    <Stack spacing={3}>
+      <Typography variant="h6" sx={{ fontWeight: 600, color: "#1560BD" }}>
+        School Information
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)" },
+          gap: 3,
+        }}
+      >
+        <RHFTextField
+          name="adminName"
+          label="Admin Name *"
+          placeholder="Enter admin name"
+        />
+        <RHFTextField
+          name="schoolName"
+          label="School Name *"
+          placeholder="Enter school name"
+        />
+        <RHFTextField
+          name="address"
+          label="Address *"
+          placeholder="Enter address"
+        />
+        <RHFTextField
+          name="adminEmail"
+          label="Admin Email *"
+          placeholder="Enter admin email"
+        />
+        <RHFTextField
+          name="schoolEmail"
+          label="School Email *"
+          placeholder="Enter school email"
+        />
+        <RHFTextField
+          name="contactNumber"
+          label="Contact Number *"
+          placeholder="+92-300-0000000"
+        />
+      </Box>
+    </Stack>
+  );
+}
+
+/* ===================== OTHER SECTIONS ===================== */
+
+function RouteRulesSection() {
+  const { setValue, trigger, watch } = useFormContext<FormValues>();
+
+  const lat = watch("routeLatitude");
+  const lng = watch("routeLongitude");
+
+  const googleMapsLink =
+    Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))
+      ? `https://www.google.com/maps?q=${Number(lat)},${Number(lng)}`
+      : "";
+
+  const handlePositionChange = async (newLat: number, newLng: number) => {
+    setValue("routeLatitude", newLat as any, { shouldDirty: true, shouldValidate: true });
+    setValue("routeLongitude", newLng as any, { shouldDirty: true, shouldValidate: true });
+    await trigger(["routeLatitude", "routeLongitude"]);
+  };
+
+  return (
+    <Stack spacing={2}>
+      <Typography variant="subtitle2">Route Rules</Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)" },
+          gap: 2,
+        }}
+      >
+        <RHFTimePicker name="pickupStartTime" label="Pickup Start Time" />
+        <RHFTimePicker name="dropoffStartTime" label="Dropoff Start Time" />
+
+        <RHFTextField name="maxTripDuration" label="Max Trip Duration" placeholder="45 mins" />
+        <RHFTextField name="bufferTime" label="Buffer Time" placeholder="10 mins" />
+
+        <RHFTextField name="routeLatitude" label="Latitude" type="number" placeholder="24.8607" />
+        <RHFTextField name="routeLongitude" label="Longitude" type="number" placeholder="67.0011" />
+      </Box>
+
+      {/* Open in Google Maps link */}
+      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+        <Typography variant="caption" color="text.secondary">
+          Open this location in Google Maps:
+        </Typography>
+
+        <Button
+          variant="outlined"
+          size="small"
+          disabled={!googleMapsLink}
+          onClick={() => window.open(googleMapsLink, "_blank")}
+        >
+          Open in Google Maps
+        </Button>
+
+        {googleMapsLink ? (
+          <Typography variant="caption" sx={{ wordBreak: "break-all" }}>
+            {googleMapsLink}
+          </Typography>
+        ) : null}
+      </Box>
+    </Stack>
+  );
+}
+
+function LimitsSection() {
+  return (
+    <Stack spacing={2}>
+      <Typography variant="subtitle2">Limits</Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)" },
+          gap: 2,
+        }}
+      >
+        <RHFTextField
+          name="allowedVans"
+          label="Allowed Vans"
+          type="number"
+          placeholder="50"
+        />
+        <RHFTextField
+          name="allowedRoutes"
+          label="Allowed Routes"
+          type="number"
+          placeholder="20"
+        />
+        <RHFTextField
+          name="allowedStudents"
+          label="Allowed Students"
+          type="number"
+          placeholder="1000"
+        />
+      </Box>
+    </Stack>
+  );
+}
+
+function SubscriptionBillingSection() {
+  return (
+    <Stack spacing={2}>
+      <Typography variant="subtitle2">Subscription & Billing</Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)" },
+          gap: 2,
+        }}
+      >
+        <RHFTextField name="plan" label="Current Plan" select>
+          <MenuItem value="premium">Premium</MenuItem>
+          <MenuItem value="standard">Standard</MenuItem>
+        </RHFTextField>
+
+        <RHFTextField name="billingCycle" label="Billing Cycle" select>
+          <MenuItem value="weekly">Weekly</MenuItem>
+          <MenuItem value="monthly">Monthly</MenuItem>
+          <MenuItem value="quarterly">Quarterly</MenuItem>
+        </RHFTextField>
+
+        <RHFTextField name="nextInvoice" type="date" label="Next Invoice" />
+
+        <RHFTextField name="paymentMethod" label="Payment Method" select>
+          <MenuItem value="cash">Cash</MenuItem>
+          <MenuItem value="bank">Bank</MenuItem>
+        </RHFTextField>
+
+        <Box sx={{ gridColumn: "1 / -1" }}>
+          <RHFSwitch
+            name="pickDropExceptionsActive"
+            label="Auto Renew"
+          />
+        </Box>
+      </Box>
+    </Stack>
+  );
+}
+
 /* ----------------------------------------
-   HEADER UNDER TITLE (SCHOOL SUMMARY)
+   OLD COMPONENTS (KEPT FOR REFERENCE)
 ---------------------------------------- */
 function SchoolSummaryHeader() {
   return (

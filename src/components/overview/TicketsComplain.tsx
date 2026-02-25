@@ -127,18 +127,18 @@ export function TicketsComplain({ list }: ProductsProps): React.JSX.Element {
       </Grid2>
       <Divider />
       <Box sx={{
-    height: 440,
+    height: 580,
     overflowY: 'auto',
     pr: 1,
     "&::-webkit-scrollbar": {
-          width: "0px",
+          width: "6px",
         },
         "&::-webkit-scrollbar-thumb": {
-          backgroundColor: "primary.main",
-          borderRadius: "4px",
+          backgroundColor: "#888",
+          borderRadius: "3px",
         },
         "&::-webkit-scrollbar-track": {
-          backgroundColor: "transparent",
+          backgroundColor: "#f1f1f1",
         },
   }}>
         {loading ? (
@@ -146,8 +146,15 @@ export function TicketsComplain({ list }: ProductsProps): React.JSX.Element {
             <Typography>Loading complaints...</Typography>
           </Box>
         ) : complaints && complaints.length > 0 ? (
-          complaints.slice(0, 3).map((complaint, idx) => (
-            <Box key={complaint._id} sx={{ p: 2, cursor: 'pointer', '&:hover': { backgroundColor: 'var(--mui-palette-action-hover)' } }} onClick={() => handleComplaintClick(complaint)}>
+          complaints.slice(0, 5).map((complaint, idx) => (
+            <Box key={complaint._id} sx={{ 
+              p: 2, 
+              cursor: 'pointer', 
+              '&:hover': { backgroundColor: 'var(--mui-palette-action-hover)' },
+              minHeight: 90,
+              height: 90,
+              overflow: 'hidden'
+            }} onClick={() => handleComplaintClick(complaint)}>
               <Stack direction="row" spacing={2} alignItems="flex-start">
                 <Avatar src="/assets/avatar-1.png" sx={{ width: 48, height: 48 }} />
                 <Box flex={1}>
@@ -188,7 +195,14 @@ export function TicketsComplain({ list }: ProductsProps): React.JSX.Element {
             { _id: '2', type: 'parentReport' as any, issueType: 'Driver Using Mobile While Driving', description: 'The driver was seen using his mobile phone while driving, which is unsafe for students.', createdAt: '2025-10-22T18:09:23' },
             { _id: '3', type: 'parentReport' as any, issueType: 'Overcrowded Van', description: 'The van was carrying more students than its capacity, which seemed unsafe', createdAt: '2025-10-22T18:06:01' }
           ].map((complaint: any, idx: number) => (
-            <Box key={complaint._id} sx={{ p: 2, cursor: 'pointer', '&:hover': { backgroundColor: 'var(--mui-palette-action-hover)' } }} onClick={() => handleComplaintClick(complaint)}>
+            <Box key={complaint._id} sx={{ 
+              p: 2, 
+              cursor: 'pointer', 
+              '&:hover': { backgroundColor: 'var(--mui-palette-action-hover)' },
+              minHeight: 90,
+              height: 90,
+              overflow: 'hidden'
+            }} onClick={() => handleComplaintClick(complaint)}>
               <Stack direction="row" spacing={2} alignItems="flex-start">
                 <Avatar src="/assets/avatar-1.png" sx={{ width: 48, height: 48 }} />
                 <Box flex={1}>

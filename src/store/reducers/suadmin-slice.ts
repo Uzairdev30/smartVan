@@ -118,6 +118,25 @@ export const editSchool = createAsyncThunk<
   }
 });
 
+// ✅ Change School Status
+export const changeSchoolStatus = createAsyncThunk<
+  any,
+  { schoolId: string; status: "active" | "inactive" },
+  { rejectValue: string }
+>("superAdmin/changeSchoolStatus", async (payload, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post(SUADMIN.CHANGE_SCHOOL_STATUS, payload);
+    return data;
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Request failed";
+    return rejectWithValue(msg);
+  }
+});
+
 // ✅ Create Billing / Invoice
 export const createBilling = createAsyncThunk<
   any,
@@ -491,6 +510,26 @@ const superAdminSlice = createSlice({
       .addCase(editSchool.rejected, (state, action) => {
         state.loading = false;
         state.error = (action.payload as string) ?? "Request failed";
+      })
+
+      // Change School Status
+      .addCase(changeSchoolStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(changeSchoolStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        // Update the school in the schools list if it exists
+        const updatedSchool = action.payload?.data || action.payload;
+        if (updatedSchool && state.schools) {
+          state.schools = state.schools.map((school: any) => 
+            school._id === updatedSchool._id ? { ...school, status: updatedSchool.status } : school
+          );
+        }
+      })
+      .addCase(changeSchoolStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as string) ?? "Failed to change school status";
       })
 
       /* ✅ Invoices list */

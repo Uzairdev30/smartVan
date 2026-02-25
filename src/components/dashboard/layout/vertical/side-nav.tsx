@@ -16,6 +16,8 @@ import { paths } from '@/paths';
 import { isNavItemActive } from '@/lib/is-nav-item-active';
 import { Logo } from '@/components/core/logo';
 import type { ColorScheme } from '@/styles/theme/types';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store';
 
 import { icons } from '../nav-icons';
 import { WorkspacesSwitch } from '../workspaces-switch';
@@ -34,11 +36,14 @@ export interface SideNavProps {
 
 export function SideNav({ color = 'evident', items = [] }: SideNavProps): React.JSX.Element {
   const pathname = usePathname();
-
   const { colorScheme = 'light' } = useColorScheme();
+  const userRole = useSelector((state: RootState) => state.auth.user?.role);
 
   const styles = navColorStyles[colorScheme][color];
   const logoColor = logoColors[colorScheme][color];
+
+  // Determine logo click path based on user role
+  const logoPath = userRole === 'superadmin' ? paths.dashboard.sudashboard : paths.home;
 
   return (
     <Box
@@ -59,7 +64,7 @@ export function SideNav({ color = 'evident', items = [] }: SideNavProps): React.
     >
       <Stack spacing={2} sx={{ p: 2,pb:0 }}>
         <div>
-          <Box component={RouterLink} href={paths.home} sx={{ display: 'inline-flex' }}>
+          <Box component={RouterLink} href={logoPath} sx={{ display: 'inline-flex' }}>
             <Logo color={logoColor} height={100} width={100} />
           </Box>
         </div>

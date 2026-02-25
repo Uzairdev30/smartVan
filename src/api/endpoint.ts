@@ -63,7 +63,8 @@ export const SUADMIN={
     SCHOOL_BY_ID:'/Admin/getSchoolById',
     EDIT_SCHOOL:'/Admin/edit-admin-school' ,
     GET_ALL_SCHOOL:'/Admin/getAllSchools',
-
+    CHANGE_SCHOOL_STATUS:'/school/changeSchoolStatus',
+    
     // billing
     CREATE_BILLING:'/Invoice/createInvoice',
     GET_ALL_INVOICE:'/Invoice/getAllInvoicesBySuperAdmin',

@@ -99,113 +99,109 @@ export function Stats({
         }));
 
   return (
-    <Card>
-      <CardContent>
-        <Stack spacing={3}>
-          {/* === Summary Cards === */}
-          <Grid container spacing={2}>
-            <Grid size={{ md: 3, xs: 12 }}>
-              <StatsCard
-                value={counts?.vans || 0}
-                icon={Truck}
-                title="Total Vans"
-                variant="active"
-                onClick={() => handleCardClick("Total Vans")}
-              />
-            </Grid>
-            <Grid size={{ md: 3, xs: 12 }}>
-              <StatsCard
-                value={counts?.drivers || 0}
-                icon={Users}
-                title="Total Drivers"
-                variant="delayed"
-                onClick={() => handleCardClick("Total Drivers")}
-              />
-            </Grid>
-            <Grid size={{ md: 3, xs: 12 }}>
-              <StatsCard
-                value={counts?.kids || 0}
-                icon={Student}
-                title="Total Students"
-                variant="missed"
-                onClick={() => handleCardClick("Total Students")}
-              />
-            </Grid>
-            <Grid size={{ md: 3, xs: 12 }}>
-              <StatsCard
-                value={counts?.trips || 0}
-                icon={RoadHorizon}
-                title="Total Trips"
-                variant="active"
-                onClick={() => handleCardClick("Total Trips")}
-              />
-            </Grid>
-          </Grid>
+    <Grid container spacing={2}>
+      {/* First Row: 4 Stats Cards - each col-3 */}
+      <Grid size={{ md: 3, xs: 6 }}>
+        <StatsCard
+          value={counts?.vans || 0}
+          icon={Truck}
+          title="Total Vans"
+          variant="active"
+          onClick={() => handleCardClick("Total Vans")}
+        />
+      </Grid>
+      <Grid size={{ md: 3, xs: 6 }}>
+        <StatsCard
+          value={counts?.drivers || 0}
+          icon={Users}
+          title="Total Drivers"
+          variant="delayed"
+          onClick={() => handleCardClick("Total Drivers")}
+        />
+      </Grid>
+      <Grid size={{ md: 3, xs: 6 }}>
+        <StatsCard
+          value={counts?.kids || 0}
+          icon={Student}
+          title="Total Students"
+          variant="missed"
+          onClick={() => handleCardClick("Total Students")}
+        />
+      </Grid>
+      <Grid size={{ md: 3, xs: 6 }}>
+        <StatsCard
+          value={counts?.trips || 0}
+          icon={RoadHorizon}
+          title="Total Trips"
+          variant="active"
+          onClick={() => handleCardClick("Total Trips")}
+        />
+      </Grid>
 
-          {/* === Bar Chart === */}
-          <Card>
-            <CardContent>
-              <Stack
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                spacing={2}
-              >
-                <Stack direction="row" alignItems="center" spacing={1.5}>
-                  <Avatar
-                    sx={{
-                      "--Avatar-size": "48px",
-                      bgcolor: "var(--mui-palette-background-paper)",
-                      boxShadow: "var(--mui-shadows-8)",
-                      color: "var(--mui-palette-text-primary)",
-                    }}
-                  >
-                    <Calendar fontSize="var(--icon-fontSize-lg)" />
-                  </Avatar>
-                  <Typography variant="body1">
-                    {filterType === "yearly"
-                      ? "Yearly Trip Stats"
-                      : "Monthly Trip Stats"}
-                  </Typography>
-                </Stack>
-
-                <Select
-                  name="filterType"
-                  value={filterType}
-                  onChange={(e) =>
-                    onFilterChange(e.target.value as "yearly" | "monthly")
-                  }
-                  sx={{ width: 140 }}
+      {/* Second Row: Yearly Trip Stats (col-8) */}
+      <Grid size={{ lg: 8, xs: 12 }}>
+        <Card>
+          <CardContent sx={{ pb: 2 }}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              spacing={2}
+            >
+              <Stack direction="row" alignItems="center" spacing={1.5}>
+                <Avatar
+                  sx={{
+                    "--Avatar-size": "48px",
+                    bgcolor: "var(--mui-palette-background-paper)",
+                    boxShadow: "var(--mui-shadows-8)",
+                    color: "var(--mui-palette-text-primary)",
+                  }}
                 >
-                  <Option value="yearly">Yearly</Option>
-                  <Option value="monthly">Monthly</Option>
-                </Select>
+                  <Calendar fontSize="var(--icon-fontSize-lg)" />
+                </Avatar>
+                <Typography variant="body1">
+                  {filterType === "yearly"
+                    ? "Yearly Trip Stats"
+                    : "Monthly Trip Stats"}
+                </Typography>
               </Stack>
 
-              <NoSsr fallback={<Box sx={{ height: `${chartHeight}px` }} />}>
-                <ResponsiveContainer width="100%" height={chartHeight}>
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 20, right: 20, left: 0, bottom: 10 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" tickLine={false} />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip content={<TooltipContent />} />
-                    <Bar
-                      dataKey="count"
-                      fill="#3B82F6"
-                      radius={[6, 6, 0, 0]}
-                      barSize={30}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </NoSsr>
-            </CardContent>
-          </Card>
-        </Stack>
-      </CardContent>
-    </Card>
+              <Select
+                name="filterType"
+                value={filterType}
+                onChange={(e) =>
+                  onFilterChange(e.target.value as "yearly" | "monthly")
+                }
+                sx={{ width: 140 }}
+              >
+                <Option value="yearly">Yearly</Option>
+                <Option value="monthly">Monthly</Option>
+              </Select>
+            </Stack>
+
+            <NoSsr fallback={<Box sx={{ height: `${chartHeight}px` }} />}>
+              <ResponsiveContainer width="100%" height={chartHeight}>
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 20, right: 20, left: 0, bottom: 10 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tickLine={false} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip content={<TooltipContent />} />
+                  <Bar
+                    dataKey="count"
+                    fill="#3B82F6"
+                    radius={[6, 6, 0, 0]}
+                    barSize={30}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </NoSsr>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
   );
 }
 

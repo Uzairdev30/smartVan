@@ -19,11 +19,15 @@ import {
   MenuItem,
   Switch,
   FormControlLabel,
+  Grid,
+  Paper,
+  Avatar,
+  Chip,
 } from "@mui/material";
 import Link from "next/link";
 import RouterLink from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft as ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
+import { ArrowLeft as ArrowLeftIcon, Building, MapPin, Clock, CreditCard, Users } from "@phosphor-icons/react/dist/ssr";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,7 +44,7 @@ import { registerSchool } from "@/store/reducers/suadmin-slice";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { uploadImage } from "@/utils/uploadImage"; // ⬅️ ADDED
-import MapComponent from "@/components/MapSelection";
+// import MapComponent from "@/components/MapSelection";
 // import GoogleMapsProvider from "@/components/GoogleMapsProvider";
 
 /* ===================== TABS ===================== */
@@ -275,6 +279,7 @@ export default function Page() {
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
   const activeTabOrder =
     tabsList.find((t) => t.key === activeTab)?.order ?? 0;
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const methods = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -288,7 +293,26 @@ export default function Page() {
     handleSubmit,
     trigger,
     formState: { errors },
+    watch,
+    setValue,
   } = methods;
+
+  // Logo upload handlers
+  const handleSelectImage = () => inputRef.current?.click();
+
+  const handleImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const url = await uploadImage(file);
+      setValue("schoolImage", url, { shouldValidate: true });
+    } catch (err) {
+      console.error("UPLOAD ERROR:", err);
+    }
+  };
 
   /* Tab Error Logic */
   const tabHasErrors = useMemo(() => {
@@ -404,110 +428,298 @@ export default function Page() {
               <ArrowLeftIcon fontSize="var(--icon-fontSize-md)" />
             </Link>
 
-            <Typography variant="h6" sx={{ mt: 1 }}>
-              School Details
-            </Typography>
+            {/* ENHANCED TABS */}
+            <Box sx={{ mt: 3 }}>
+              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                {orderedTabs.map((tab, index) => {
+                  const isActive = tab.key === activeTab;
+                  const isCompleted = tab.order < activeTabOrder;
+                  const hasError = tabHasErrors[tab.key];
 
-            {/* TABS */}
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              {orderedTabs.map((tab) => {
-                const isActive = tab.key === activeTab;
-                const isCompleted = tab.order < activeTabOrder;
+                  const getTabIcon = (key: TabKey) => {
+                    switch (key) {
+                      case 'profile': return <Building size={16} />;
+                      case 'route_rules': return <MapPin size={16} />;
+                      case 'limits': return <Users size={16} />;
+                      case 'subscription': return <CreditCard size={16} />;
+                      default: return null;
+                    }
+                  };
 
-                return (
-                  <Box
-                    key={tab.key}
-                    onClick={async () => {
-                      const current = orderedTabs.find(
-                        (t) => t.key === activeTab
-                      );
-                      if (
-                        current &&
-                        tab.order > current.order &&
-                        !(await trigger(fieldsByTab[activeTab]))
-                      ) {
-                        return;
-                      }
-                      setActiveTab(tab.key);
-                    }}
-                    sx={{
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 1,
-                      cursor: "pointer",
-                      background: isActive
-                        ? "#1560BD"
-                        : isCompleted
-                        ? "#000"
-                        : "#F6F7F9",
-                      color: isActive || isCompleted ? "#fff" : "#000",
-                      fontSize: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  >
+                  return (
                     <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "999px",
-                        background: tabHasErrors[tab.key]
-                          ? "#E53935"
-                          : "#FFB800",
+                      key={tab.key}
+                      onClick={async () => {
+                        const current = orderedTabs.find(
+                          (t) => t.key === activeTab
+                        );
+                        if (
+                          current &&
+                          tab.order > current.order &&
+                          !(await trigger(fieldsByTab[activeTab]))
+                        ) {
+                          return;
+                        }
+                        setActiveTab(tab.key);
                       }}
-                    />
-                    {tab.label}
-                  </Box>
-                );
-              })}
-            </Stack>
+                      sx={{
+                        position: 'relative',
+                        px: 2,
+                        py: 1.5,
+                        borderRadius: 2,
+                        cursor: "pointer",
+                        background: isActive
+                          ? "linear-gradient(135deg, #1560BD 0%, #0D47A1 100%)"
+                          : isCompleted
+                            ? "linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)"
+                            : "#F5F5F5",
+                        color: isActive || isCompleted ? "#fff" : "#616161",
+                        fontSize: "14px",
+                        fontWeight: isActive ? 600 : 500,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        transition: "all 0.3s ease",
+                        boxShadow: isActive ? "0 4px 12px rgba(21, 96, 189, 0.3)" : "none",
+                        border: hasError ? "2px solid #E53935" : "none",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          boxShadow: isActive ? "0 6px 16px rgba(21, 96, 189, 0.4)" : "0 4px 12px rgba(0, 0, 0, 0.1)",
+                        }
+                      }}
+                    >
+                      {/* Step Number */}
+                      <Box
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: "50%",
+                          background: isActive || isCompleted ? "rgba(255, 255, 255, 0.2)" : "#E0E0E0",
+                          color: isActive || isCompleted ? "#fff" : "#757575",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {index + 1}
+                      </Box>
+
+                      {/* Tab Icon */}
+                      {getTabIcon(tab.key)}
+
+                      {/* Tab Label */}
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                          {tab.label}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8, fontSize: "11px" }}>
+                          {isCompleted ? "Completed" : isActive ? "In Progress" : "Pending"}
+                        </Typography>
+                      </Box>
+
+                      {/* Error Indicator */}
+                      {hasError && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: -4,
+                            right: -4,
+                            width: 12,
+                            height: 12,
+                            borderRadius: "50%",
+                            background: "#E53935",
+                            border: "2px solid #fff",
+                          }}
+                        />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
+
+              {/* Progress Bar */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                {orderedTabs.map((tab, index) => {
+                  const isActive = tab.key === activeTab;
+                  const isCompleted = tab.order < activeTabOrder;
+                  const isLast = index === orderedTabs.length - 1;
+
+                  return (
+                    <>
+                      <Box
+                        sx={{
+                          flex: 1,
+                          height: 4,
+                          borderRadius: 2,
+                          background: isActive || isCompleted
+                            ? "linear-gradient(90deg, #1560BD, #0D47A1)"
+                            : "#E0E0E0",
+                        }}
+                      />
+                      {!isLast && (
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: isActive || isCompleted ? "#1560BD" : "#E0E0E0",
+                          }}
+                        />
+                      )}
+                    </>
+                  );
+                })}
+              </Box>
+            </Box>
           </Stack>
         </Stack>
 
-        {/* CARD */}
-        <Card sx={{ mt: 3 }}>
-          <CardContent>
-            {activeTab === "profile" && <ProfileSection />}
-            {activeTab === "route_rules" && <RouteRulesSection />}
-            {activeTab === "limits" && <LimitsSection />}
-            {activeTab === "subscription" && (
-              <SubscriptionBillingSection />
-            )}
-          </CardContent>
-
-          <Divider />
-
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            sx={{ p: 2 }}
-          >
-            <Button
-              variant="outlined"
-              onClick={goPrev}
-              disabled={activeTab === "profile"}
+        {/* MAIN CONTENT AREA */}
+        <Grid container spacing={3} sx={{ mt: 1 }}>
+          {/* LOGO CARD - COL-4 */}
+          <Grid item xs={12} md={4}>
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                // background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
+                border: "1px solid #dee2e6",
+                height: "fit-content"
+              }}
             >
-              Previous
-            </Button>
+              <Stack spacing={4} alignItems="center">
+                {/* Logo Display */}
+                <Box sx={{ position: 'relative' }}>
+                  <Avatar
+                    src={watch("schoolImage") || undefined}
+                    sx={{
+                      width: 150,
+                      height: 150,
+                      borderRadius: 4,
+                      border: "1px solid",
+                      // boxShadow: "0 16px 40px rgba(0, 0, 0, 0.18)",
+                      bgcolor: "#fafafa",
+                    }}
+                  >
+                    <Building size={60} color="#757575" />
+                  </Avatar>
 
-            {isLastStep ? (
-              <Button
-                variant="contained"
-                onClick={async () => {
-                  if (!(await trigger(fieldsByTab[activeTab]))) return;
-                  handleSubmit(onSubmit)();
-                }}
+                </Box>
+
+                {/* Upload Button */}
+                <Button
+                  variant="contained"
+                  onClick={handleSelectImage}
+                  size="large"
+                  sx={{
+                    px: 4,
+                    py: 2,
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    borderRadius: 2,
+                    background: "linear-gradient(135deg, #1976d2, #0d47a1)",
+                    textTransform: "none",
+                    boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
+                    "&:hover": {
+                      // background: "linear-gradient(135deg, #0d47a1, #1976d2)",
+                      boxShadow: "0 6px 20px rgba(25, 118, 210, 0.5)",
+                      // transform: "translateY(-2px)",
+                    }
+                  }}
+                >
+                  Upload School Logo
+                </Button>
+
+                {/* Hidden File Input */}
+                <input
+                  hidden
+                  ref={inputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+              </Stack>
+            </Paper>
+          </Grid>
+
+          {/* FORM CARD - COL-8 */}
+          <Grid item xs={12} md={8}>
+            <Card sx={{ borderRadius: 3, boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)" }}>
+              <CardContent sx={{ p: 3 }}>
+                {activeTab === "profile" && <ProfileSection />}
+                {activeTab === "route_rules" && <RouteRulesSection />}
+                {activeTab === "limits" && <LimitsSection />}
+                {activeTab === "subscription" && (
+                  <SubscriptionBillingSection />
+                )}
+              </CardContent>
+
+              <Divider />
+
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                sx={{ p: 3 }}
               >
-                Submit
-              </Button>
-            ) : (
-              <Button variant="contained" onClick={goNext}>
-                Next
-              </Button>
-            )}
-          </Stack>
-        </Card>
+                <Button
+                  variant="outlined"
+                  onClick={goPrev}
+                  disabled={activeTab === "profile"}
+                  sx={{ 
+                    px: 3, 
+                    py: 1,
+                    borderColor: "#FFA500",
+                    color: "#FFA500",
+                    "&:hover": {
+                      borderColor: "#FF8C00",
+                      color: "#FF8C00",
+                      bgcolor: "rgba(255, 165, 0, 0.04)"
+                    }
+                  }}
+                >
+                  Previous
+                </Button>
+
+                {isLastStep ? (
+                  <Button
+                    variant="contained"
+                    onClick={async () => {
+                      if (!(await trigger(fieldsByTab[activeTab]))) return;
+                      handleSubmit(onSubmit)();
+                    }}
+                    sx={{
+                      px: 4,
+                      py: 1,
+                      background: "#FFA500",
+                      "&:hover": {
+                        background: "#FF8C00",
+                      }
+                    }}
+                  >
+                    Submit
+                  </Button>
+                ) : (
+                  <Button
+                    variant="contained"
+                    onClick={goNext}
+                    sx={{
+                      px: 4,
+                      py: 1,
+                      background: "#FFA500",
+                      "&:hover": {
+                        background: "#FF8C00",
+                      }
+                    }}
+                  >
+                    Next
+                  </Button>
+                )}
+              </Stack>
+            </Card>
+          </Grid>
+        </Grid>
       </Box>
     </FormProvider>
   );
@@ -516,78 +728,17 @@ export default function Page() {
 /* ===================== PROFILE SECTION (UPDATED WITH UPLOAD) ===================== */
 
 function ProfileSection() {
-  const { watch, setValue } = useFormContext<FormValues>();
-  const schoolImage = watch("schoolImage");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleSelectImage = () => inputRef.current?.click();
-
-  const handleImageChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const url = await uploadImage(file); // ⬅️ EXACT SAME AS STUDENT FORM
-      setValue("schoolImage", url, { shouldValidate: true });
-    } catch (err) {
-      console.error("UPLOAD ERROR:", err);
-    }
-  };
-
   return (
-    <Stack spacing={2}>
-      {/* LOGO UPLOAD */}
-      <Stack direction="row" spacing={2} alignItems="center">
-        <Box
-          sx={{
-            width: 72,
-            height: 72,
-            borderRadius: 1,
-            overflow: "hidden",
-            border: "1px dashed #aaa",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            bgcolor: "#f8f8f8",
-          }}
-        >
-          {schoolImage ? (
-            <img
-              src={schoolImage}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            "Logo"
-          )}
-        </Box>
+    <Stack spacing={3}>
+      <Typography variant="h6" sx={{ fontWeight: 600, color: "#1560BD" }}>
+        School Information
+      </Typography>
 
-        <Stack spacing={0.5}>
-          <Typography variant="subtitle2">School Logo</Typography>
-          <Typography variant="caption">
-            Min 400×400px, PNG or JPG
-          </Typography>
-
-          <Button variant="outlined" onClick={handleSelectImage}>
-            Select
-          </Button>
-          <input
-            hidden
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-          />
-        </Stack>
-      </Stack>
-
-      {/* INPUT FIELDS */}
       <Box
         sx={{
           display: "grid",
           gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)" },
-          gap: 2,
+          gap: 3,
         }}
       >
         <RHFTextField
@@ -694,8 +845,8 @@ function RouteRulesSection() {
           Pick location on map
         </Typography>
         {/* <GoogleMapsProvider> */}
-  <MapComponent onPositionChange={handlePositionChange} />
-{/* </GoogleMapsProvider> */}
+        {/* <MapComponent onPositionChange={handlePositionChange} /> */}
+        {/* </GoogleMapsProvider> */}
 
         {/* <MapComponent onPositionChange={handlePositionChange} /> */}
       </Box>

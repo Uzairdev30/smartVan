@@ -10,7 +10,11 @@ import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import { BagSimple as BagSimpleIcon } from '@phosphor-icons/react/dist/ssr/BagSimple';
+import { Car as CarIcon } from '@phosphor-icons/react/dist/ssr/Car';
+import { Users as UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
+import { MapPin as MapPinIcon } from '@phosphor-icons/react/dist/ssr/MapPin';
 import { paths } from '@/paths';
 
 export interface Kid {
@@ -108,6 +112,26 @@ export function TripCard({
         ) : (
           displayedTrips.map((trip) => {
             const isSelected = trip._id === selectedId;
+            
+            // Status color mapping
+            const getStatusColor = (status: string) => {
+              switch(status) {
+                case 'start': return '#2D9CDB';
+                case 'ongoing': return '#34C759';
+                case 'end': return '#9B9B9B';
+                default: return '#9B9B9B';
+              }
+            };
+
+            const getStatusLabel = (status: string) => {
+              switch(status) {
+                case 'start': return 'Started';
+                case 'ongoing': return 'Ongoing';
+                case 'end': return 'Completed';
+                default: return 'Unknown';
+              }
+            };
+
             return (
               <Box
                 key={trip._id}
@@ -115,50 +139,93 @@ export function TripCard({
                   p: 2,
                   cursor: onSelectTrip ? 'pointer' : 'default',
                   bgcolor: isSelected ? '#F1F7FF' : 'transparent',
+                  borderRadius: 2,
+                  mb: 1,
+                  border: isSelected ? '2px solid #2D9CDB' : '1px solid #E5E7EB',
                   '&:hover': {
                     bgcolor: '#F8FAFC',
+                    borderColor: '#D1D5DB',
                   },
+                  transition: 'all 0.2s ease-in-out',
                 }}
-                onClick={() => onSelectTrip && onSelectTrip(trip)}  // 🔹 yahan se parent ko trip ja raha
+                onClick={() => onSelectTrip && onSelectTrip(trip)}
               >
                 <Stack direction="row" spacing={2} alignItems="flex-start">
-                  <Avatar sx={{ width: 48, height: 48 }}>
-                    {trip.driverName ? trip.driverName[0] : 'D'}
+                  <Avatar 
+                    sx={{ 
+                      width: 56, 
+                      height: 56, 
+                      bgcolor: getStatusColor(trip.status),
+                      fontSize: '1.2rem',
+                      fontWeight: 600
+                    }}
+                  >
+                    {trip.driverName ? trip.driverName[0]?.toUpperCase() : 'D'}
                   </Avatar>
 
                   <Box flex={1}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Typography fontWeight={600}>{trip.driverName}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(trip.createdAt).toLocaleString()}
+                    {/* Driver Name and Status */}
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                      <Typography variant="subtitle1" fontWeight={600} color="#1F2937">
+                        {trip.driverName || 'Unknown Driver'}
                       </Typography>
+                      <Chip
+                        label={getStatusLabel(trip.status)}
+                        size="small"
+                        sx={{
+                          backgroundColor: getStatusColor(trip.status),
+                          color: 'white',
+                          fontWeight: 500,
+                          fontSize: '0.75rem',
+                        }}
+                      />
                     </Stack>
 
-                    <Stack spacing={0.5} mt={1}>
-                      <Stack direction="row" spacing={1}>
-                        <Typography variant="caption" color="text.secondary">Car:</Typography>
-                        <Typography variant="caption" fontWeight={400} color="text.primary">
-                          {trip.carNumber}
+                    {/* Trip Details */}
+                    <Stack spacing={1.5}>
+                      {/* Car Info */}
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <CarIcon size={16} color="#6B7280" />
+                        <Typography variant="body2" color="#6B7280" fontWeight={500}>
+                          Vehicle:
+                        </Typography>
+                        <Typography variant="body2" color="#1F2937" fontWeight={400}>
+                          {trip.carNumber || 'N/A'}
                         </Typography>
                       </Stack>
 
-                      <Stack direction="row" spacing={1}>
-                        <Typography variant="caption" color="text.secondary">Kids Count:</Typography>
-                        <Typography variant="caption" fontWeight={400} color="text.primary">
+                      {/* Kids Count */}
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <UsersIcon size={16} color="#6B7280" />
+                        <Typography variant="body2" color="#6B7280" fontWeight={500}>
+                          Students:
+                        </Typography>
+                        <Typography variant="body2" color="#1F2937" fontWeight={400}>
                           {trip.kids ? trip.kids.length : 0}
                         </Typography>
                       </Stack>
 
-                      <Stack direction="row" spacing={1}>
-                        <Typography variant="caption" color="text.secondary">Status:</Typography>
-                        <Typography variant="caption" fontWeight={400} color="text.primary">
-                          {trip.status}
+                      {/* Date/Time */}
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <MapPinIcon size={16} color="#6B7280" />
+                        <Typography variant="body2" color="#6B7280" fontWeight={500}>
+                          Started:
+                        </Typography>
+                        <Typography variant="body2" color="#1F2937" fontWeight={400}>
+                          {trip.tripStart?.startTime 
+                            ? new Date(trip.tripStart.startTime).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            : 'Not started'
+                          }
                         </Typography>
                       </Stack>
                     </Stack>
                   </Box>
                 </Stack>
-                <Divider sx={{ mt: 2 }} />
               </Box>
             );
           })

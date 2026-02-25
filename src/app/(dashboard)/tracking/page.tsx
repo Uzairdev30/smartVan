@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAllTrips } from '@/store/reducers/trip-slice';
+import { getAllSchools } from '@/store/reducers/suadmin-slice';
 import { RootState, AppDispatch } from '@/store';
 import { TrackingView } from '@/components/tracking';
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
@@ -12,14 +13,28 @@ export default function Page(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
 
   const [status, setStatus] = useState("");
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedSchool, setSelectedSchool] = useState("");
+
+  const clearFilters = () => {
+    setSelectedSchool("");
+    setStatus("");
+    setSelectedDate(new Date().toISOString().split('T')[0]);
+  };
 
   const tripState = useSelector((state: RootState) => state.trip);
   const trips = tripState?.trips ?? [];
   const loading = tripState?.loading ?? false;
+
+  const { schools } = useSelector((state: RootState) => state.suadmin);
 console.log("trips",trips)
   useEffect(() => {
-    dispatch(getAllTrips({ page: 1, limit: 10, status }));
-  }, [dispatch, status]);
+    dispatch(getAllSchools({ page: 1, limit: 100 }));
+  }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(getAllTrips({ page: 1, limit: 10, status, date: selectedDate, schoolId: selectedSchool }));
+  }, [dispatch, status, selectedDate, selectedSchool]);
 
   const vehicles = useMemo(() => {
     return (trips || []).map((trip: any) => {
@@ -58,7 +73,13 @@ console.log("trips",trips)
         vehicles={vehicles}
         status={status}
         onStatusChange={setStatus}
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+        selectedSchool={selectedSchool}
+        onSchoolChange={setSelectedSchool}
+        schools={schools}
         loading={loading}
+        onClearFilters={clearFilters}
       />
     </GoogleMapsProvider>
   );

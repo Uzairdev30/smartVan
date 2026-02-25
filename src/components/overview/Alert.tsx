@@ -83,7 +83,7 @@ export const Alert: React.FC = () => {
   const displayedComplaints = complaints?.slice(0, 4) || [];
 
   return (
-    <Card>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardHeader
         avatar={
           <Avatar>
@@ -105,7 +105,14 @@ export const Alert: React.FC = () => {
       />
       <Divider />
 
-      <Box display="flex" flexDirection="column" gap={2} p={2}>
+      <Box 
+        sx={{ 
+          flexGrow: 1, 
+          overflow: 'auto', 
+          maxHeight: 280, // Reduced to match Yearly Trip Stats height exactly
+          p: 2 
+        }}
+      >
         {loading ? (
           <Typography sx={{ p: 2 }}>Loading...</Typography>
         ) : displayedComplaints.length === 0 ? (
@@ -113,7 +120,9 @@ export const Alert: React.FC = () => {
             No complaints available
           </Typography>
         ) : (
-          displayedComplaints.map((note) => <NotificationCard key={note._id} {...note} />)
+          <Box display="flex" flexDirection="column" gap={2}>
+            {displayedComplaints.map((note) => <NotificationCard key={note._id} {...note} />)}
+          </Box>
         )}
       </Box>
     </Card>

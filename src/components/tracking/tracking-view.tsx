@@ -38,17 +38,41 @@ import { Map } from './map';
 import { Sidebar } from './Sidebar';
 import { useDispatch, useSelector } from '@/store';
 import { getTripKidsByDriver } from '@/store/reducers/trip-slice';
+import { useAuthContext } from '@/contexts/AuthContext';
 
-export function TrackingView({ vehicles, status, onStatusChange, loading }: any) {
+export function TrackingView({ vehicles, status, onStatusChange, selectedDate, onDateChange, selectedSchool, onSchoolChange, schools, loading, onClearFilters }: any) {
   const dispatch = useDispatch();
+  const { user, userProfile } = useSelector((state: any) => state.auth);
 
   const [kidsModalOpen, setKidsModalOpen] = React.useState(false);
   const [selectedLocations,setSelectedLocations]=React.useState([])
-  const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0]);
   const { tripKids, tripKidsLoading } = useSelector((state) => state.trip);
   const kidsArray = tripKids?.kids ?? [];
 
   const [openSidebar, setOpenSidebar] = React.useState(false);
+
+  // Check if user is super admin - check both user and userProfile
+  const currentUser = user || userProfile;
+  const isSuperAdmin = currentUser?.role === 'superadmin' || currentUser?.userType === 'superadmin';
+  const isSchoolAdmin = currentUser?.role === 'admin' || currentUser?.userType === 'admin';
+  
+  // Debug logging
+  console.log("Auth Debug:", {
+    user,
+    userProfile,
+    currentUser,
+    isSuperAdmin,
+    isSchoolAdmin,
+    userRole: currentUser?.role,
+    userType: currentUser?.userType,
+    currentUserString: JSON.stringify(currentUser, null, 2)
+  });
+  
+  console.log("Schools Debug:", {
+    schools,
+    schoolsLength: schools?.length,
+    selectedSchool
+  });
 
   const [currentVehicleId, setCurrentVehicleId] = React.useState<string | undefined>(
     vehicles[0] ? String(vehicles[0].id) : undefined
@@ -158,30 +182,65 @@ console.log("selec",selectedLocations)
 
               {/* DATE PICKER AND FILTER */}
               <Stack direction="row" spacing={1} alignItems="center">
-                <TextField
-                  type="date"
-                  size="small"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  sx={{
-                    background: 'white',
-                    borderRadius: 1,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 1,
-                    }
-                  }}
-                />
-                <Select
-                  value={status}
-                  onChange={(e) => onStatusChange(e.target.value)}
-                  size="small"
-                  sx={{ minWidth: 150, background: 'white', borderRadius: 1 }}
-                >
-                  <MenuItem value="">All Trips</MenuItem>
-                  <MenuItem value="start">Started</MenuItem>
-                  <MenuItem value="ongoing">Ongoing</MenuItem>
-                  <MenuItem value="end">Completed</MenuItem>
-                </Select>
+                {/* Show school filter ONLY for super admin */}
+                {isSuperAdmin && (
+                  <Select
+                    value={selectedSchool}
+                    onChange={(e) => onSchoolChange(e.target.value)}
+                    size="small"
+                    sx={{ minWidth: 200, background: 'white', borderRadius: 1 }}
+                    displayEmpty
+                  >
+                    <MenuItem value="">All Schools</MenuItem>
+                    {schools?.map((school: any) => (
+                      <MenuItem key={school._id} value={school._id}>
+                        {school.schoolName || school.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                )}
+                
+                {/* Show date and trips filters for school admin OR for super admin after school selection */}
+                {(isSchoolAdmin || (isSuperAdmin && selectedSchool)) && (
+                  <>
+                    <TextField
+                      type="date"
+                      size="small"
+                      value={selectedDate}
+                      onChange={(e) => onDateChange(e.target.value)}
+                      sx={{
+                        background: 'white',
+                        borderRadius: 1,
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 1,
+                        }
+                      }}
+                    />
+                    <Select
+                      value={status}
+                      onChange={(e) => onStatusChange(e.target.value)}
+                      size="small"
+                      sx={{ minWidth: 150, background: 'white', borderRadius: 1 }}
+                    >
+                      <MenuItem value="">All Trips</MenuItem>
+                      <MenuItem value="start">Started</MenuItem>
+                      <MenuItem value="ongoing">Ongoing</MenuItem>
+                      <MenuItem value="end">Completed</MenuItem>
+                    </Select>
+                    
+                    {/* Clear button for super admin */}
+                    {isSuperAdmin && (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={onClearFilters}
+                        sx={{ borderRadius: 1 }}
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </>
+                )}
               </Stack>
             </Stack>
 

@@ -5,13 +5,33 @@ import { useEffect, useState } from "react";
 import { Box, Stack } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import { useDispatch, useSelector } from "react-redux";
+import Avatar from "@mui/material/Avatar";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Select from "@mui/material/Select";
+import Typography from "@mui/material/Typography";
+import { Calendar } from "@phosphor-icons/react/dist/ssr/Calendar";
+import { Truck } from "@phosphor-icons/react/dist/ssr/Truck";
+import { Users } from "@phosphor-icons/react/dist/ssr/Users";
+import { Student } from "@phosphor-icons/react/dist/ssr/Student";
+import { RoadHorizon } from "@phosphor-icons/react/dist/ssr/RoadHorizon";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  CartesianGrid,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
-import { Stats, Alert, TripCard } from "@/components/overview";
+import { StatsCard, Alert, TripCard } from "@/components/overview";
 import { getDashboardStats } from "@/store/reducers/dashboard-slice";
 import { getAllTrips } from "@/store/reducers/trip-slice";
 import { RootState, AppDispatch } from "@/store";
 import { TripAPI } from "@/components/overview/TripCard"; // Same type reuse
 import { Map } from "@/components/tracking"; // Directly use Map here
+import { Option } from "@/components/core/option";
 
 export default function Page(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
@@ -106,25 +126,121 @@ export default function Page(): React.JSX.Element {
   return (
     <Box sx={{ p: "var(--Content-padding)", width: "var(--Content-width)" }}>
       <Stack spacing={2}>
+        {/* First Row: 4 Stats Cards */}
         <Grid container spacing={2}>
-          {/* Stats Section */}
-          <Grid size={{ lg: 8, xs: 12 }}>
-            <Stats
-              data={stats}
-              filterType={filterType}
-              onFilterChange={handleFilterChange}
-              loading={statsLoading}
+          <Grid size={{ md: 3, xs: 6 }}>
+            <StatsCard
+              value={stats?.counts?.vans || 0}
+              icon={Truck}
+              title="Total Vans"
+              variant="active"
+              onClick={() => router.push("/van")}
             />
           </Grid>
+          <Grid size={{ md: 3, xs: 6 }}>
+            <StatsCard
+              value={stats?.counts?.drivers || 0}
+              icon={Users}
+              title="Total Drivers"
+              variant="delayed"
+              onClick={() => router.push("/vehicles")}
+            />
+          </Grid>
+          <Grid size={{ md: 3, xs: 6 }}>
+            <StatsCard
+              value={stats?.counts?.kids || 0}
+              icon={Student}
+              title="Total Students"
+              variant="missed"
+              onClick={() => router.push("/student")}
+            />
+          </Grid>
+          <Grid size={{ md: 3, xs: 6 }}>
+            <StatsCard
+              value={stats?.counts?.trips || 0}
+              icon={RoadHorizon}
+              title="Total Trips"
+              variant="active"
+              onClick={() => router.push("/tracking")}
+            />
+          </Grid>
+        </Grid>
 
-          {/* Alert Section */}
+        {/* Second Row: Yearly Trip Stats (col-8) and Tickets & Complaints (col-4) */}
+        <Grid container spacing={2}>
+          <Grid size={{ lg: 8, xs: 12 }}>
+            <Card sx={{ height: 380, display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ pb: 2, flexGrow: 1 }}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  spacing={2}
+                >
+                  <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Avatar
+                      sx={{
+                        "--Avatar-size": "48px",
+                        bgcolor: "var(--mui-palette-background-paper)",
+                        boxShadow: "var(--mui-shadows-8)",
+                        color: "var(--mui-palette-text-primary)",
+                      }}
+                    >
+                      <Calendar fontSize="var(--icon-fontSize-lg)" />
+                    </Avatar>
+                    <Typography variant="body1">
+                      {filterType === "yearly"
+                        ? "Yearly Trip Stats"
+                        : "Monthly Trip Stats"}
+                    </Typography>
+                  </Stack>
+
+                  <Select
+                    name="filterType"
+                    value={filterType}
+                    onChange={(e) =>
+                      handleFilterChange(e.target.value as "yearly" | "monthly")
+                    }
+                    sx={{ width: 140 }}
+                  >
+                    <Option value="yearly">Yearly</Option>
+                    <Option value="monthly">Monthly</Option>
+                  </Select>
+                </Stack>
+
+                <Box sx={{ height: 250, mt: 2 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={stats?.graph || []}
+                      margin={{ top: 20, right: 20, left: 0, bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" tickLine={false} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Bar
+                        dataKey="count"
+                        fill="#3B82F6"
+                        radius={[6, 6, 0, 0]}
+                        barSize={30}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
           <Grid size={{ lg: 4, xs: 12 }}>
             <Alert />
           </Grid>
+        </Grid>
 
+        {/* Third Row: Map and TripCard */}
+        <Grid container spacing={2}>
           {/* ─── Map Section ─────────────── */}
           <Grid size={{ lg: 8, xs: 12 }}>
-            <Box sx={{ height: 600 }}>
+            <Box sx={{ height: 520 }}>
               {/* Pass the vehicles and selected trip data directly to the Map */}
               {selectedTrip && (
                 <Map
