@@ -28,6 +28,7 @@ import Link from "next/link";
 import RouterLink from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft as ArrowLeftIcon, Building, MapPin, Clock, CreditCard, Users } from "@phosphor-icons/react/dist/ssr";
+import { paths } from "@/paths";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -398,7 +399,7 @@ export default function Page() {
 
     try {
       await dispatch(registerSchool(formattedData)).unwrap();
-      router.push("/su-admin/school-management");
+      router.push(paths.dashboard.superadmin.school);
     } catch (err) {
       console.error("❌ Register failed:", err);
     }
@@ -417,13 +418,14 @@ export default function Page() {
         }}
       >
         {/* TOP AREA */}
-        <Stack direction="row" justifyContent="space-between">
-          <Stack>
+        <Stack spacing={4}>
+          <Stack spacing={2}>
             <Link
               color="text.primary"
               component={RouterLink}
-              href={"/su-admin/school-management"}
-              sx={{ alignItems: "center", display: "inline-flex", gap: 1 }}
+              href={paths.dashboard.superadmin.school}
+              sx={{ alignItems: 'center', display: 'inline-flex', gap: 1 }}
+              variant="subtitle2"
             >
               <ArrowLeftIcon fontSize="var(--icon-fontSize-md)" />
             </Link>
@@ -538,40 +540,6 @@ export default function Page() {
                   );
                 })}
               </Box>
-
-              {/* Progress Bar */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                {orderedTabs.map((tab, index) => {
-                  const isActive = tab.key === activeTab;
-                  const isCompleted = tab.order < activeTabOrder;
-                  const isLast = index === orderedTabs.length - 1;
-
-                  return (
-                    <>
-                      <Box
-                        sx={{
-                          flex: 1,
-                          height: 4,
-                          borderRadius: 2,
-                          background: isActive || isCompleted
-                            ? "linear-gradient(90deg, #1560BD, #0D47A1)"
-                            : "#E0E0E0",
-                        }}
-                      />
-                      {!isLast && (
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            background: isActive || isCompleted ? "#1560BD" : "#E0E0E0",
-                          }}
-                        />
-                      )}
-                    </>
-                  );
-                })}
-              </Box>
             </Box>
           </Stack>
         </Stack>
@@ -646,7 +614,7 @@ export default function Page() {
 
           {/* FORM CARD - COL-8 */}
           <Grid item xs={12} md={8}>
-            <Card sx={{ borderRadius: 3, boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)" }}>
+            <Card sx={{ borderRadius: 3 }}>
               <CardContent sx={{ p: 3 }}>
                 {activeTab === "profile" && <ProfileSection />}
                 {activeTab === "route_rules" && <RouteRulesSection />}
@@ -667,8 +635,8 @@ export default function Page() {
                   variant="outlined"
                   onClick={goPrev}
                   disabled={activeTab === "profile"}
-                  sx={{ 
-                    px: 3, 
+                  sx={{
+                    px: 3,
                     py: 1,
                     borderColor: "#FFA500",
                     color: "#FFA500",

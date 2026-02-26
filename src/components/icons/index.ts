@@ -1,4 +1,4 @@
-export { Plus as PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
+export { Plus as PlusIcon } from "@phosphor-icons/react";
 export { PencilSimple as EditIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
 export { Eye } from "@phosphor-icons/react";
 export { Trash } from "@phosphor-icons/react";

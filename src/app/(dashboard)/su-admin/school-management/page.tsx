@@ -19,10 +19,11 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
-import { Eye as EyeIcon, Edit as EditIcon, Building, Users, Power } from "@phosphor-icons/react";
-import { MoreVertical as MoreVertIcon } from "@phosphor-icons/react";
+import { Eye as EyeIcon, PencilSimple as EditIcon, Building, Users, Power } from "@phosphor-icons/react";
+import { CheckCircleIcon, MinusIcon } from "@/components/icons";
 
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store";
@@ -45,17 +46,19 @@ export default function Page(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
 
   // from suadmin slice (as designed earlier)
-  const { schools, total, page, limit, listLoading, listError } = useSelector(
+  const { schools, total, listLoading, listError } = useSelector(
     (s: RootState) => s.suadmin
   );
 
   const [selectedRows, setSelectedRows] = React.useState<UiSchoolRow[]>([]);
+  const [page, setPage] = React.useState(1);
+  const [limit, setLimit] = React.useState(10);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [selectedRow, setSelectedRow] = React.useState<UiSchoolRow | null>(null);
 
   React.useEffect(() => {
-    dispatch(getAllSchools({ page: 1, limit: 10 }));
-  }, [dispatch]);
+    dispatch(getAllSchools({ page, limit }));
+  }, [dispatch, page, limit]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, row: UiSchoolRow) => {
     setAnchorEl(event.currentTarget);
@@ -101,7 +104,7 @@ export default function Page(): React.JSX.Element {
 
   const columns: ColumnDef<UiSchoolRow>[] = [
     {
-      name: "#",
+      name: "S.no",
       width: "60px",
       formatter: (row, index) => (
         <Typography color="text.primary" variant="body2" sx={{ textAlign: "center" }}>
@@ -196,43 +199,45 @@ export default function Page(): React.JSX.Element {
           try {
             await dispatch(changeSchoolStatus({ schoolId: row._id, status: newStatus })).unwrap();
             // Refresh the list to show updated status
-            dispatch(getAllSchools({ page: page ?? 1, limit: limit ?? 10 }));
+            dispatch(getAllSchools({ page, limit }));
           } catch (error) {
             console.error("Failed to change school status:", error);
           }
         };
 
+        const mapping = {
+          inActive: {
+            label: "InActive",
+            icon: <MinusIcon color="var(--mui-palette-error-main)" />,
+            color: "error" as const,
+          },
+          active: {
+            label: "Active",
+            icon: (
+              <CheckCircleIcon
+                color="var(--mui-palette-success-main)"
+                weight="fill"
+              />
+            ),
+            color: "success" as const,
+          },
+        } as const;
+
+        const statusKey = (row?.status?.trim()?.toLowerCase() ||
+          "inActive") as keyof typeof mapping;
+
+        const { label, icon, color } = mapping[statusKey] ?? mapping.inActive;
+
         return (
-          <Box
+          <Chip
+            icon={icon}
+            label={label}
+            size="small"
+            color={color}
+            variant="outlined"
             onClick={handleStatusToggle}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              cursor: "pointer",
-              "&:hover": {
-                opacity: 0.8,
-              }
-            }}
-          >
-            <Box
-              sx={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                bgcolor: row.status === "active" ? "#4CAF50" : "#F44336",
-              }}
-            />
-            <Typography
-              variant="body2"
-              sx={{
-                color: row.status === "active" ? "#4CAF50" : "#F44336",
-                fontWeight: 500,
-              }}
-            >
-              {row.status === "active" ? "Active" : "Inactive"}
-            </Typography>
-          </Box>
+            sx={{ cursor: "pointer" }}
+          />
         );
       },
     },
@@ -300,104 +305,6 @@ export default function Page(): React.JSX.Element {
           </Button>
         </Stack>
 
-        {/* STATISTICS CARDS */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={4}>
-            <Card sx={{ 
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              color: "white",
-              borderRadius: 2,
-              boxShadow: "0 4px 20px rgba(102, 126, 234, 0.3)"
-            }}>
-              <CardContent sx={{ p: 3 }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h4" fontWeight={700}>
-                      {(schools || [])?.length || 0}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Total Schools
-                    </Typography>
-                  </Box>
-                  <Box sx={{ 
-                    bgcolor: "rgba(255, 255, 255, 0.2)",
-                    borderRadius: "50%",
-                    p: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}>
-                    <Building size={32} color="white" />
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4}>
-            <Card sx={{ 
-              background: "linear-gradient(135deg, #4CAF50 0%, #45a049 100%)",
-              color: "white",
-              borderRadius: 2,
-              boxShadow: "0 4px 20px rgba(76, 175, 80, 0.3)"
-            }}>
-              <CardContent sx={{ p: 3 }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h4" fontWeight={700}>
-                      {(schools || [])?.filter(s => s.status === "active").length || 0}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Active Schools
-                    </Typography>
-                  </Box>
-                  <Box sx={{ 
-                    bgcolor: "rgba(255, 255, 255, 0.2)",
-                    borderRadius: "50%",
-                    p: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}>
-                    <Users size={32} color="white" />
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4}>
-            <Card sx={{ 
-              background: "linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)",
-              color: "white",
-              borderRadius: 2,
-              boxShadow: "0 4px 20px rgba(255, 107, 107, 0.3)"
-            }}>
-              <CardContent sx={{ p: 3 }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h4" fontWeight={700}>
-                      {(schools || [])?.filter(s => s.status !== "active").length || 0}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Inactive Schools
-                    </Typography>
-                  </Box>
-                  <Box sx={{ 
-                    bgcolor: "rgba(255, 255, 255, 0.2)",
-                    borderRadius: "50%",
-                    p: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}>
-                    <Power size={32} color="white" />
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
 
         <Card>
           {/* TABLE */}
@@ -430,17 +337,17 @@ export default function Page(): React.JSX.Element {
 
           {/* PAGINATION */}
           <CustomersPagination
-            count={total ?? 0}
-            page={Math.max(0, (page ?? 1) - 1)}     // component expects 0-based
-            rowsPerPage={limit ?? 10}
-            onPaginationChange={(_, newPage0) => {
-              const next = newPage0 + 1;
-              dispatch(getAllSchools({ page: next, limit: limit ?? 10 }));
+            count={total || 0}
+            page={page - 1}
+            rowsPerPage={limit}
+            onPaginationChange={(_, newPage) => {
+              setPage(newPage + 1);
               setSelectedRows([]);
             }}
-            onRowsPerPageChange={(e) => {
-              const newLimit = parseInt(e.target.value, 10);
-              dispatch(getAllSchools({ page: 1, limit: newLimit }));
+            onRowsPerPageChange={(event) => {
+              const newLimit = parseInt(event.target.value, 10);
+              setLimit(newLimit);
+              setPage(1);
               setSelectedRows([]);
             }}
           />

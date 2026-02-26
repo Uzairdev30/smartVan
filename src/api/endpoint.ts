@@ -71,7 +71,7 @@ export const SUADMIN={
 
     // banner
     CREATE_BANNER:'/promotion-banner',
-    GET_ALL_BANNERS:'/promotion-banner',
+    GET_ALL_BANNERS:'/promotion-banner/findAll',
     GET_BANNER_BY_ID:'/promotion-banner',
     UPDATE_BANNER:'/promotion-banner',
     DELETE_BANNER:'/promotion-banner'

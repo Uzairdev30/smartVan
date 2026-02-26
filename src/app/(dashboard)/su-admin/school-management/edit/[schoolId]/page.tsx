@@ -24,8 +24,9 @@ import {
 import Link from "next/link";
 import RouterLink from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft as ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
+import { ArrowLeft as ArrowLeftIcon, Building, MapPin, Clock, Users, CreditCard } from "@phosphor-icons/react";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { paths } from "@/paths";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -385,128 +386,164 @@ export default function SchoolDetailEditPage() {
               <Link
                 color="text.primary"
                 component={RouterLink}
-                href={"/su-admin/school-management"}
-                sx={{ alignItems: "center", display: "inline-flex", gap: 1 }}
+                href={paths.dashboard.superadmin.school}
+                sx={{ alignItems: 'center', display: 'inline-flex', gap: 1 }}
                 variant="subtitle2"
               >
                 <ArrowLeftIcon fontSize="var(--icon-fontSize-md)" />
               </Link>
-
-              <Box
-                sx={{
-                  ml: "auto",
-                  border: "1px solid #4CAF50",
-                  borderRadius: "4px",
-                  px: 1,
-                  py: 0.5,
-                  fontSize: "12px",
-                  lineHeight: 1.2,
-                  color: "#2e7d32",
-                  bgcolor: "rgba(76,175,80,0.08)",
-                  fontWeight: 500,
-                }}
-              >
-                {isEditing ? "Editing" : "Viewing"}
-              </Box>
             </Stack>
 
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-              <Typography variant="h6" fontWeight={600}>
-                School Details
-              </Typography>
-              {loading && <CircularProgress size={16} sx={{ ml: 1 }} />}
-            </Stack>
-
-            {/* Step pills */}
-            <Stack direction="column" alignItems="start" spacing={1} sx={{ mt: 2 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {isEditing ? "EDIT FIELDS" : "VIEW DETAILS"}
-              </Typography>
-
-              <Stack direction="row" flexWrap="wrap" sx={{ rowGap: 1 }} useFlexGap>
-                {tabsList.map((tab) => {
+            {/* ENHANCED TABS (Same as Add School) */}
+            <Box sx={{ mt: 3 }}>
+              <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
+                {orderedTabs.map((tab, index) => {
                   const isActive = tab.key === activeTab;
                   const isCompleted = tab.order < activeTabOrder;
-                  const isUpcoming = tab.order > activeTabOrder;
 
-                  let bg = "#F6F7F9";
-                  let textColor = "#000";
-                  let borderColor = "#E0E2E7";
-
-                  if (isActive) {
-                    bg = "#1560BD";
-                    textColor = "#fff";
-                    borderColor = "transparent";
-                  } else if (isCompleted) {
-                    bg = "#000";
-                    textColor = "#fff";
-                    borderColor = "transparent";
-                  }
+                  const getTabIcon = (key: TabKey) => {
+                    switch (key) {
+                      case "profile":
+                        return <Building size={16} />;
+                      case "route_rules":
+                        return <MapPin size={16} />;
+                      case "limits":
+                        return <Users size={16} />;
+                      case "subscription":
+                        return <CreditCard size={16} />;
+                      default:
+                        return null;
+                    }
+                  };
 
                   return (
                     <Box
                       key={tab.key}
                       onClick={async () => {
                         if (isEditing) {
-                          const current = tabsList.find((t) => t.key === activeTab);
-                          if (current && tab.order > current.order) {
-                            const ok = await trigger(fieldsByTab[activeTab]);
-                            if (!ok) return;
+                          const current = orderedTabs.find((t) => t.key === activeTab);
+                          if (
+                            current &&
+                            tab.order > current.order &&
+                            !(await trigger(fieldsByTab[activeTab]))
+                          ) {
+                            return;
                           }
                         }
                         setActiveTab(tab.key);
                       }}
                       sx={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        mr: 1,
-                        mb: 1,
-                        px: 1.5,
-                        py: 0.5,
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        lineHeight: 1.4,
-                        fontWeight: 500,
+                        position: "relative",
+                        px: 2,
+                        py: 1.5,
+                        borderRadius: 2,
                         cursor: "pointer",
-                        backgroundColor: bg,
-                        color: textColor,
-                        border: "1px solid",
-                        borderColor: isUpcoming ? borderColor : "transparent",
-                        userSelect: "none",
-                        minHeight: "26px",
-                        whiteSpace: "nowrap",
+                        background: isActive
+                          ? "linear-gradient(135deg, #1560BD 0%, #0D47A1 100%)"
+                          : isCompleted
+                            ? "linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)"
+                            : "#F5F5F5",
+                        color: isActive || isCompleted ? "#fff" : "#616161",
+                        fontSize: "14px",
+                        fontWeight: isActive ? 600 : 500,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        transition: "all 0.3s ease",
+                        boxShadow: isActive
+                          ? "0 4px 12px rgba(21, 96, 189, 0.3)"
+                          : "none",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          boxShadow: isActive
+                            ? "0 6px 16px rgba(21, 96, 189, 0.4)"
+                            : "0 4px 12px rgba(0,0,0,0.1)",
+                        },
                       }}
                     >
-                      {tab.label}
+                      {/* Step Number */}
+                      <Box
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: "50%",
+                          background:
+                            isActive || isCompleted
+                              ? "rgba(255,255,255,0.2)"
+                              : "#E0E0E0",
+                          color: isActive || isCompleted ? "#fff" : "#757575",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {index + 1}
+                      </Box>
+
+                      {getTabIcon(tab.key)}
+
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                        >
+                          {tab.label}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ opacity: 0.8, fontSize: "11px" }}
+                        >
+                          {isCompleted
+                            ? "Completed"
+                            : isActive
+                              ? "In Progress"
+                              : "Pending"}
+                        </Typography>
+                      </Box>
                     </Box>
                   );
                 })}
-              </Stack>
-            </Stack>
+              </Box>
+            </Box>
           </Stack>
 
           <Stack direction="row" spacing={1}>
             {!isEditing ? (
               <Button
-                variant="contained"
+                variant="outlined"
                 size="small"
                 onClick={() => setIsEditing(true)}
-                sx={{ textTransform: "none" }}
                 disabled={loading || !school}
+                sx={{
+                  textTransform: "none",
+                  px: 3,
+                  py: 1,
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  backgroundColor: "rgba(76, 175, 80, 0.1)",
+                }}
               >
-                Edit
+                Edit Form
               </Button>
             ) : (
               <Button
                 variant="outlined"
                 size="small"
                 onClick={() => {
-                  // revert: simply turn off edit; form already reflects latest reset values
                   setIsEditing(false);
                 }}
-                sx={{ textTransform: "none" }}
+                sx={{
+                  textTransform: "none",
+                  px: 3,
+                  py: 1,
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  backgroundColor: "rgba(76, 175, 80, 0.1)",
+                }}
               >
-                Cancel
+                View Only
               </Button>
             )}
           </Stack>
@@ -547,7 +584,7 @@ export default function SchoolDetailEditPage() {
                   sx={{
                     textTransform: "none",
                     bgcolor: "#FFB800",
-                    color: "#000",
+                    color: "white",
                     fontWeight: 500,
                     "&:hover": { bgcolor: "#e5a700" },
                   }}
@@ -574,7 +611,7 @@ export default function SchoolDetailEditPage() {
               <Button
                 variant="contained"
                 size="small"
-                onClick={() => router.push("/su-admin/school-management")}
+                onClick={() => router.push(paths.dashboard.superadmin.school)}
                 sx={{ textTransform: "none" }}
               >
                 Back to list
@@ -698,7 +735,7 @@ function RouteRulesSection({ disabled }: { disabled?: boolean }) {
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             Pick location on map
           </Typography>
-          <MapComponent 
+          <MapComponent
             onPositionChange={handlePositionChange}
             initialLat={lat}
             initialLng={lng}

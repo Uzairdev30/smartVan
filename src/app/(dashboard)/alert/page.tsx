@@ -13,8 +13,14 @@ import {
   Button,
   Menu,
   MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
 import { useRouter } from "next/navigation";
@@ -39,6 +45,8 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [deleteAlertLoading, setDeleteAlertLoading] = React.useState(false);
   const open = Boolean(anchorEl);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
@@ -58,33 +66,76 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
     handleMenuClose();
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
+    setDeleteDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleteAlertLoading(true);
     try {
       await dispatch(deleteAlert({ alertId: row._id })).unwrap();
+      setDeleteDialogOpen(false);
     } catch (err: any) {
+      console.error("Delete failed:", err);
     } finally {
-      handleMenuClose();
+      setDeleteAlertLoading(false);
     }
   };
 
   return (
-    <Stack direction="row" spacing={0} sx={{ justifyContent: "flex-end" }}>
-      <IconButton size="small" onClick={handleMenuOpen}>
-        <MoreVertIcon />
-      </IconButton>
+    <>
+      <Stack direction="row" spacing={0} sx={{ justifyContent: "flex-end" }}>
+        <IconButton size="small" onClick={handleMenuOpen}>
+          <MoreVertIcon />
+        </IconButton>
 
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleMenuClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        <Menu
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleMenuClose}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <MenuItem onClick={handleView}>View</MenuItem>
+          <MenuItem onClick={handleEdit}>Edit</MenuItem>
+          <MenuItem onClick={handleDelete} sx={{ color: "error.main" }}>Delete</MenuItem>
+        </Menu>
+      </Stack>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
       >
-        <MenuItem onClick={handleView}>View</MenuItem>
-        <MenuItem onClick={handleEdit}>Edit</MenuItem>
-        <MenuItem onClick={handleDelete}>Delete</MenuItem>
-      </Menu>
-    </Stack>
+        <DialogTitle>Delete Alert</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this alert "{row.alertType}"?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete} disabled={deleteAlertLoading}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleConfirmDelete} 
+            variant="contained" 
+            color="error"
+            disabled={deleteAlertLoading}
+            startIcon={deleteAlertLoading ? <CircularProgress size={16} /> : <TrashIcon size={18} />}
+          >
+            {deleteAlertLoading ? 'Deleting...' : 'Delete Alert'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 // ─── Main Component ───────────────────────────────

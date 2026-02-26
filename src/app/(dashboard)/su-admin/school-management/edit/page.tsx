@@ -29,6 +29,7 @@ import Link from "next/link";
 import RouterLink from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft as ArrowLeftIcon, Building, MapPin, Clock, CreditCard, Users } from "@phosphor-icons/react/dist/ssr";
+import { paths } from "@/paths";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -128,7 +129,12 @@ function RHFTextField({
 
   return (
     <Box>
-      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+      <Typography variant="subtitle2" sx={{ 
+        mb: 1,
+        fontWeight: 600,
+        color: "#374151",
+        fontSize: "0.875rem"
+      }}>
         {label}
       </Typography>
       <TextField
@@ -139,7 +145,20 @@ function RHFTextField({
         select={select}
         error={!!err}
         helperText={err}
-        InputProps={{ sx: { borderRadius: 1, py: 1 } }}
+        InputProps={{ 
+          sx: { 
+            borderRadius: 2,
+            py: 1,
+            backgroundColor: "#ffffff",
+            "&:hover": {
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+            },
+            "&.Mui-focused": {
+              boxShadow: "0 4px 12px rgba(21, 96, 189, 0.2)",
+              borderColor: "#1560BD",
+            }
+          }
+        }}
         inputProps={
           type === "number"
             ? { inputMode: "decimal", step: "any" }
@@ -168,7 +187,12 @@ function RHFTimePicker({
 
   return (
     <Box>
-      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+      <Typography variant="subtitle2" sx={{ 
+        mb: 1,
+        fontWeight: 600,
+        color: "#374151",
+        fontSize: "0.875rem"
+      }}>
         {label}
       </Typography>
       <Controller
@@ -185,7 +209,19 @@ function RHFTimePicker({
                   fullWidth: true,
                   error: !!err,
                   helperText: err,
-                  InputProps: { sx: { borderRadius: 1 } },
+                  InputProps: { 
+                    sx: { 
+                      borderRadius: 2,
+                      backgroundColor: "#ffffff",
+                      "&:hover": {
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                      },
+                      "&.Mui-focused": {
+                        boxShadow: "0 4px 12px rgba(21, 96, 189, 0.2)",
+                        borderColor: "#1560BD",
+                      }
+                    }
+                  },
                 },
               }}
             />
@@ -447,7 +483,7 @@ export default function Page() {
 
     try {
       await dispatch(editSchool(formattedData)).unwrap();
-      router.push("/su-admin/school-management");
+      router.push(paths.dashboard.superadmin.school);
     } catch (err) {
       console.error("❌ Edit failed:", err);
     }
@@ -489,10 +525,11 @@ export default function Page() {
             <Link
               color="text.primary"
               component={RouterLink}
-              href={"/su-admin/school-management"}
+              href={paths.dashboard.superadmin.school}
               sx={{ alignItems: "center", display: "inline-flex", gap: 1 }}
             >
               <ArrowLeftIcon fontSize="var(--icon-fontSize-md)" />
+              School Management
             </Link>
 
             {/* ENHANCED TABS */}
@@ -651,8 +688,10 @@ export default function Page() {
               sx={{
                 p: 3,
                 borderRadius: 3,
+                background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
                 border: "1px solid #dee2e6",
-                height: "fit-content"
+                height: "fit-content",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
               }}
             >
               <Stack spacing={4} alignItems="center">
@@ -665,6 +704,7 @@ export default function Page() {
                       height: 150,
                       borderRadius: 4,
                       border: "1px solid",
+                      boxShadow: "0 16px 40px rgba(0, 0, 0, 0.18)",
                       bgcolor: "#fafafa",
                     }}
                   >
@@ -687,11 +727,14 @@ export default function Page() {
                     textTransform: "none",
                     boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
                     "&:hover": {
+                      background: "linear-gradient(135deg, #0d47a1, #1976d2)",
                       boxShadow: "0 6px 20px rgba(25, 118, 210, 0.5)",
-                    }
+                      transform: "translateY(-2px)",
+                    },
+                    transition: "all 0.3s ease"
                   }}
                 >
-                  Change School Logo
+                  Upload School Logo
                 </Button>
 
                 {/* Hidden File Input */}
@@ -708,7 +751,12 @@ export default function Page() {
 
           {/* FORM CARD - COL-8 */}
           <Grid item xs={12} md={8}>
-            <Card sx={{ borderRadius: 3, boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)" }}>
+            <Card sx={{ 
+              borderRadius: 3, 
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+              background: "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)",
+              border: "1px solid rgba(255, 255, 255, 0.2)"
+            }}>
               <CardContent sx={{ p: 3 }}>
                 {activeTab === "profile" && <ProfileSection />}
                 {activeTab === "route_rules" && <RouteRulesSection />}
@@ -730,15 +778,21 @@ export default function Page() {
                   onClick={goPrev}
                   disabled={activeTab === "profile"}
                   sx={{ 
-                    px: 3, 
-                    py: 1,
+                    px: 4, 
+                    py: 1.5,
                     borderColor: "#FFA500",
                     color: "#FFA500",
+                    fontWeight: 600,
+                    borderRadius: 2,
+                    textTransform: "none",
                     "&:hover": {
                       borderColor: "#FF8C00",
                       color: "#FF8C00",
-                      bgcolor: "rgba(255, 165, 0, 0.04)"
-                    }
+                      bgcolor: "rgba(255, 165, 0, 0.04)",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 12px rgba(255, 165, 0, 0.2)",
+                    },
+                    transition: "all 0.3s ease"
                   }}
                 >
                   Previous
@@ -753,11 +807,18 @@ export default function Page() {
                     }}
                     sx={{
                       px: 4,
-                      py: 1,
-                      background: "#FFA500",
+                      py: 1.5,
+                      background: "linear-gradient(135deg, #FFA500, #FF8C00)",
+                      fontWeight: 600,
+                      borderRadius: 2,
+                      textTransform: "none",
+                      boxShadow: "0 4px 12px rgba(255, 165, 0, 0.3)",
                       "&:hover": {
-                        background: "#FF8C00",
-                      }
+                        background: "linear-gradient(135deg, #FF8C00, #FFA500)",
+                        boxShadow: "0 6px 20px rgba(255, 165, 0, 0.5)",
+                        transform: "translateY(-2px)",
+                      },
+                      transition: "all 0.3s ease"
                     }}
                   >
                     Update School
@@ -768,11 +829,18 @@ export default function Page() {
                     onClick={goNext}
                     sx={{
                       px: 4,
-                      py: 1,
-                      background: "#FFA500",
+                      py: 1.5,
+                      background: "linear-gradient(135deg, #FFA500, #FF8C00)",
+                      fontWeight: 600,
+                      borderRadius: 2,
+                      textTransform: "none",
+                      boxShadow: "0 4px 12px rgba(255, 165, 0, 0.3)",
                       "&:hover": {
-                        background: "#FF8C00",
-                      }
+                        background: "linear-gradient(135deg, #FF8C00, #FFA500)",
+                        boxShadow: "0 6px 20px rgba(255, 165, 0, 0.5)",
+                        transform: "translateY(-2px)",
+                      },
+                      transition: "all 0.3s ease"
                     }}
                   >
                     Next
@@ -792,7 +860,23 @@ export default function Page() {
 function ProfileSection() {
   return (
     <Stack spacing={3}>
-      <Typography variant="h6" sx={{ fontWeight: 600, color: "#1560BD" }}>
+      <Typography variant="h6" sx={{ 
+        fontWeight: 600, 
+        color: "#1560BD",
+        fontSize: "1.2rem",
+        mb: 2,
+        position: "relative",
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          bottom: -8,
+          left: 0,
+          width: 60,
+          height: 3,
+          background: "linear-gradient(90deg, #1560BD, #0D47A1)",
+          borderRadius: 2,
+        }
+      }}>
         School Information
       </Typography>
 
@@ -858,8 +942,26 @@ function RouteRulesSection() {
   };
 
   return (
-    <Stack spacing={2}>
-      <Typography variant="subtitle2">Route Rules</Typography>
+    <Stack spacing={3}>
+      <Typography variant="h6" sx={{ 
+        fontWeight: 600, 
+        color: "#1560BD",
+        fontSize: "1.2rem",
+        mb: 2,
+        position: "relative",
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          bottom: -8,
+          left: 0,
+          width: 60,
+          height: 3,
+          background: "linear-gradient(90deg, #1560BD, #0D47A1)",
+          borderRadius: 2,
+        }
+      }}>
+        Route Rules
+      </Typography>
 
       <Box
         sx={{
@@ -874,8 +976,8 @@ function RouteRulesSection() {
         <RHFTextField name="maxTripDuration" label="Max Trip Duration" placeholder="45 mins" />
         <RHFTextField name="bufferTime" label="Buffer Time" placeholder="10 mins" />
 
-        <RHFTextField name="routeLatitude" label="Latitude" type="number" placeholder="24.8607" />
-        <RHFTextField name="routeLongitude" label="Longitude" type="number" placeholder="67.0011" />
+        {/* <RHFTextField name="routeLatitude" label="Latitude" type="number" placeholder="24.8607" />
+        <RHFTextField name="routeLongitude" label="Longitude" type="number" placeholder="67.0011" /> */}
       </Box>
 
       {/* Open in Google Maps link */}
@@ -893,20 +995,53 @@ function RouteRulesSection() {
           Open in Google Maps
         </Button>
 
+        {/* optional: show link text */}
         {googleMapsLink ? (
           <Typography variant="caption" sx={{ wordBreak: "break-all" }}>
             {googleMapsLink}
           </Typography>
         ) : null}
       </Box>
+
+      {/* ✅ MapSelection component (unchanged) */}
+      <Box sx={{ mt: 1 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          Pick location on map
+        </Typography>
+        {/* <GoogleMapsProvider> */}
+        {/* <MapComponent onPositionChange={handlePositionChange} /> */}
+        {/* </GoogleMapsProvider> */}
+
+        {/* <MapComponent onPositionChange={handlePositionChange} /> */}
+      </Box>
     </Stack>
   );
 }
 
+/* ===================== OTHER SECTIONS (UNCHANGED) ===================== */
+
 function LimitsSection() {
   return (
-    <Stack spacing={2}>
-      <Typography variant="subtitle2">Limits</Typography>
+    <Stack spacing={3}>
+      <Typography variant="h6" sx={{ 
+        fontWeight: 600, 
+        color: "#1560BD",
+        fontSize: "1.2rem",
+        mb: 2,
+        position: "relative",
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          bottom: -8,
+          left: 0,
+          width: 60,
+          height: 3,
+          background: "linear-gradient(90deg, #1560BD, #0D47A1)",
+          borderRadius: 2,
+        }
+      }}>
+        Limits
+      </Typography>
 
       <Box
         sx={{
@@ -940,8 +1075,26 @@ function LimitsSection() {
 
 function SubscriptionBillingSection() {
   return (
-    <Stack spacing={2}>
-      <Typography variant="subtitle2">Subscription & Billing</Typography>
+    <Stack spacing={3}>
+      <Typography variant="h6" sx={{ 
+        fontWeight: 600, 
+        color: "#1560BD",
+        fontSize: "1.2rem",
+        mb: 2,
+        position: "relative",
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          bottom: -8,
+          left: 0,
+          width: 60,
+          height: 3,
+          background: "linear-gradient(90deg, #1560BD, #0D47A1)",
+          borderRadius: 2,
+        }
+      }}>
+        Subscription & Billing
+      </Typography>
 
       <Box
         sx={{

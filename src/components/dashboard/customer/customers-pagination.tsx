@@ -20,7 +20,7 @@ export function CustomersPagination({
     <TablePagination
       component="div"
       count={count}
-      page={page - 1} // MUI ka page index 0-based hota hai
+      page={page}
       onPageChange={onPaginationChange} 
       onRowsPerPageChange={onRowsPerPageChange} 
       rowsPerPage={rowsPerPage}
