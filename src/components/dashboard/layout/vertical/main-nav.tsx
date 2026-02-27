@@ -6,8 +6,11 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
 import { Bell as BellIcon } from '@phosphor-icons/react/dist/ssr/Bell';
 import { List as ListIcon } from '@phosphor-icons/react/dist/ssr/List';
+import { MagnifyingGlass as SearchIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { useTranslation } from 'react-i18next';
 import { CaretDown as CaretDownIcon } from '@phosphor-icons/react/dist/ssr/CaretDown';
 import type { NavItemConfig } from '@/types/nav';
@@ -27,6 +30,7 @@ export interface MainNavProps {
 
 export function MainNav({ items }: MainNavProps): React.JSX.Element {
   const [openNav, setOpenNav] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const user = useSelector((state:RootState)=>state.auth.user)
   console.log("useruseruseruseruseruseruseruseruseruser",user)
   const dispatch = useDispatch<AppDispatch>();
@@ -74,6 +78,44 @@ export function MainNav({ items }: MainNavProps): React.JSX.Element {
             >
               <ListIcon />
             </IconButton>
+            
+            {/* Search Bar */}
+            {/* <Box sx={{ display: { xs: 'none', md: 'block' }, flex: 1, maxWidth: 400 }}>
+              <TextField
+                fullWidth
+                size="large"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon size={18} color="#6B7280" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 1,
+                    backgroundColor: '#F9FAFB',
+                    border: '1px solid #E5E7EB',
+                    '&:hover': {
+                      backgroundColor: '#F3F4F6',
+                      borderColor: '#D1D5DB',
+                    },
+                    '&.Mui-focused': {
+                      backgroundColor: '#FFFFFF',
+                      borderColor: '#2D9CDB',
+                      boxShadow: '0 0 0 2px rgba(45, 156, 219, 0.1)',
+                    },
+                  },
+                  '& .MuiInputBase-input::placeholder': {
+                    color: '#9CA3AF',
+                    fontSize: '0.875rem',
+                  },
+                }}
+              />
+            </Box> */}
           </Stack>
           <Stack
             direction="row"

@@ -16,7 +16,14 @@ import { ThemeProvider } from '@/components/core/theme-provider/theme-provider';
 import { Toaster } from '@/components/core/toaster';
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
 
-export const metadata = { title: config.site.name } satisfies Metadata;
+export const metadata = { 
+  title: config.site.name,
+  icons: {
+    icon: '/assets/logo/favicon.png',
+    shortcut: '/assets/logo/favicon.png',
+    apple: '/assets/logo/favicon.png',
+  }
+} satisfies Metadata;
 export const viewport = {
   width: 'device-width',
   initialScale: 1,

@@ -62,10 +62,10 @@ export function SideNav({ color = 'evident', items = [] }: SideNavProps): React.
         zIndex: 'var(--SideNav-zIndex)',
       }}
     >
-      <Stack spacing={2} sx={{ p: 2,pb:0 }}>
+      <Stack spacing={2} sx={{ p: 2, pb: 0 }}>
         <div>
-          <Box component={RouterLink} href={logoPath} sx={{ display: 'inline-flex' }}>
-            <Logo color={logoColor} height={100} width={100} />
+          <Box component={RouterLink} href={logoPath} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 1 }}>
+            <Logo color={logoColor} height={60} width={230} />
           </Box>
         </div>
         {/* <WorkspacesSwitch /> */}

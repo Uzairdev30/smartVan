@@ -324,7 +324,7 @@ export default function VanDetailsPage() {
                 },
               }}
             >
-              {drivers?.drivers?.map((driver: any) => (
+              {drivers?.drivers?.filter((driver: any) => driver.status?.toLowerCase() === 'active').map((driver: any) => (
                 <MenuItem key={driver.id} value={driver.id}>
                   {driver.fullname} — {driver.phoneNo || "N/A"}
                 </MenuItem>

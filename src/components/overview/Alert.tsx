@@ -29,12 +29,19 @@ interface Notification {
 }
 
 const NotificationCard: React.FC<Notification> = ({
+  _id,
   issueType,
   description,
   driverName,
   vanCarNumber,
   createdAt,
 }) => {
+  const router = useRouter();
+  
+  const handleClick = () => {
+    router.push(`/parents/tickets/${_id}`);
+  };
+
   return (
     <Paper
       variant="outlined"
@@ -46,7 +53,16 @@ const NotificationCard: React.FC<Notification> = ({
         gap: 2,
         borderRadius: 2,
         alignItems: 'center',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+          backgroundColor: '#D4E7FF',
+          borderColor: '#1E88E5',
+          transform: 'translateY(-1px)',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+        },
       }}
+      onClick={handleClick}
     >
       <Avatar sx={{ bgcolor: '#2D9CDB' }}>{driverName[0]}</Avatar>
 
@@ -62,9 +78,9 @@ const NotificationCard: React.FC<Notification> = ({
         </Typography>
       </Box>
 
-      {/* <IconButton size="small" sx={{ color: 'text.secondary' }}>
+      <IconButton size="small" sx={{ color: 'text.secondary' }}>
         <ArrowForwardIosIcon />
-      </IconButton> */}
+      </IconButton>
     </Paper>
   );
 };

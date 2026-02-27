@@ -28,12 +28,24 @@ export interface Kid {
 export interface TripAPI {
   _id: string;
   driverName: string;
-  carNumber: string;
+  driver?: {
+    fullname: string;
+    _id: string;
+    image?: string;
+  };
+  van?: {
+    carNumber: string;
+    vehicleType: string;
+  };
   status: 'start' | 'ongoing' | 'end';
   kids: Kid[];
   tripStart: { startTime: string };
   createdAt: string;
   updatedAt: string;
+  route?: {
+    title: string;
+    tripType: string;
+  };
 }
 
 export interface TripCardProps {
@@ -104,7 +116,7 @@ export function TripCard({
 
       <Divider />
 
-      <Box sx={{ height: 380, overflowY: 'auto', pr: 1, '&::-webkit-scrollbar': { width: 0 } }}>
+      <Box sx={{ height: 380, overflowY: 'auto', px: 1, '&::-webkit-scrollbar': { width: 0 } }}>
         {loading ? (
           <Typography sx={{ p: 2 }}>Loading...</Typography>
         ) : displayedTrips.length === 0 ? (
@@ -137,10 +149,11 @@ export function TripCard({
                 key={trip._id}
                 sx={{
                   p: 2,
+                  pt: 3,
                   cursor: onSelectTrip ? 'pointer' : 'default',
                   bgcolor: isSelected ? '#F1F7FF' : 'transparent',
                   borderRadius: 2,
-                  mb: 1,
+                  mb: 2,
                   border: isSelected ? '2px solid #2D9CDB' : '1px solid #E5E7EB',
                   '&:hover': {
                     bgcolor: '#F8FAFC',
@@ -157,17 +170,18 @@ export function TripCard({
                       height: 56, 
                       bgcolor: getStatusColor(trip.status),
                       fontSize: '1.2rem',
-                      fontWeight: 600
+                      fontWeight: 600,
+                      src: trip.driver?.image || '/assets/avatar-placeholder.png'
                     }}
                   >
-                    {trip.driverName ? trip.driverName[0]?.toUpperCase() : 'D'}
+                    {trip.driver?.fullname ? trip.driver?.fullname[0]?.toUpperCase() : trip.driverName ? trip.driverName[0]?.toUpperCase() : 'D'}
                   </Avatar>
 
                   <Box flex={1}>
                     {/* Driver Name and Status */}
                     <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1}>
                       <Typography variant="subtitle1" fontWeight={600} color="#1F2937">
-                        {trip.driverName || 'Unknown Driver'}
+                        {trip.driver?.fullname || trip.driverName || 'Unknown Driver'}
                       </Typography>
                       <Chip
                         label={getStatusLabel(trip.status)}
@@ -190,7 +204,7 @@ export function TripCard({
                           Vehicle:
                         </Typography>
                         <Typography variant="body2" color="#1F2937" fontWeight={400}>
-                          {trip.carNumber || 'N/A'}
+                          {trip.van?.carNumber || trip.carNumber || 'N/A'}
                         </Typography>
                       </Stack>
 

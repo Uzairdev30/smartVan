@@ -342,7 +342,7 @@ export default function StudentDetailsPage(): React.JSX.Element {
                 },
               }}
             >
-              {vans.map((item) => (
+              {vans.filter((item) => item.van.status?.toLowerCase() === 'active').map((item) => (
                 <MenuItem key={item.van.id} value={item.van.id}>
                   {item.van.vehicleType} — {item.van.carNumber}
                 </MenuItem>

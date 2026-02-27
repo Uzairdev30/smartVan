@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Box, Stack } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import { useDispatch, useSelector } from "react-redux";
@@ -35,6 +36,7 @@ import { Option } from "@/components/core/option";
 
 export default function Page(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
 
   // Dashboard state
   const { stats, loading: statsLoading } = useSelector(
@@ -143,7 +145,7 @@ export default function Page(): React.JSX.Element {
               icon={Users}
               title="Total Drivers"
               variant="delayed"
-              onClick={() => router.push("/vehicles")}
+              onClick={() => router.push("/van")}
             />
           </Grid>
           <Grid size={{ md: 3, xs: 6 }}>
