@@ -81,9 +81,19 @@ export function SchoolSignin(): React.JSX.Element {
       <Box
         component={RouterLink}
         href={paths.home}
-        sx={{ display: 'inline-block', fontSize: 0, position: 'relative', left: -20 }}
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          mb: 2,
+        }}
       >
-        <DynamicLogo colorDark="light" colorLight="dark" height={100} width={100} />
+        <DynamicLogo
+          colorDark="light"
+          colorLight="dark"
+          height={80}
+          width={220}
+        />
       </Box>
 
       <Stack spacing={1}>
@@ -107,8 +117,8 @@ export function SchoolSignin(): React.JSX.Element {
                     {...field}
                     disabled={isPending}
                     type="email"
-                    style={{backgroundColor:'#F6F7F9'}}
-                    startAdornment={<Envelope color="#1560BD" fontSize="18px" style={{marginRight:'8px'}}/>}
+                    style={{ backgroundColor: '#F6F7F9' }}
+                    startAdornment={<Envelope color="#1560BD" fontSize="18px" style={{ marginRight: '8px' }} />}
                   />
                   {errors.email && <FormHelperText>{errors.email.message}</FormHelperText>}
                 </FormControl>
@@ -125,8 +135,8 @@ export function SchoolSignin(): React.JSX.Element {
                   <OutlinedInput
                     {...field}
                     disabled={isPending}
-                    startAdornment={<Lock color="#1560BD" fontSize="18px" style={{marginRight:'8px'}} />}
-                    style={{backgroundColor:'#F6F7F9'}}
+                    startAdornment={<Lock color="#1560BD" fontSize="18px" style={{ marginRight: '8px' }} />}
+                    style={{ backgroundColor: '#F6F7F9' }}
 
                     endAdornment={
                       showPassword ? (

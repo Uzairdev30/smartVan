@@ -96,7 +96,7 @@ export function SignInForm(): React.JSX.Element {
   //     // Refresh the auth state
   //     await checkSession?.();
 
-     
+
   //     router.refresh();
   //   },
   //   [checkSession, router, setError]
@@ -105,29 +105,29 @@ export function SignInForm(): React.JSX.Element {
   return (
     <Stack spacing={2}>
       <div>
-  <Box
-    component={RouterLink}
-    href={paths.home}
-    sx={{
-      display: 'inline-block',
-      fontSize: 0,
-      position: 'relative',
-      left: -20, // move 12px to the left
-    }}
-  >
-    <DynamicLogo colorDark="light" colorLight="dark" height={100} width={100} />
-  </Box>
-</div>
+        <Box
+          component={RouterLink}
+          href={paths.home}
+          sx={{
+            display: 'inline-block',
+            fontSize: 0,
+            position: 'relative',
+            left: -20, // move 12px to the left
+          }}
+        >
+          <DynamicLogo colorDark="light" colorLight="dark" height={100} width={100} />
+        </Box>
+      </div>
 
       <Stack spacing={1}>
         <Typography variant="h5">Log in</Typography>
-               <Typography variant="body2" color='#667085'>Enter your email and password.</Typography>
+        <Typography variant="body2" color='#667085'>Enter your email and password.</Typography>
 
       </Stack>
       <Stack spacing={3}>
-       
+
         <Stack spacing={2}>
-          <form onSubmit={()=>{}}>
+          <form onSubmit={() => { }}>
             <Stack spacing={2}>
               <Controller
                 control={control}
@@ -136,7 +136,7 @@ export function SignInForm(): React.JSX.Element {
                 render={({ field }) => (
                   <FormControl error={Boolean(errors.email)}>
                     <InputLabel>Email address</InputLabel>
-                    <OutlinedInput {...field} type="email" startAdornment={<Envelope color='#1560BD' fontSize={'18px'}/>}/>
+                    <OutlinedInput {...field} type="email" startAdornment={<Envelope color='#1560BD' fontSize={'18px'} />} />
                     {errors.email ? <FormHelperText>{errors.email.message}</FormHelperText> : null}
                   </FormControl>
                 )}
@@ -148,7 +148,7 @@ export function SignInForm(): React.JSX.Element {
                   <FormControl error={Boolean(errors.password)}>
                     <InputLabel>Password</InputLabel>
                     <OutlinedInput
-                    startAdornment={<Lock color='#1560BD' fontSize={'18px'}/>}
+                      startAdornment={<Lock color='#1560BD' fontSize={'18px'} />}
                       {...field}
                       endAdornment={
                         showPassword ? (
@@ -166,7 +166,7 @@ export function SignInForm(): React.JSX.Element {
                             onClick={(): void => {
                               setShowPassword(true);
                             }}
-                            
+
 
                           />
                         )
@@ -181,19 +181,19 @@ export function SignInForm(): React.JSX.Element {
               {/* <Button disabled={isPending} type="submit" variant="contained">
                 Sign in
               </Button> */}
-              <Button disabled={isPending} sx={{backgroundColor:'#1560BD'}}  variant="contained" onClick={()=>router.push('/dashboard')}>
+              <Button disabled={isPending} sx={{ backgroundColor: '#1560BD' }} variant="contained" onClick={() => router.push('/dashboard')}>
                 Log in
               </Button>
             </Stack>
           </form>
-          <div style={{display:'flex',justifyContent:'center'}}>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
             <Link component={RouterLink} href={paths.auth.custom.resetPassword} variant="subtitle2" color='#FFB800'>
               Forgot password?
             </Link>
           </div>
         </Stack>
       </Stack>
-      
+
     </Stack>
   );
 }

@@ -152,7 +152,7 @@ export function ForgetPassword(): React.JSX.Element {
     // console.log("Sss")
 
     // if (!ok.success) return;
-console.log("Sss")
+    console.log("Sss")
     try {
       setIsPending(true);
       await dispatch(
@@ -167,8 +167,22 @@ console.log("Sss")
   return (
     <Stack spacing={4}>
       {/* Logo */}
-      <Box component={RouterLink} href="/" sx={{ display: 'inline-block', fontSize: 0 }}>
-        <DynamicLogo colorDark="light" colorLight="dark" height={100} width={100} />
+      <Box
+        component={RouterLink}
+        href="/"
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          mb: 1,
+        }}
+      >
+        <DynamicLogo
+          colorDark="light"
+          colorLight="dark"
+          height={80}
+          width={220}
+        />
       </Box>
 
       {/* Step 1 - Email */}
@@ -182,9 +196,9 @@ console.log("Sss")
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               fullWidth
-              
+
             />
-            
+
 
             <PrimaryButton
               type="submit"
