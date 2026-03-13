@@ -414,12 +414,12 @@ const vanSlice = createSlice({
       .addCase(bulkUpdateVanStatus.fulfilled, (state, action) => {
         state.bulkStatusLoading = false;
         state.bulkStatusSuccess = true;
-        // Update the status of vans in the local state
-        const { vans: updatedVans } = action.payload;
-        updatedVans.forEach((updatedVan) => {
-          const index = state.vans.findIndex((van) => van._id === updatedVan._id);
+        // Update the status of vans in the local state based on request payload
+        const { vanIds, status } = action.meta.arg;
+        vanIds.forEach((vanId: string) => {
+          const index = state.vans.findIndex((van) => van._id === vanId || van.id === vanId);
           if (index !== -1) {
-            state.vans[index].status = updatedVan.status;
+            state.vans[index].status = status;
           }
         });
       })

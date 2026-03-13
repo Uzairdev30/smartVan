@@ -45,6 +45,7 @@ export default function Page(): React.JSX.Element {
     (state: RootState) => state.van
   );
 
+  const [localVans, setLocalVans] = React.useState<any[]>([]);
   const [selectedVans, setSelectedVans] = React.useState<any[]>([]);
   const [filters, setFilters] = React.useState<VanFilters>({});
   const [page, setPage] = React.useState(1);
@@ -54,6 +55,11 @@ export default function Page(): React.JSX.Element {
   const [updatingStatus, setUpdatingStatus] = React.useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [vanToDelete, setVanToDelete] = React.useState<any>(null);
+
+  // Sync localVans with vans from Redux
+  React.useEffect(() => {
+    setLocalVans(vans);
+  }, [vans]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, row: any) => {
     setAnchorEl(event.currentTarget);
@@ -191,6 +197,16 @@ export default function Page(): React.JSX.Element {
         newStatus
       });
 
+      // Optimistic update
+      setLocalVans(prev => prev.map(v => {
+        const vanId = v?.van?._id || v?.van?.id;
+        const rowId = row?.van?._id || row?.van?.id;
+        if (vanId === rowId) {
+          return { ...v, van: { ...v.van, status: newStatus } };
+        }
+        return v;
+      }));
+
       await dispatch(
         bulkUpdateVanStatus({
           vanIds: [row?.van?._id || row?.van?.id],
@@ -198,17 +214,12 @@ export default function Page(): React.JSX.Element {
         })
       ).unwrap();
 
-      // Refresh the data to ensure UI is updated
-      dispatch(
-        getAllSchoolVans({
-          page,
-          limit,
-          ...filters,
-        })
-      );
+      // The fulfilled case updates the state immediately
 
     } catch (error) {
       console.error("Failed to toggle van status:", error);
+      // Revert on error
+      setLocalVans(vans);
     } finally {
       setUpdatingStatus(null);
     }
@@ -381,7 +392,7 @@ export default function Page(): React.JSX.Element {
         return (
           <Chip
             icon={icon}
-            label={label}
+            label={updatingStatus === (row?.van?._id || row?.van?.id) ? "Updating..." : label}
             size="small"
             color={color}
             variant="outlined"
@@ -504,7 +515,7 @@ export default function Page(): React.JSX.Element {
             ) : vans?.length ? (
               <DataTable<any>
                 columns={columns}
-                rows={vans}
+                rows={localVans}
                 selectable
                 onSelectionChange={(_, rows) =>
                   setSelectedVans(rows as any[])

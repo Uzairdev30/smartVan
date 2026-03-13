@@ -47,6 +47,7 @@ export default function Page(): React.JSX.Element {
     (state: RootState) => state.student
   );
 
+  const [localStudents, setLocalStudents] = React.useState<StudentRecord[]>([]);
   const [selectedStudents, setSelectedStudents] = React.useState<StudentRecord[]>([]);
   const [filters, setFilters] = React.useState<Filters>({});
   const [page, setPage] = React.useState(1);
@@ -54,6 +55,11 @@ export default function Page(): React.JSX.Element {
   const [updatingStatus, setUpdatingStatus] = React.useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = React.useState(false);
   const [headerActionAnchor, setHeaderActionAnchor] = React.useState<null | HTMLElement>(null);
+
+  // Sync localStudents with students from Redux
+  React.useEffect(() => {
+    setLocalStudents(students);
+  }, [students]);
 
   // 🔁 Fetch on mount + whenever pagination/filters change
   React.useEffect(() => {
@@ -296,6 +302,14 @@ export default function Page(): React.JSX.Element {
 
             console.log("Updating status:", { id: row.student.id, currentStatus, newStatus });
 
+            // Optimistic update
+            setLocalStudents(prev => prev.map(s => {
+              if (s.student.id === row.student.id) {
+                return { ...s, student: { ...s.student, status: newStatus } };
+              }
+              return s;
+            }));
+
             await dispatch(
               verifyStudentByAdmin({
                 id: row.student.id,
@@ -308,6 +322,8 @@ export default function Page(): React.JSX.Element {
 
           } catch (error) {
             console.error("Failed to toggle student status:", error);
+            // Revert on error
+            setLocalStudents(students);
           } finally {
             setUpdatingStatus(null);
           }
@@ -338,62 +354,9 @@ export default function Page(): React.JSX.Element {
       width: "100px",
       align: "right",
       formatter: (row) => {
-        const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-        const open = Boolean(anchorEl);
-
         const handleView = async () => {
-          setAnchorEl(null);
           await dispatch(getStudentDetail(row.student.id)).unwrap();
           router.push(`/student/${row.student.id}`);
-        };
-
-        const handleActivate = async () => {
-          setAnchorEl(null);
-          try {
-            const studentIds = [row.student.id];
-            console.log('Activating student:', { studentIds, status: 'active' });
-            
-            await dispatch(
-              bulkUpdateStudentStatus({
-                studentIds,
-                status: 'active',
-              })
-            ).unwrap();
-
-            dispatch(getAllStudents({ page, limit, ...filters }));
-          } catch (error) {
-            console.error("Failed to activate student:", error);
-          }
-        };
-
-        const handleDeactivate = async () => {
-          setAnchorEl(null);
-          try {
-            const studentIds = [row.student.id];
-            console.log('Deactivating student:', { studentIds, status: 'inActive' });
-            
-            await dispatch(
-              bulkUpdateStudentStatus({
-                studentIds,
-                status: 'inActive',
-              })
-            ).unwrap();
-
-            dispatch(getAllStudents({ page, limit, ...filters }));
-          } catch (error) {
-            console.error("Failed to deactivate student:", error);
-          }
-        };
-
-        const handleDelete = async () => {
-          setAnchorEl(null);
-          if (window.confirm('Are you sure you want to delete this student?')) {
-            try {
-              await dispatch(deleteStudentsAndRefetch([row.student.id])).unwrap();
-            } catch (error) {
-              console.error("Failed to delete student:", error);
-            }
-          }
         };
 
         return (
@@ -441,7 +404,7 @@ export default function Page(): React.JSX.Element {
             ) : students?.length ? (
               <DataTable<any>
                 columns={columns}
-                rows={students}
+                rows={localStudents}
                 selectable
                 onSelectionChange={(_, rows) =>
                   setSelectedStudents(rows as StudentRecord[])
