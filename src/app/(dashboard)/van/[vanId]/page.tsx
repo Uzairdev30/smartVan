@@ -324,11 +324,13 @@ export default function VanDetailsPage() {
                 },
               }}
             >
-              {drivers?.drivers?.filter((driver: any) => driver.status?.toLowerCase() === 'active').map((driver: any) => (
-                <MenuItem key={driver.id} value={driver.id}>
-                  {driver.fullname} — {driver.phoneNo || "N/A"}
-                </MenuItem>
-              ))}
+              {drivers
+                ?.filter((driver: any) => driver?.isDelete === false)
+                .map((driver: any) => (
+                  <MenuItem key={driver.id} value={driver.id}>
+                    {driver.fullname} — {driver.phoneNo || "N/A"}
+                  </MenuItem>
+                ))}
             </Select>
           </FormControl>
 

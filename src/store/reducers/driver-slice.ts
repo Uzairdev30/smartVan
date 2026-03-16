@@ -25,13 +25,26 @@ export const getAllDrivers = createAsyncThunk<
   "driver/getAllDrivers",
   async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
     try {
-      const response = await api.get(DRIVER.GET_ALL_DRIVER_OF_SCHOOL, {
+      const response = await api.get(DRIVER.GET_ALL_DRIVER, {
         params: { page, limit },
       });
 
-      // Expected response format: { data: [], pagination: {} }
-      const { data, pagination } = response.data;
-      return { drivers: data, pagination };
+      // API response shape:
+      // {
+      //   message: string,
+      //   data: {
+      //     totalDrivers: number,
+      //     drivers: []
+      //   }
+      // }
+      const apiData = response.data?.data;
+      const drivers = apiData?.drivers || [];
+      const totalDrivers = apiData?.totalDrivers;
+
+      return {
+        drivers,
+        pagination: totalDrivers ? { total: totalDrivers, page, limit } : null,
+      };
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch drivers"

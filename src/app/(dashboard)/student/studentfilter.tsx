@@ -25,7 +25,8 @@ export interface Filters {
   carNumber?: string;
   driverName?: string;
   kidsName?:string;
-  parentName?:string
+  parentName?:string;
+  grade?: string;
 }
 
 interface StudentFilterProps {
@@ -191,24 +192,35 @@ export function StudentFilter({
             value={filters?.driverName || ""}
           />
  <FilterButton
-            displayValue={filters?.driverName || ""}
+            displayValue={filters?.kidsName || ""}
             label="Student Name"
             onFilterApply={(value) =>
               handleFilterChange("kidsName", value as string)
             }
             onFilterDelete={() => handleFilterChange("kidsName", "")}
             popover={<GenericFilterPopover field="Student Name" />}
-            value={filters?.driverName || ""}
+            value={filters?.kidsName || ""}
           />
            <FilterButton
-            displayValue={filters?.driverName || ""}
+            displayValue={filters?.parentName || ""}
             label="Parent Name"
             onFilterApply={(value) =>
               handleFilterChange("parentName", value as string)
             }
             onFilterDelete={() => handleFilterChange("parentName", "")}
-            popover={<GenericFilterPopover field="Student Name" />}
-            value={filters?.driverName || ""}
+            popover={<GenericFilterPopover field="Parent Name" />}
+            value={filters?.parentName || ""}
+          />
+          {/* 🔍 Grade */}
+          <FilterButton
+            displayValue={filters?.grade || ""}
+            label="Class/Grade"
+            onFilterApply={(value) =>
+              handleFilterChange("grade", value as string)
+            }
+            onFilterDelete={() => handleFilterChange("grade", "")}
+            popover={<GenericFilterPopover field="Grade" />}
+            value={filters?.grade || ""}
           />
           {hasFilters ? (
             <Button onClick={handleClearFilters}>Clear filters</Button>

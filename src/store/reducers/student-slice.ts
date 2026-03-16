@@ -24,7 +24,10 @@ type GetAllStudentsParams = {
   page?: number;
   limit?: number;
   carNumber?: string;
-  driverName?: string; // 👈 new
+  driverName?: string;
+  kidsName?: string;
+  parentName?: string;
+  grade?: string;
 };
 
 export const getAllStudents = createAsyncThunk(
