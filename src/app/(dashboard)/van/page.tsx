@@ -1,5 +1,4 @@
 // app/(dashboard)/vans/page.tsx
-
 "use client";
 
 import * as React from "react";
@@ -24,16 +23,23 @@ import {
   DialogActions,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { Plus as PlusIcon, DotsThreeVertical as MoreIcon } from "@phosphor-icons/react";
+import { Plus as PlusIcon } from "@phosphor-icons/react";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-import { getAllSchoolVans, bulkUpdateVanStatus, deleteVans, resetBulkStatus, resetDeleteVan, removeDriverFromVan, resetRemoveDriver, deleteVanById } from "@/store/reducers/van-slice";
+import {
+  getAllSchoolVans,
+  bulkUpdateVanStatus,
+  deleteVanById,
+  removeDriverFromVan,
+  resetBulkStatus,
+  resetDeleteVan,
+  resetRemoveDriver,
+} from "@/store/reducers/van-slice";
 import { VanFilter, type VanFilters } from "./driverfilter";
 import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
 import { Pencil as EditIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
-import { UserMinus as RemoveDriverIcon } from "@phosphor-icons/react/dist/ssr/UserMinus";
 import { Trash as DeleteIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { CheckCircleIcon, MinusIcon } from "@/components/icons";
 
@@ -41,9 +47,14 @@ export default function Page(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
-  const { vans, loading, pagination, bulkStatusLoading, bulkStatusSuccess, bulkStatusError, deleteVanLoading, deleteVanSuccess, deleteVanError, removeDriverLoading, removeDriverSuccess, removeDriverError } = useSelector(
-    (state: RootState) => state.van
-  );
+  const {
+    vans,
+    loading,
+    pagination,
+    bulkStatusSuccess,
+    deleteVanSuccess,
+    removeDriverSuccess,
+  } = useSelector((state: RootState) => state.van);
 
   const [localVans, setLocalVans] = React.useState<any[]>([]);
   const [selectedVans, setSelectedVans] = React.useState<any[]>([]);
@@ -56,16 +67,46 @@ export default function Page(): React.JSX.Element {
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [vanToDelete, setVanToDelete] = React.useState<any>(null);
 
-  // Sync localVans with vans from Redux
+  // Routes modal
+  const [routesModalOpen, setRoutesModalOpen] = React.useState(false);
+  const [selectedRoutes, setSelectedRoutes] = React.useState<any[]>([]);
+
   React.useEffect(() => {
     setLocalVans(vans);
   }, [vans]);
+
+  // Reset success states
+  React.useEffect(() => {
+    if (bulkStatusSuccess) {
+      dispatch(resetBulkStatus());
+      setSelectedVans([]);
+      dispatch(getAllSchoolVans({ page, limit, ...filters }));
+    }
+  }, [bulkStatusSuccess, dispatch, page, limit, filters]);
+
+  React.useEffect(() => {
+    if (deleteVanSuccess) {
+      dispatch(resetDeleteVan());
+      setSelectedVans([]);
+      dispatch(getAllSchoolVans({ page, limit, ...filters }));
+    }
+  }, [deleteVanSuccess, dispatch, page, limit, filters]);
+
+  React.useEffect(() => {
+    if (removeDriverSuccess) {
+      dispatch(resetRemoveDriver());
+      dispatch(getAllSchoolVans({ page, limit, ...filters }));
+    }
+  }, [removeDriverSuccess, dispatch, page, limit, filters]);
+
+  React.useEffect(() => {
+    dispatch(getAllSchoolVans({ page, limit, ...filters }));
+  }, [dispatch, page, limit, filters]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, row: any) => {
     setAnchorEl(event.currentTarget);
     setSelectedRow(row);
   };
-
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedRow(null);
@@ -87,33 +128,18 @@ export default function Page(): React.JSX.Element {
 
   const handleRemoveDriver = async () => {
     if (selectedRow?.van?.driverId) {
-      if (window.confirm('Are you sure you want to remove the driver from this van?')) {
-        try {
-          await dispatch(removeDriverFromVan({
+      if (window.confirm("Are you sure you want to remove the driver?")) {
+        await dispatch(
+          removeDriverFromVan({
             driverId: selectedRow.van.driverId,
-            vanId: selectedRow?.van?._id || selectedRow?.van?.id
-          })).unwrap();
-
-          // Refresh the list
-          dispatch(
-            getAllSchoolVans({
-              page,
-              limit,
-              ...filters,
-            })
-          );
-        } catch (error) {
-          console.error("Failed to remove driver:", error);
-        }
+            vanId: selectedRow?.van?._id || selectedRow?.van?.id,
+          })
+        ).unwrap();
       }
     } else {
-      alert('No driver assigned to this van');
+      alert("No driver assigned to this van");
     }
     handleMenuClose();
-  };
-
-  const handleBulkStatusUpdate = (vanIds: string[], status: string) => {
-    dispatch(bulkUpdateVanStatus({ vanIds, status }));
   };
 
   const handleDelete = () => {
@@ -125,153 +151,49 @@ export default function Page(): React.JSX.Element {
   };
 
   const handleConfirmDelete = async () => {
-    if (vanToDelete?.van?._id || vanToDelete?.van?.id) {
-      try {
-        const vanId = vanToDelete?.van?._id || vanToDelete?.van?.id;
-        await dispatch(deleteVanById({ vanId })).unwrap();
-        
-        // Refresh the list
-        dispatch(
-          getAllSchoolVans({
-            page,
-            limit,
-            ...filters,
-          })
-        );
-      } catch (error) {
-        console.error("Failed to delete van:", error);
-      }
+    if (vanToDelete) {
+      await dispatch(
+        deleteVanById({
+          vanId: vanToDelete?.van?._id || vanToDelete?.van?.id,
+        })
+      ).unwrap();
     }
     setDeleteDialogOpen(false);
     setVanToDelete(null);
   };
-
   const handleCancelDelete = () => {
     setDeleteDialogOpen(false);
     setVanToDelete(null);
   };
 
-  const handleBulkDelete = async (vanIds: string[]) => {
-    if (window.confirm(`Are you sure you want to delete ${vanIds.length} van(s)?`)) {
-      try {
-        // First, remove drivers from vans that have drivers assigned
-        const vansWithDrivers = selectedVans.filter(van => van?.van?.driverId);
-
-        if (vansWithDrivers.length > 0) {
-          console.log('Removing drivers from vans before deletion...');
-
-          // Remove drivers from all vans that have drivers
-          const removeDriverPromises = vansWithDrivers.map(van =>
-            dispatch(removeDriverFromVan({
-              driverId: van.van.driverId,
-              vanId: van?.van?._id || van?.van?.id
-            })).unwrap()
-          );
-
-          await Promise.all(removeDriverPromises);
-          console.log('All drivers removed successfully');
-        }
-
-        // Now delete the vans
-        await dispatch(deleteVans({ vanIds })).unwrap();
-
-      } catch (error) {
-        console.error("Failed to delete vans:", error);
-      }
-    }
-  };
-
   const handleStatusToggle = async (row: any) => {
-    if (updatingStatus) return; // Prevent multiple clicks
-
-    try {
-      setUpdatingStatus(row?.van?._id || row?.van?.id);
-
-      // Toggle status - ensure case-insensitive comparison
-      const currentStatus = row?.van?.status?.trim()?.toLowerCase() || "inActive";
-      const newStatus = currentStatus === "active" ? "inActive" : "active";
-
-      console.log("Updating van status:", {
-        id: row?.van?._id || row?.van?.id,
-        currentStatus,
-        newStatus
-      });
-
-      // Optimistic update
-      setLocalVans(prev => prev.map(v => {
+    if (updatingStatus) return;
+    setUpdatingStatus(row?.van?._id || row?.van?.id);
+    const currentStatus = (row?.van?.status || "inActive").toLowerCase();
+    const newStatus = currentStatus === "active" ? "inActive" : "active";
+    setLocalVans((prev) =>
+      prev.map((v) => {
         const vanId = v?.van?._id || v?.van?.id;
-        const rowId = row?.van?._id || row?.van?.id;
-        if (vanId === rowId) {
+        if (vanId === (row?.van?._id || row?.van?.id)) {
           return { ...v, van: { ...v.van, status: newStatus } };
         }
         return v;
-      }));
-
-      await dispatch(
-        bulkUpdateVanStatus({
-          vanIds: [row?.van?._id || row?.van?.id],
-          status: newStatus,
-        })
-      ).unwrap();
-
-      // The fulfilled case updates the state immediately
-
-    } catch (error) {
-      console.error("Failed to toggle van status:", error);
-      // Revert on error
-      setLocalVans(vans);
-    } finally {
-      setUpdatingStatus(null);
-    }
-  };
-
-  // Reset bulk operation states when successful
-  React.useEffect(() => {
-    if (bulkStatusSuccess) {
-      dispatch(resetBulkStatus());
-      setSelectedVans([]);
-      // Refresh list
-      dispatch(
-        getAllSchoolVans({
-          page,
-          limit,
-          ...filters,
-        })
-      );
-    }
-  }, [bulkStatusSuccess, dispatch, page, limit, filters]);
-
-  React.useEffect(() => {
-    if (deleteVanSuccess) {
-      dispatch(resetDeleteVan());
-      setSelectedVans([]);
-      // Refresh list
-      dispatch(
-        getAllSchoolVans({
-          page,
-          limit,
-          ...filters,
-        })
-      );
-    }
-  }, [deleteVanSuccess, dispatch, page, limit, filters]);
-
-  React.useEffect(() => {
-    if (removeDriverSuccess) {
-      dispatch(resetRemoveDriver());
-    }
-  }, [removeDriverSuccess, dispatch]);
-
-  // 🔁 Fetch vans whenever pagination or filters change
-  React.useEffect(() => {
-    dispatch(
-      getAllSchoolVans({
-        page,
-        limit,
-        ...filters, // carNumber, driverName if set
       })
     );
-  }, [dispatch, page, limit, filters]);
+    await dispatch(
+      bulkUpdateVanStatus({
+        vanIds: [row?.van?._id || row?.van?.id],
+        status: newStatus,
+      })
+    ).unwrap();
+    setUpdatingStatus(null);
+  };
+
+  // Open Routes Modal
+  const handleViewRoutes = (row: any) => {
+    setSelectedRoutes(row.routes || []);
+    setRoutesModalOpen(true);
+  };
 
   const columns: ColumnDef<any>[] = [
     {
@@ -280,53 +202,32 @@ export default function Page(): React.JSX.Element {
       formatter: (row) => {
         const vehicleType = row?.van?.vehicleType || "";
         const carNumber = row?.van?.carNumber || "";
-        const capacity = row?.van?.venCapacity || "-";
-        const image = row?.van?.venImage;
-
-        // initials generator based on vehicleType (e.g. "School Van" → "SV")
         const initials = vehicleType
           ?.split(" ")
           ?.map((w: string) => w?.[0]?.toUpperCase())
           ?.join("");
-
         return (
           <Stack direction="row" spacing={1} alignItems="center">
-            {/* IMAGE or INITIALS fallback */}
-            {image ? (
-              <img
-                src={image}
-                alt={vehicleType}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  background: "#1976d2",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 600,
-                  fontSize: 14,
-                }}
-              >
-                {initials}
-              </div>
-            )}
-
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: "#1976d2",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 600,
+                fontSize: 14,
+              }}
+            >
+              {initials}
+            </div>
             <Stack>
               <Typography color="text.primary" variant="body2">
                 {vehicleType}
               </Typography>
-
               <Typography color="text.secondary" variant="caption">
                 Vehicle No: {carNumber}
               </Typography>
@@ -334,21 +235,31 @@ export default function Page(): React.JSX.Element {
           </Stack>
         );
       },
-    }
-    ,
+    },
     {
-      name: "Route",
+      name: "Routes",
       width: "220px",
       formatter: (row) => (
-        <Typography color="text.secondary">
-          {row?.route?.title || "-"}
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "flex-start", alignItems: "center", height: '100%', cursor: row.routes?.length ? 'pointer' : 'default' }}>
+          {row.routes?.length ? (
+            <Typography
+              variant="body2"
+              color="primary"
+              onClick={() => handleViewRoutes(row)}
+            >
+              View Routes
+            </Typography>
+          ) : (
+            <Typography color="text.secondary" variant="body2">
+              No routes assigned
+            </Typography>
+          )}
+        </Box>
       ),
     },
-
     {
       name: "Driver",
-      width: "220px",
+      width: "180px",
       formatter: (row) => (
         <Typography color="text.secondary">
           {row?.driver?.fullname || "-"}
@@ -367,28 +278,12 @@ export default function Page(): React.JSX.Element {
           },
           active: {
             label: "Active",
-            icon: (
-              <CheckCircleIcon
-                color="var(--mui-palette-success-main)"
-                weight="fill"
-              />
-            ),
+            icon: <CheckCircleIcon color="var(--mui-palette-success-main)" weight="fill" />,
             color: "success" as const,
           },
-        } as const;
-
-        const statusKey = (row?.van?.status?.trim()?.toLowerCase() ||
-          "inActive") as keyof typeof mapping;
-
-        // Debug: Log actual status value from backend
-        console.log('Van status debug:', {
-          vanId: row?.van?._id,
-          originalStatus: row?.van?.status,
-          normalizedStatus: statusKey
-        });
-
+        };
+        const statusKey = (row?.van?.status?.trim()?.toLowerCase() || "inActive") as keyof typeof mapping;
         const { label, icon, color } = mapping[statusKey] ?? mapping.inActive;
-
         return (
           <Chip
             icon={icon}
@@ -398,12 +293,7 @@ export default function Page(): React.JSX.Element {
             variant="outlined"
             onClick={() => handleStatusToggle(row)}
             disabled={updatingStatus !== null}
-            sx={{
-              cursor: updatingStatus ? 'not-allowed' : 'pointer',
-              '&:hover': {
-                backgroundColor: updatingStatus ? 'transparent' : 'action.hover',
-              }
-            }}
+            sx={{ cursor: updatingStatus ? "not-allowed" : "pointer" }}
           />
         );
       },
@@ -423,13 +313,6 @@ export default function Page(): React.JSX.Element {
             onClose={handleMenuClose}
             anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             transformOrigin={{ vertical: "top", horizontal: "right" }}
-            PaperProps={{
-              elevation: 0,
-              sx: {
-                border: '1px solid',
-                borderColor: 'divider',
-              }
-            }}
           >
             <MenuItem onClick={handleView}>
               <ListItemIcon>
@@ -456,20 +339,10 @@ export default function Page(): React.JSX.Element {
   ];
 
   return (
-    <Box
-      sx={{
-        bgcolor: "var(--mui-palette-background-level1)",
-        p: 3,
-      }}
-    >
+    <Box sx={{ bgcolor: "var(--mui-palette-background-level1)", p: 3 }}>
       <Stack spacing={3}>
-        {/* Header */}
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={3}
-          sx={{ alignItems: "flex-start" }}
-        >
-          <Box sx={{ flex: "1 1 auto" }}>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "flex-start" }}>
+          <Box sx={{ flex: 1 }}>
             <Typography variant="h5">Van Management</Typography>
           </Box>
           <Box>
@@ -484,29 +357,17 @@ export default function Page(): React.JSX.Element {
           </Box>
         </Stack>
 
-        {/* Filters */}
         <Card>
           <VanFilter
             filters={filters}
             setFilters={(updater) => {
-              setPage(1); // reset page on filter change
-              setFilters((prev) =>
-                typeof updater === "function" ? updater(prev) : updater
-              );
+              setPage(1);
+              setFilters((prev) => (typeof updater === "function" ? updater(prev) : updater));
             }}
             selected={selectedVans}
-            onRefresh={() => {
-              dispatch(
-                getAllSchoolVans({
-                  page,
-                  limit,
-                  ...filters,
-                })
-              );
-            }}
+            onRefresh={() => dispatch(getAllSchoolVans({ page, limit, ...filters }))}
           />
 
-          {/* Table */}
           <Box sx={{ overflowX: "auto" }}>
             {loading ? (
               <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
@@ -517,17 +378,11 @@ export default function Page(): React.JSX.Element {
                 columns={columns}
                 rows={localVans}
                 selectable
-                onSelectionChange={(_, rows) =>
-                  setSelectedVans(rows as any[])
-                }
+                onSelectionChange={(_, rows) => setSelectedVans(rows as any[])}
               />
             ) : (
               <Box sx={{ p: 3 }}>
-                <Typography
-                  color="text.secondary"
-                  sx={{ textAlign: "center" }}
-                  variant="body2"
-                >
+                <Typography color="text.secondary" sx={{ textAlign: "center" }} variant="body2">
                   No Vans Found
                 </Typography>
               </Box>
@@ -536,7 +391,6 @@ export default function Page(): React.JSX.Element {
 
           <Divider />
 
-          {/* Pagination */}
           <CustomersPagination
             count={pagination?.total || 0}
             page={(page || 1) - 1}
@@ -554,33 +408,50 @@ export default function Page(): React.JSX.Element {
           />
         </Card>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={handleCancelDelete}
-          maxWidth="sm"
-          fullWidth
-        >
+        {/* Delete Dialog */}
+        <Dialog open={deleteDialogOpen} onClose={handleCancelDelete} maxWidth="sm" fullWidth>
           <DialogContent sx={{ pb: 2 }}>
-            <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Box sx={{ textAlign: "center", py: 2 }}>
               <Typography variant="body1" color="text.primary" fontSize="1.1rem">
                 Are you sure you want to delete this van?
               </Typography>
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCancelDelete} disabled={deleteVanLoading}>
-              Cancel
+            <Button onClick={handleCancelDelete}>Cancel</Button>
+            <Button onClick={handleConfirmDelete} variant="contained" color="error">
+              Delete Van
             </Button>
-            <Button 
-              onClick={handleConfirmDelete} 
-              variant="contained" 
-              color="error"
-              disabled={deleteVanLoading}
-              startIcon={deleteVanLoading ? <CircularProgress size={16} /> : <DeleteIcon size={18} />}
-            >
-              {deleteVanLoading ? 'Deleting...' : 'Delete Van'}
-            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Routes Modal */}  
+        <Dialog open={routesModalOpen} onClose={() => setRoutesModalOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ 
+          backgroundColor: '#191970', 
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+            Routes Details</DialogTitle>
+          <DialogContent>
+            {selectedRoutes.length === 0 ? (
+              <Typography>No routes assigned</Typography>
+            ) : (
+              
+              <Stack spacing={1} mt={1}>
+                {selectedRoutes.map((route) => (
+                  <Box key={route.id} sx={{ display: "flex", justifyContent: "space-between", border: "1px solid #eee", borderRadius: 1, p: 1 }}>
+                    <Typography variant="body2">{route.title}</Typography>
+                    <Chip label={route.tripType} size="small" color="primary" />
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setRoutesModalOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
       </Stack>
