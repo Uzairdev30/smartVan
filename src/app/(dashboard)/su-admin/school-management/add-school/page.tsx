@@ -90,11 +90,13 @@ const schema = z.object({
   routeLatitude: z
     .coerce.number({ invalid_type_error: "Latitude must be a number" })
     .min(-90, "Min -90")
-    .max(90, "Max 90"),
+    .max(90, "Max 90")
+    .optional(),   // ✅ add this
   routeLongitude: z
     .coerce.number({ invalid_type_error: "Longitude must be a number" })
     .min(-180, "Min -180")
-    .max(180, "Max 180"),
+    .max(180, "Max 180")
+    .optional(),   // ✅ add this
 
   // Limits
   allowedVans: z.coerce.number().min(1, "Min 1"),
