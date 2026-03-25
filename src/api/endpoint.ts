@@ -6,8 +6,8 @@ export const AUTH = {
     FORGET_PASSWORD: `${BASE_URL}/Admin/forgot-password`,
     RESET_PASSWORD: `${BASE_URL}/Admin/reset-password`,
     RESEND_OTP: `${BASE_URL}/Admin/resend-otp`,
-    GET_PROFILE:`${BASE_URL}/Admin/getProfile`
-
+    GET_PROFILE:`${BASE_URL}/Admin/getProfile`,
+    CHANGE_PASSWORD:`${BASE_URL}/Admin/changePassword`
 };
 
 export const STUDENT = {
