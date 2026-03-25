@@ -235,14 +235,14 @@ export default function StudentDetailsPage(): React.JSX.Element {
             <CardHeader title="School & Route Details" />
             <CardContent>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
+                {/* <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle1" color="text.secondary">School ID</Typography>
                   <Typography variant="body1">{studentDetail?.student?.schoolId || '—'}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle1" color="text.secondary">Student ID</Typography>
                   <Typography variant="body1">{studentDetail?.student?.id || '—'}</Typography>
-                </Grid>
+                </Grid> */}
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle1" color="text.secondary">Van Type</Typography>
                   <Typography variant="body1">{studentDetail?.van?.vehicleType || '—'}</Typography>
