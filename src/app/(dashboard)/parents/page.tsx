@@ -117,6 +117,15 @@ export default function ParentTicketPage(): React.JSX.Element {
       ),
     },
     {
+      name: "Name",
+      width: "140px",
+      formatter: (row) => (
+        <Typography variant="body2">
+          {row.parentName || row.driverName || "-"}
+        </Typography>
+      ),
+    },
+    {
       name: "Type",
       width: "140px",
       formatter: (row) => (

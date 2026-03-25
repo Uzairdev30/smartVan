@@ -211,8 +211,8 @@ export default function AddRouteForm(): React.JSX.Element {
                     <FormControl fullWidth>
                       <InputLabel>Trip Type</InputLabel>
                       <Select {...field} label="Trip Type">
-                        <MenuItem value="morning">Morning</MenuItem>
-                        <MenuItem value="evening">Evening</MenuItem>
+                        <MenuItem value="pick">Pick</MenuItem>
+                        <MenuItem value="drop">Drop</MenuItem>
                       </Select>
                     </FormControl>
                   )}

@@ -57,8 +57,10 @@ const tabsList: { key: TabKey; label: string; order: number }[] = [
 
 const schema = z.object({
   // Profile
-  adminName: z.string().min(1, "Admin name is required"),
-  adminEmail: z.string().email("Invalid admin email"),
+  adminInfo: z.object({
+    name: z.string().min(1, "Admin name is required"),
+    email: z.string().email("Invalid admin email"),
+  }),
   schoolName: z.string().min(1, "School name is required"),
   schoolEmail: z.string().email("Invalid school email"),
   address: z.string().min(1, "Address is required"),
@@ -99,7 +101,7 @@ type FormValues = z.infer<typeof schema>;
 /* ===================== PER-TAB FIELD MAP ===================== */
 
 const fieldsByTab: Record<TabKey, (keyof FormValues)[]> = {
-  profile: ["adminName", "adminEmail", "schoolName", "schoolEmail", "address", "contactNumber"],
+  profile: ["adminInfo", "schoolName", "schoolEmail", "address", "contactNumber"],
   route_rules: [
     "pickupStartTime",
     "dropoffStartTime",
@@ -154,6 +156,70 @@ function RHFTextField({
         inputProps={type === "number" ? { inputMode: "decimal", step: "any" } : undefined}
         disabled={disabled}
         {...register(name)}
+      >
+        {children}
+      </TextField>
+    </Box>
+  );
+}
+
+function RHFNestedTextField({
+  name,
+  label,
+  placeholder,
+  type = "text",
+  select = false,
+  children,
+  disabled,
+}: {
+  name: string;
+  label: string;
+  placeholder?: string;
+  type?: React.InputHTMLAttributes<unknown>["type"];
+  select?: boolean;
+  children?: React.ReactNode;
+  disabled?: boolean;
+}) {
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext<FormValues>();
+  
+  // Handle nested errors
+  const errorPath = name.split('.');
+  let err: string | undefined;
+  let currentErrors: any = errors;
+  
+  for (const part of errorPath) {
+    if (currentErrors && currentErrors[part]) {
+      currentErrors = currentErrors[part];
+    } else {
+      currentErrors = undefined;
+      break;
+    }
+  }
+  
+  if (currentErrors && typeof currentErrors === 'object' && 'message' in currentErrors) {
+    err = currentErrors.message as string;
+  }
+
+  return (
+    <Box>
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        {label}
+      </Typography>
+      <TextField
+        fullWidth
+        size="small"
+        placeholder={placeholder}
+        type={type}
+        select={select}
+        error={!!err}
+        helperText={err}
+        InputProps={{ sx: { borderRadius: 1, py: 1 } }}
+        inputProps={type === "number" ? { inputMode: "decimal", step: "any" } : undefined}
+        disabled={disabled}
+        {...register(name as any)}
       >
         {children}
       </TextField>
@@ -291,8 +357,10 @@ export default function SchoolDetailEditPage() {
 
     reset({
       // Profile
-      adminName: s.admin?.name ?? "",
-      adminEmail: s.admin?.email ?? "",
+      adminInfo: {
+        name: s.admin?.name ?? "",
+        email: s.admin?.email ?? "",
+      },
       schoolName: s.schoolName ?? "",
       schoolEmail: s.schoolEmail ?? "",
       address: s.address ?? "",
@@ -346,8 +414,12 @@ export default function SchoolDetailEditPage() {
     if (!schoolId) return;
     const payload = {
       schoolId,
+      adminInfo: {
+        name: data.adminInfo.name,
+        email: data.adminInfo.email,
+      },
       schoolInfo: {
-        contactPerson: data.adminName,
+        contactPerson: data.adminInfo.name,
         startTime: data.pickupStartTime ? dayjs(data.pickupStartTime).format("hh:mm A") : "",
         endTime: data.dropoffStartTime ? dayjs(data.dropoffStartTime).format("hh:mm A") : "",
         maxTripDuration: Number(data.maxTripDuration),
@@ -362,6 +434,7 @@ export default function SchoolDetailEditPage() {
         autoRenew: !!data.pickDropExceptionsActive,
         lat: Number(data.routeLatitude),
         long: Number(data.routeLongitude),
+        contactNumber: data.contactNumber,
       },
     };
 
@@ -641,8 +714,8 @@ function ProfileSection({ disabled }: { disabled?: boolean }) {
           rowGap: 2,
         }}
       >
-        <RHFTextField name="adminName" label="Admin Name *" placeholder="Enter Admin name" disabled={disabled} />
-        <RHFTextField name="adminEmail" label="Admin Email *" placeholder="Enter Admin Email" disabled={disabled} />
+        <RHFNestedTextField name="adminInfo.name" label="Admin Name *" placeholder="Enter Admin name" disabled={disabled} />
+        <RHFNestedTextField name="adminInfo.email" label="Admin Email *" placeholder="Enter Admin Email" disabled={disabled} />
         <RHFTextField name="schoolName" label="School Name *" placeholder="School name" disabled={disabled} />
         <RHFTextField name="schoolEmail" label="School Email *" placeholder="Enter School Email" disabled={disabled} />
         <RHFTextField name="address" label="Address *" placeholder="Address" disabled={disabled} />

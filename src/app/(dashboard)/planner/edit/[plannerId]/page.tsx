@@ -81,7 +81,7 @@ export default function UpdateRouteForm(): React.JSX.Element {
       driverId: "",
       title: "",
       startTime: "",
-      tripType: "morning",
+      tripType: "Pick",
       tripDays: {
         monday: false,
         tuesday: false,
@@ -265,8 +265,8 @@ export default function UpdateRouteForm(): React.JSX.Element {
                     <FormControl fullWidth error={!!errors.tripType}>
                       <InputLabel id="trip-type-label">Trip Type</InputLabel>
                       <Select labelId="trip-type-label" {...field} label="Trip Type">
-                        <MenuItem value="morning">Morning</MenuItem>
-                        <MenuItem value="evening">Evening</MenuItem>
+                        <MenuItem value="Pick">Pick</MenuItem>
+                        <MenuItem value="Drop">Drop</MenuItem>
                       </Select>
                       {errors.tripType && (
                         <FormHelperText>{errors.tripType.message}</FormHelperText>

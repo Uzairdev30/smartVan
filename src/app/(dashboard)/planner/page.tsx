@@ -168,10 +168,12 @@ export default function RoutePlannerPage(): React.JSX.Element {
     (state: RootState) => state.route
   );
 
-  const [selectedTrips, setSelectedTrips] = React.useState<TripRecord[]>([]);
+  const [selectedTrips, setSelectedTrips] = React.useState<VanWithRoutes[]>([]);
   const [filters, setFilters] = React.useState<RouteFilters>({});
   const [page, setPage] = React.useState<number>(1);
   const [limit, setLimit] = React.useState<number>(10);
+  const [routesModalOpen, setRoutesModalOpen] = React.useState(false);
+  const [selectedVan, setSelectedVan] = React.useState<VanWithRoutes | null>(null);
 
   // Fetch when page / limit / filters change
   React.useEffect(() => {
@@ -184,7 +186,7 @@ export default function RoutePlannerPage(): React.JSX.Element {
     );
   }, [dispatch, page, limit, filters]);
 
-  const columns: ColumnDef<TripRecord>[] = [
+  const columns: ColumnDef<VanWithRoutes>[] = [
     // {
     //   name: "Van ID",
     //   width: "120px",
@@ -206,7 +208,7 @@ export default function RoutePlannerPage(): React.JSX.Element {
       width: "130px",
       formatter: (row) => (
         <Typography variant="body2">
-          {row.vanDetails?.carNumber || "—"}
+          {row.van?.carNumber || "—"}
         </Typography>
       ),
     },
@@ -215,15 +217,8 @@ export default function RoutePlannerPage(): React.JSX.Element {
       width: "160px",
       formatter: (row) => (
         <Typography variant="body2">
-          {row.driverDetails?.fullname || "—"}
+          {row.driver?.fullname || "—"}
         </Typography>
-      ),
-    },
-    {
-      name: "Title",
-      width: "200px",
-      formatter: (row) => (
-        <Typography variant="body2">{row.title}</Typography>
       ),
     },
     {
@@ -237,32 +232,49 @@ export default function RoutePlannerPage(): React.JSX.Element {
       ),
     },
     {
-      name: "Trip Type",
-      width: "120px",
+      name: "Routes",
+      width: "150px",
       formatter: (row) => (
-        <Chip
-          label={row.tripType}
-          size="small"
-          variant="outlined"
-          color="primary"
-        />
+        <Box sx={{ display: "flex", justifyContent: "flex-start", alignItems: "center", height: '100%', cursor: row.routes?.length ? 'pointer' : 'default' }}>
+          {row.routes?.length ? (
+            <Typography
+              variant="body2"
+              color="primary"
+              onClick={() => {
+                setSelectedVan(row);
+                setRoutesModalOpen(true);
+              }}
+            >
+              View Routes
+            </Typography>
+          ) : (
+            <Typography color="text.secondary" variant="body2">
+              No assigned Route
+            </Typography>
+          )}
+        </Box>
       ),
     },
     {
       name: "Trip Days",
-      width: "300px",
+      width: "200px",
       formatter: (row) => {
-        const days = Object.entries(row.tripDays || {})
-          .filter(([_, enabled]) => enabled === true && _ !== '_id') // only true values and exclude _id
-          .map(([key]) => key);
+        // Get all unique enabled days from all routes
+        const allDays = row.routes?.flatMap(route => 
+          Object.entries(route.tripDays || {})
+            .filter(([_, enabled]) => enabled === true && _ !== '_id')
+            .map(([day]) => day)
+        ) || [];
+        
+        const uniqueDays = [...new Set(allDays)];
 
-        if (days.length === 0) {
+        if (uniqueDays.length === 0) {
           return <Typography variant="body2">—</Typography>;
         }
 
         return (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {days.map((day) => (
+            {uniqueDays.map((day) => (
               <Box
                 key={day}
                 sx={{
@@ -408,6 +420,37 @@ export default function RoutePlannerPage(): React.JSX.Element {
             }}
           />
         </Card>
+
+        {/* Route Details Modal */}
+        <Dialog open={routesModalOpen} onClose={() => setRoutesModalOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ 
+            backgroundColor: '#191970', 
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}>
+            Route Details
+          </DialogTitle>
+          <DialogContent>
+            {selectedVan ? (
+              <Stack spacing={1} mt={1}>
+                {selectedVan.routes?.map((route) => (
+                  <Box key={route._id} sx={{ display: "flex", justifyContent: "space-between", border: "1px solid #eee", borderRadius: 1, p: 1 }}>
+                    <Typography variant="body2">{route.title}</Typography>
+                    <Chip label={route.tripType} size="small" color="primary" />
+                  </Box>
+                ))}
+              </Stack>
+            ) : (
+              <Typography>No route details available</Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setRoutesModalOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
       </Stack>
     </Box>
   );

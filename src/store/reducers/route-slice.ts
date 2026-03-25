@@ -27,17 +27,22 @@ export interface RouteFilters {
   // later: carNumber?: string; tripType?: string; etc.
 }
 
+export interface VanWithRoutes {
+  routes: TripRecord[];
+  van: { id: string; carNumber: string };
+  driver: { id: string; fullname: string };
+  createdAt: string;
+}
+
 export interface TripRecord {
   _id: string;
   vanId: string;
   title: string;
   startTime: string;
-  tripType: "morning" | "evening";
+  tripType: "pick" | "drop";
   tripDays: Record<string, boolean>;
   startPoint: Point;
   endPoint: Point;
-  vanDetails?: { carNumber: string };
-  driverDetails?: { fullname: string };
 }
 
 type GetAllRoutesParams = {
@@ -83,7 +88,7 @@ const initialState: RouteState = {
 
 // ✅ Get all routes → /Route/getRoutes?driverName=...&page=...&limit=...
 export const getAllRoutes = createAsyncThunk<
-  { routes: TripRecord[]; pagination: PaginationMeta; filters: RouteFilters },
+  { routes: VanWithRoutes[]; pagination: PaginationMeta; filters: RouteFilters },
   GetAllRoutesParams | undefined,
   { rejectValue: string }
 >("route/getAllRoutes", async (params = {}, { rejectWithValue }) => {
@@ -101,7 +106,12 @@ export const getAllRoutes = createAsyncThunk<
     });
 
     const { data, pagination } = response.data as {
-      data: TripRecord[];
+      data: Array<{
+        routes: TripRecord[];
+        van: { id: string; carNumber: string };
+        driver: { id: string; fullname: string };
+        createdAt: string;
+      }>;
       pagination?: PaginationMeta;
     };
 
@@ -111,7 +121,7 @@ export const getAllRoutes = createAsyncThunk<
         pagination || {
           page,
           limit,
-          total: data?.length || 0,
+          total: flattenedRoutes.length || 0,
         },
       filters: {
         driverName: driverName || "",
@@ -172,7 +182,7 @@ export const createRoute = createAsyncThunk<
     vanId: string;
     title: string;
     startTime: string;
-    tripType: "morning" | "evening";
+    tripType: "pick" | "prop";
     tripDays: TripDays;
     startPoint: Point;
     endPoint: Point;
