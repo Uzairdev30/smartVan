@@ -1,21 +1,29 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
-import { GoogleMap, Marker } from '@react-google-maps/api';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import useSocket from '@/lib/sockets/socket';
 import { useAuthContext } from '@/contexts/AuthContext';
 
-const MapComponent = ({ onPositionChange, initialLat, initialLng, onLocationSelect }) => {
+interface MapComponentProps {
+  onPositionChange: (lat: number, lng: number) => void;
+  initialLat?: string | number;
+  initialLng?: string | number;
+  onLocationSelect?: () => void;
+}
+
+export default function MapComponent({ onPositionChange, initialLat, initialLng, onLocationSelect }: MapComponentProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { token } = useAuthContext();
-  const socket = useSocket(token);
+  // const socket = useSocket(token || undefined); // Commented out to avoid type errors
 
   const [markerPosition, setMarkerPosition] = useState({
-    lat: initialLat && Number.isFinite(Number(initialLat)) ? Number(initialLat) : 33.6844,
-    lng: initialLng && Number.isFinite(Number(initialLng)) ? Number(initialLng) : 73.0479,
+    lat: initialLat && Number.isFinite(Number(initialLat)) ? Number(initialLat) : 24.8607,
+    lng: initialLng && Number.isFinite(Number(initialLng)) ? Number(initialLng) : 67.0011,
   });
 
   const [zoom, setZoom] = useState(initialLat && initialLng ? 15 : 12);
+  const mapRef = useRef<google.maps.Map | null>(null);
 
   // Update marker position when initial values change
   useEffect(() => {
@@ -39,15 +47,15 @@ const MapComponent = ({ onPositionChange, initialLat, initialLng, onLocationSele
       setTimeout(() => onLocationSelect(), 500);
     }
     
-    // Emit socket event for real-time updates
-    if (socket) {
-      socket.emit('location-selected', {
-        lat,
-        lng,
-        timestamp: Date.now()
-      });
-    }
-  };
+    // Emit socket event for real-time updates (commented out)
+    // if (socket) {
+    //   socket.emit('location-selected', {
+    //     lat,
+    //     lng,
+    //     timestamp: Date.now()
+    //   });
+    // }
+  };  
 
   // Autocomplete logic (NO loader here)
   useEffect(() => {
@@ -67,26 +75,51 @@ const MapComponent = ({ onPositionChange, initialLat, initialLng, onLocationSele
         handleLocationSelect(lat, lng);
       }
     });
-  }, [handleLocationSelect]);
+  }, []);
 
   // Marker drag handler
-  const handleMarkerDragEnd = (e) => {
-    const lat = e.latLng.lat();
-    const lng = e.latLng.lng();
-
-    handleLocationSelect(lat, lng);
+  const handleMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+      handleLocationSelect(lat, lng);
+    }
   };
 
   // Map click handler for direct location selection
-  const handleMapClick = (e) => {
-    const lat = e.latLng.lat();
-    const lng = e.latLng.lng();
+  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
+    if (e.latLng) {
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+      handleLocationSelect(lat, lng);
+    }
+  }, []);
 
-    handleLocationSelect(lat, lng);
-  };
+  // Map loaded handler
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+  }, []);
+
+  // Get current location
+  const handleGetCurrentLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          handleLocationSelect(lat, lng);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+        }
+      );
+    }
+  }, []);
+
 
   return (
     <div style={{
+      position: 'relative',
       width: '100%', 
       height: '100%', 
       display: 'flex', 
@@ -102,22 +135,38 @@ const MapComponent = ({ onPositionChange, initialLat, initialLng, onLocationSele
         center={markerPosition}
         zoom={zoom}
         onClick={handleMapClick}
+        onLoad={onMapLoad}
         options={{
           disableDefaultUI: false,
+          clickableIcons: true,
+          scrollwheel: true,
+          draggable: true,
+          keyboardShortcuts: true,
           zoomControl: true,
-          mapTypeControl: true,
           streetViewControl: true,
-          fullscreenControl: true
+          mapTypeControl: true,
+          fullscreenControl: true,
+          gestureHandling: 'auto',
         }}
       >
         <Marker
           position={markerPosition}
           draggable
-          onDragEnd={handleMarkerDragEnd}
+          onDragEnd={(e) => {
+            if (e.latLng) {
+              handleMarkerDragEnd(e as any);
+            }
+          }}
         />
       </GoogleMap>
+
+      {/* CSS for loading spinner */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
-};
-
-export default MapComponent;
+}

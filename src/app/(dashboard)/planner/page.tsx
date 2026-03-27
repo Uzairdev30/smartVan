@@ -14,7 +14,6 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
-  ListItemText,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -35,271 +34,156 @@ import {
   getAllRoutes,
   getRouteById,
   deleteRouteByAdmin,
-  type TripRecord,
   type RouteFilters,
 } from "@/store/reducers/route-slice";
 import { RouteFilter } from "./RouteFilter";
-import dayjs from "dayjs";
 import { paths } from "@/paths";
-
-// ─── Row Actions ─────────────────────────────────────────────
-
-const RouteActions = ({ row }: { row: TripRecord }) => {
-  const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const open = Boolean(anchorEl);
-
-  // Get delete loading state from Redux
-  const { deleteRouteLoading } = useSelector((state: RootState) => state.route);
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) =>
-    setAnchorEl(event.currentTarget);
-  const handleMenuClose = () => setAnchorEl(null);
-
-  const handleView = async () => {
-    try {
-      await dispatch(getRouteById(row._id)).unwrap();
-      router.push(`/planner/${row._id}`);
-    } catch (err) {
-      console.error("Failed to load route details before view", err);
-      // still navigate even if prefetch fails, optional:
-      router.push(`/planner/${row._id}`);
-    } finally {
-      handleMenuClose();
-    }
-  };
-
-  const handleEdit = () => {
-    router.push(`${paths.dashboard.planner}/edit/${row._id}`);
-    handleMenuClose();
-  };
-
-  const handleConfirmDelete = async () => {
-    try {
-      await dispatch(deleteRouteByAdmin({ routeId: row._id })).unwrap();
-      // Refresh the routes list
-      window.location.reload();
-    } catch (error) {
-      console.error("Failed to delete route:", error);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
-  };
-
-  return (
-    <>
-      <Stack direction="row" spacing={0} sx={{ justifyContent: "flex-end" }}>
-        <IconButton size="small" onClick={handleMenuOpen}>
-          <MoreVertIcon />
-        </IconButton>
-
-        <Menu
-          anchorEl={anchorEl}
-          open={open}
-          onClose={handleMenuClose}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
-        >
-          <MenuItem onClick={handleView}>
-            <ListItemIcon>
-              <EyeIcon size={18} />
-            </ListItemIcon>
-            <ListItemText primary="View" />
-          </MenuItem>
-          <MenuItem onClick={handleEdit}>
-            <ListItemIcon>
-              <EditIcon size={18} />
-            </ListItemIcon>
-            <ListItemText primary="Edit" />
-          </MenuItem>
-          <MenuItem onClick={() => { setDeleteDialogOpen(true); handleMenuClose(); }}>
-            <ListItemIcon>
-              <TrashIcon size={18} color="red" />
-            </ListItemIcon>
-            <ListItemText primary="Delete" />
-          </MenuItem>
-        </Menu>
-      </Stack>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleCancelDelete}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogContent sx={{ pb: 2 }}>
-          <Box sx={{ textAlign: 'center', py: 2 }}>
-            <Typography variant="body1" color="text.primary" fontSize="1.1rem">
-              Are you sure you want to delete this route "{row.title}"?
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelDelete} disabled={deleteRouteLoading}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleConfirmDelete} 
-            variant="contained" 
-            color="error"
-            disabled={deleteRouteLoading}
-            startIcon={deleteRouteLoading ? <CircularProgress size={16} /> : <TrashIcon size={18} />}
-          >
-            {deleteRouteLoading ? 'Deleting...' : 'Delete Route'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
-  );
-};
-
-// ─── Main Page ─────────────────────────────────────────
 
 export default function RoutePlannerPage(): React.JSX.Element {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { routes, loading, pagination } = useSelector(
+  const { routes, loading, pagination, deleteRouteLoading } = useSelector(
     (state: RootState) => state.route
   );
 
-  const [selectedTrips, setSelectedTrips] = React.useState<VanWithRoutes[]>([]);
   const [filters, setFilters] = React.useState<RouteFilters>({});
-  const [page, setPage] = React.useState<number>(1);
-  const [limit, setLimit] = React.useState<number>(10);
-  const [routesModalOpen, setRoutesModalOpen] = React.useState(false);
-  const [selectedVan, setSelectedVan] = React.useState<VanWithRoutes | null>(null);
+  const [page, setPage] = React.useState(1);
+  const [limit, setLimit] = React.useState(10);
 
-  // Fetch when page / limit / filters change
+  const [routesModalOpen, setRoutesModalOpen] = React.useState(false);
+  const [selectedVan, setSelectedVan] = React.useState<any>(null);
+
+  // 🔥 Modal Menu States
+  const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [selectedRoute, setSelectedRoute] = React.useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+
+  const isMenuOpen = Boolean(menuAnchorEl);
+
+  // ─── Fetch Data ───
   React.useEffect(() => {
-    dispatch(
-      getAllRoutes({
-        page,
-        limit,
-        ...filters, // currently driverName; easily extendable
-      })
-    );
+    dispatch(getAllRoutes({ page, limit, ...filters }));
   }, [dispatch, page, limit, filters]);
 
-  const columns: ColumnDef<VanWithRoutes>[] = [
-    // {
-    //   name: "Van ID",
-    //   width: "120px",
-    //   formatter: (row) => (
-    //     <Typography variant="body2">{row.vanId}</Typography>
-    //   ),
-    // },
+  // ─── Menu Handlers ───
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, route: any) => {
+    setMenuAnchorEl(e.currentTarget);
+    setSelectedRoute(route);
+  };
+
+  const handleMenuClose = () => setMenuAnchorEl(null);
+
+  const handleViewRoutes = (row: any) => {
+    setSelectedVan(row);
+    setRoutesModalOpen(true);
+  };
+
+  const handleViewRoute = async () => {
+    await dispatch(getRouteById(selectedRoute._id));
+    router.push(`/planner/${selectedRoute._id}`);
+    handleMenuClose();
+  };
+
+  const handleEditRoute = () => {
+    router.push(`${paths.dashboard.planner}/edit/${selectedRoute._id}`);
+    handleMenuClose();
+  };
+
+  const handleDeleteRoute = () => {
+    setDeleteDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleConfirmDelete = async () => {
+    await dispatch(deleteRouteByAdmin({ routeId: selectedRoute._id }));
+    setDeleteDialogOpen(false);
+  };
+
+  // ─── Columns ───
+  const columns: ColumnDef<any>[] = [
     {
       name: "S.No",
-      width: "120px",
+      width: "80px",
       formatter: (row, index) => (
-        <Typography variant="body2">
-          {(page - 1) * limit + index + 1}
-        </Typography>
+        <Typography>{(page - 1) * limit + index + 1}</Typography>
       ),
     },
     {
       name: "Car Number",
-      width: "130px",
-      formatter: (row) => (
-        <Typography variant="body2">
-          {row.van?.carNumber || "—"}
-        </Typography>
-      ),
+      formatter: (row) => row.van?.carNumber || "—",
     },
     {
-      name: "Driver",
-      width: "160px",
-      formatter: (row) => (
-        <Typography variant="body2">
-          {row.driver?.fullname || "—"}
-        </Typography>
-      ),
+      name: "Driver Name",
+      formatter: (row) => row.driver?.fullname || "—",
     },
     {
       name: "Start Time",
-      width: "120px",
-      formatter: (row) => (
-        <Typography variant="body2">
-          {/* {dayjs(row.startTime).format("hh:mm A")} */}
-          {row.startTime}
-        </Typography>
-      ),
+      formatter: (row) => {
+        // Get unique start times from all routes
+        const startTimes = row.routes?.map((route: any) => route.startTime).filter(Boolean) || [];
+        const uniqueTimes = [...new Set(startTimes)];
+        return uniqueTimes.join(", ") || "—";
+      },
     },
     {
       name: "Routes",
-      width: "150px",
+      width: "220px",
       formatter: (row) => (
         <Box sx={{ display: "flex", justifyContent: "flex-start", alignItems: "center", height: '100%', cursor: row.routes?.length ? 'pointer' : 'default' }}>
+
           {row.routes?.length ? (
             <Typography
               variant="body2"
               color="primary"
-              onClick={() => {
-                setSelectedVan(row);
-                setRoutesModalOpen(true);
-              }}
+              onClick={() => handleViewRoutes(row)}
             >
               View Routes
+              
             </Typography>
           ) : (
             <Typography color="text.secondary" variant="body2">
-              No assigned Route
+              No routes assigned
             </Typography>
           )}
         </Box>
+
       ),
     },
+
+    // ✅ Trip Days column (IMPORTANT)
     {
       name: "Trip Days",
-      width: "200px",
+      width: "220px",
       formatter: (row) => {
-        // Get all unique enabled days from all routes
-        const allDays = row.routes?.flatMap(route => 
-          Object.entries(route.tripDays || {})
-            .filter(([_, enabled]) => enabled === true && _ !== '_id')
-            .map(([day]) => day)
-        ) || [];
-        
+        const allDays =
+          row.routes?.flatMap((route: any) =>
+            Object.entries(route.tripDays || {})
+              .filter(([key, val]) => val === true && key !== "_id")
+              .map(([day]) => day)
+          ) || [];
+
         const uniqueDays = [...new Set(allDays)];
 
-        if (uniqueDays.length === 0) {
-          return <Typography variant="body2">—</Typography>;
+        if (!uniqueDays.length) {
+          return <Typography>—</Typography>;
         }
 
         return (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
             {uniqueDays.map((day) => (
               <Box
                 key={day}
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   px: 1,
                   py: 0.5,
                   borderRadius: 1,
-                  backgroundColor: '#e3f2fd',
-                  border: '1px solid #2196f3',
-                  transition: 'all 0.2s ease',
-                  minWidth: '45px',
+                  background: "#e3f2fd",
+                  border: "1px solid #2196f3",
                 }}
               >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontWeight: 600,
-                    color: '#1976d2',
-                    fontSize: '0.75rem',
-                    textTransform: 'capitalize',
-                  }}
-                >
-                  {day.charAt(0).toUpperCase() + day.slice(1, 3)}
+                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                  {day.slice(0, 3)}
                 </Typography>
               </Box>
             ))}
@@ -307,45 +191,16 @@ export default function RoutePlannerPage(): React.JSX.Element {
         );
       },
     },
-    // {
-    //   name: "Start Point",
-    //   width: "150px",
-    //   formatter: (row) => (
-    //     <Typography variant="body2">
-    //       {row.startPoint.lat}, {row.startPoint.long}
-    //     </Typography>
-    //   ),
-    // },
-    // {
-    //   name: "End Point",
-    //   width: "150px",
-    //   formatter: (row) => (
-    //     <Typography variant="body2">
-    //       {row.endPoint.lat}, {row.endPoint.long}
-    //     </Typography>
-    //   ),
-    // },
-    {
-      name: "Actions",
-      width: "100px",
-      align: "right",
-      formatter: (row) => <RouteActions row={row} />,
-    },
   ];
 
   return (
-    <Box sx={{ bgcolor: "var(--mui-palette-background-level1)", p: 3 }}>
+    <Box sx={{ p: 3 }}>
       <Stack spacing={3}>
         {/* Header */}
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-        >
+        <Stack direction="row" justifyContent="space-between">
           <Typography variant="h5">Routes</Typography>
           <Button
             variant="contained"
-            color="primary"
             onClick={() =>
               router.push(`${paths.dashboard.planner}/create`)
             }
@@ -354,103 +209,112 @@ export default function RoutePlannerPage(): React.JSX.Element {
           </Button>
         </Stack>
 
-        {/* Content */}
         <Card>
-          {/* Filters */}
-          <RouteFilter
-            filters={filters}
-            setFilters={(updater) => {
-              setPage(1); // reset page on filter change
-              setFilters((prev) =>
-                typeof updater === "function" ? updater(prev) : updater
-              );
-            }}
-          />
+          <RouteFilter filters={filters} setFilters={setFilters} />
 
-          {/* Table */}
-          <Box sx={{ overflowX: "auto" }}>
-            {loading ? (
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  p: 3,
-                }}
-              >
-                <CircularProgress />
-              </Box>
-            ) : routes && routes.length ? (
-              <DataTable<any>
-                columns={columns}
-                rows={routes}
-                selectable={false}
-                onSelectionChange={(_, rows) =>
-                  setSelectedTrips(rows as TripRecord[])
-                }
-              />
-            ) : (
-              <Box sx={{ p: 3 }}>
-                <Typography
-                  color="text.secondary"
-                  sx={{ textAlign: "center" }}
-                  variant="body2"
-                >
-                  No Data found
-                </Typography>
-              </Box>
-            )}
-          </Box>
+          {loading ? (
+            <Box sx={{ textAlign: "center", p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataTable columns={columns} rows={routes || []} />
+          )}
 
           <Divider />
 
-          {/* Pagination */}
           <CustomersPagination
-            count={pagination.total}
+            count={pagination?.total || 0}
             page={page - 1}
             rowsPerPage={limit}
-            onPaginationChange={(_, newPage) => {
-              setPage(newPage + 1);
-              setSelectedTrips([]);
-            }}
-            onRowsPerPageChange={(event) => {
-              const newLimit = parseInt(event.target.value, 10);
-              setLimit(newLimit);
+            onPaginationChange={(_, newPage) => setPage(newPage + 1)}
+            onRowsPerPageChange={(e) => {
+              setLimit(parseInt(e.target.value));
               setPage(1);
-              setSelectedTrips([]);
             }}
           />
         </Card>
 
-        {/* Route Details Modal */}
+        {/* ─── ROUTE DETAILS MODAL ─── */}
         <Dialog open={routesModalOpen} onClose={() => setRoutesModalOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ 
-            backgroundColor: '#191970', 
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
-          }}>
+          <DialogTitle sx={{ background: "#191970", color: "#fff" }}>
             Route Details
           </DialogTitle>
+
           <DialogContent>
-            {selectedVan ? (
-              <Stack spacing={1} mt={1}>
-                {selectedVan.routes?.map((route) => (
-                  <Box key={route._id} sx={{ display: "flex", justifyContent: "space-between", border: "1px solid #eee", borderRadius: 1, p: 1 }}>
-                    <Typography variant="body2">{route.title}</Typography>
-                    <Chip label={route.tripType} size="small" color="primary" />
-                  </Box>
-                ))}
-              </Stack>
-            ) : (
-              <Typography>No route details available</Typography>
-            )}
+            {selectedVan?.routes?.map((route: any) => (
+              <Box
+                key={route._id}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  border: "1px solid #eee",
+                  borderRadius: 1,
+                  p: 1,
+                  mt: 1,
+                }}
+              >
+                <Box>
+                  <Typography>{route.title}</Typography>
+                  <Chip label={route.tripType} size="small" />
+                </Box>
+
+                <IconButton onClick={(e) => handleMenuOpen(e, route)}>
+                  <MoreVertIcon />
+                </IconButton>
+              </Box>
+            ))}
           </DialogContent>
+
           <DialogActions>
             <Button onClick={() => setRoutesModalOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
 
+        {/* ─── MENU ─── */}
+        <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}>
+          <MenuItem onClick={handleViewRoute}>
+            <ListItemIcon>
+              <EyeIcon size={18} />
+            </ListItemIcon>
+            View
+          </MenuItem>
+
+          <MenuItem onClick={handleEditRoute}>
+            <ListItemIcon>
+              <EditIcon size={18} />
+            </ListItemIcon>
+            Edit
+          </MenuItem>
+
+          <MenuItem onClick={handleDeleteRoute}>
+            <ListItemIcon>
+              <TrashIcon size={18} color="red" />
+            </ListItemIcon>
+            Delete
+          </MenuItem>
+        </Menu>
+
+        {/* ─── DELETE DIALOG ─── */}
+        <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+          <DialogContent>
+            <Typography>Are you sure you want to delete this route?</Typography>
+          </DialogContent>
+
+          <DialogActions>
+            <Button onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="error"
+              variant="contained"
+              onClick={handleConfirmDelete}
+              disabled={deleteRouteLoading}
+            >
+              {deleteRouteLoading ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Stack>
     </Box>
   );
