@@ -20,7 +20,7 @@ import {
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ArrowLeft as ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
 import { House as HouseIcon } from "@phosphor-icons/react/dist/ssr/House";
 import { PencilSimple as EditIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
@@ -46,16 +46,27 @@ function DetailItem({ label, value }: { label: string; value: any }) {
   );
 }
 
-export default function PlannerDetailPage(): React.JSX.Element {
-  const params = useParams<{ plannerId: string }>();
-  const plannerId = params?.plannerId;
+export default function PlannerDetailPage({ params }: { params: { plannerId: string } }): React.JSX.Element {
   const router = useRouter();
+  const plannerId = params.plannerId;
+
+  console.log('🔴 Route Detail Page - plannerId:', plannerId);
+  console.log('🔴 Full params:', params);
 
   const dispatch = useDispatch<AppDispatch>();
   const { routeDetails, loading } = useSelector((s: RootState) => s.route);
 
+  console.log('🔴 Redux routeDetails:', routeDetails);
+  console.log('🔴 Loading state:', loading);
+
   React.useEffect(() => {
-    if (plannerId) dispatch(getRouteById(plannerId));
+    console.log('🔍 useEffect - About to dispatch with plannerId:', plannerId);
+    if (plannerId) {
+      console.log('✅ Dispatching getRouteById with ID:', plannerId);
+      dispatch(getRouteById(plannerId));
+    } else {
+      console.error('❌ plannerId is undefined or empty!');
+    }
   }, [plannerId, dispatch]);
 
   const tripDays =
@@ -165,7 +176,7 @@ export default function PlannerDetailPage(): React.JSX.Element {
                 <Typography variant="subtitle1" color="text.secondary">Trip Days</Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
                   {tripDays?.length > 0 ? (
-                    tripDays.map((day) => (
+                    tripDays.map((day: string) => (
                       <Box
                         key={day}
                         sx={{
@@ -210,15 +221,15 @@ export default function PlannerDetailPage(): React.JSX.Element {
           />
           <CardContent>
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={4}>
+              {/* <Grid item xs={12} sm={6} md={4}>
                 <Typography variant="subtitle1" color="text.secondary">Van ID</Typography>
                 <Typography variant="body1">{routeDetails.vanId || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              </Grid> */}
+              <Grid item xs={12} sm={6} md={6}>
                 <Typography variant="subtitle1" color="text.secondary">Car Number</Typography>
                 <Typography variant="body1">{routeDetails.carNumber || '—'}</Typography>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={6} md={6}>
                 <Typography variant="subtitle1" color="text.secondary">Driver Name</Typography>
                 <Typography variant="body1">{routeDetails.driverName || '—'}</Typography>
               </Grid>
@@ -265,7 +276,7 @@ export default function PlannerDetailPage(): React.JSX.Element {
         </Card>
 
         {/* System Information Card */}
-        <Card>
+        {/* <Card>
           <CardHeader 
             title="System Information" 
             // avatar={<UserIcon color="#1976d2" />}
@@ -290,7 +301,7 @@ export default function PlannerDetailPage(): React.JSX.Element {
               </Grid>
             </Grid>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Action Buttons */}
         {/* <Stack direction="row" justifyContent="flex-end" spacing={2}>

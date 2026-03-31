@@ -43,7 +43,7 @@ type FormValues = {
   driverId?: string;
   title: string;
   startTime: string;
-  tripType: "morning" | "evening";
+  tripType: "pick" | "drop";
   tripDays: Record<string, boolean>;
   startLat: string;
   startLong: string;
@@ -117,7 +117,7 @@ export default function UpdateRouteForm(): React.JSX.Element {
         driverId: routeDetails.driverId || "",
         title: routeDetails.title || "",
         startTime: routeDetails.startTime || "",
-        tripType: routeDetails.tripType || "morning",
+        tripType: routeDetails.tripType || "pick",
         tripDays: routeDetails.tripDays || {
           monday: false,
           tuesday: false,
@@ -265,8 +265,8 @@ export default function UpdateRouteForm(): React.JSX.Element {
                     <FormControl fullWidth error={!!errors.tripType}>
                       <InputLabel id="trip-type-label">Trip Type</InputLabel>
                       <Select labelId="trip-type-label" {...field} label="Trip Type">
-                        <MenuItem value="Pick">Pick</MenuItem>
-                        <MenuItem value="Drop">Drop</MenuItem>
+                        <MenuItem value="pick">Pick</MenuItem>
+                        <MenuItem value="drop">Drop</MenuItem>
                       </Select>
                       {errors.tripType && (
                         <FormHelperText>{errors.tripType.message}</FormHelperText>

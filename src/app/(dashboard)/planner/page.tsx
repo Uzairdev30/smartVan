@@ -80,13 +80,25 @@ export default function RoutePlannerPage(): React.JSX.Element {
   };
 
   const handleViewRoute = async () => {
-    await dispatch(getRouteById(selectedRoute._id));
-    router.push(`/planner/${selectedRoute._id}`);
+    console.log('🔵 handleViewRoute called');
+    console.log('🔵 selectedRoute:', selectedRoute);
+    console.log('🔵 selectedRoute._id:', selectedRoute?._id);
+    console.log('🔵 selectedRoute.id:', selectedRoute?.id);
+    
+    const routeId = selectedRoute?._id || selectedRoute?.id;
+    
+    if (routeId) {
+      await dispatch(getRouteById(routeId));
+      router.push(`/planner/${routeId}`);
+    } else {
+      console.error('❌ Route ID is undefined!');
+    }
     handleMenuClose();
   };
 
   const handleEditRoute = () => {
-    router.push(`${paths.dashboard.planner}/edit/${selectedRoute._id}`);
+    const routeId = selectedRoute?._id || selectedRoute?.id;
+    router.push(`${paths.dashboard.planner}/edit/${routeId}`);
     handleMenuClose();
   };
 
@@ -96,8 +108,18 @@ export default function RoutePlannerPage(): React.JSX.Element {
   };
 
   const handleConfirmDelete = async () => {
-    await dispatch(deleteRouteByAdmin({ routeId: selectedRoute._id }));
+    const routeId = selectedRoute?._id || selectedRoute?.id;
+    await dispatch(deleteRouteByAdmin({ routeId: routeId }));
     setDeleteDialogOpen(false);
+    
+    // Refresh the routes list
+    dispatch(getAllRoutes({ page, limit, ...filters }));
+    
+    // Close modal if it's open and navigate back to list
+    if (routesModalOpen) {
+      setRoutesModalOpen(false);
+      setSelectedVan(null);
+    }
   };
 
   // ─── Columns ───
@@ -118,12 +140,35 @@ export default function RoutePlannerPage(): React.JSX.Element {
       formatter: (row) => row.driver?.fullname || "—",
     },
     {
-      name: "Start Time",
+      name: "Time",
+      width: "200px",
       formatter: (row) => {
-        // Get unique start times from all routes
-        const startTimes = row.routes?.map((route: any) => route.startTime).filter(Boolean) || [];
-        const uniqueTimes = [...new Set(startTimes)];
-        return uniqueTimes.join(", ") || "—";
+        // Separate pick and drop times
+        const pickTime = row.routes?.find((r: any) => r.tripType === "pick")?.startTime;
+        const dropTime = row.routes?.find((r: any) => r.tripType === "drop")?.startTime;
+        
+        return (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            {pickTime ? (
+              <Typography variant="body2" sx={{ color: '#1976d2', fontWeight: 600 }}>
+                Pick: {pickTime}
+              </Typography>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                Pick: Not Assigned
+              </Typography>
+            )}
+            {dropTime ? (
+              <Typography variant="body2" sx={{ color: '#d32f2f', fontWeight: 600 }}>
+                Drop: {dropTime}
+              </Typography>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                Drop: Not Assigned
+              </Typography>
+            )}
+          </Box>
+        );
       },
     },
     {
@@ -289,7 +334,7 @@ export default function RoutePlannerPage(): React.JSX.Element {
 
           <MenuItem onClick={handleDeleteRoute}>
             <ListItemIcon>
-              <TrashIcon size={18} color="red" />
+              <TrashIcon size={18} />
             </ListItemIcon>
             Delete
           </MenuItem>
