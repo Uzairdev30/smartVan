@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect } from 'react';
 import RouterLink from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,6 +23,15 @@ import { grades, vans, genders, exceptions, parents, routes } from '@/utils/data
 import { addStudent } from '@/store/reducers/student-slice';
 import { AppDispatch, RootState } from '@/store';
 import { uploadImage } from "@/utils/uploadImage";
+import { config } from '@/config';
+
+export default function Page(): React.JSX.Element {
+  const router = useRouter();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Create Student`;
+  }, []);
 
 function fileToBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {

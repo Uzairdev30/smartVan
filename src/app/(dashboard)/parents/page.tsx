@@ -3,6 +3,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import {
   Box,
   Card,
@@ -18,7 +19,11 @@ import {
   Button,
   TextField,
   IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
 } from "@mui/material";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
 import { useDispatch, useSelector } from "react-redux";
@@ -30,16 +35,29 @@ import {
   type ComplaintFilters,
 } from "@/store/reducers/complaint-management";
 import { ComplaintFilter } from "./studentfilter";
-import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { FormControl, InputLabel, Select } from "@mui/material";
 import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
 import { useRouter } from "next/navigation";
+import { config } from "@/config";
 
 export default function ParentTicketPage(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Complaint List`;
+  }, []);
+
   const { complaints, loading, pagination } = useSelector(
     (state: RootState) => state.complaint
   );
+
+  // 🔥 Menu States
+  const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [selectedComplaint, setSelectedComplaint] = React.useState<any | null>(null);
+
+  const isMenuOpen = Boolean(menuAnchorEl);
 
   const [selectedTickets, setSelectedTickets] = React.useState<any[]>([]);
   const [filters, setFilters] = React.useState<ComplaintFilters>({});
@@ -65,9 +83,19 @@ export default function ParentTicketPage(): React.JSX.Element {
     );
   }, [dispatch, page, limit, filters]);
 
-  // Handle view details
-  const handleViewDetails = (complaint: any) => {
-    router.push(`/parents/tickets/${complaint._id}`);
+  // ─── Menu Handlers ───
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, complaint: any) => {
+    setMenuAnchorEl(e.currentTarget);
+    setSelectedComplaint(complaint);
+  };
+
+  const handleMenuClose = () => setMenuAnchorEl(null);
+
+  const handleViewDetails = () => {
+    if (selectedComplaint) {
+      router.push(`/parents/tickets/${selectedComplaint._id}`);
+    }
+    handleMenuClose();
   };
 
   const getStatusColor = (status: ComplaintStatus) => {
@@ -211,12 +239,8 @@ export default function ParentTicketPage(): React.JSX.Element {
       name: "Actions",
       width: "100px",
       formatter: (row) => (
-        <IconButton
-          size="small"
-          onClick={() => handleViewDetails(row)}
-          title="View Details"
-        >
-          <EyeIcon fontSize="var(--icon-fontSize-md)" />
+        <IconButton size="small" onClick={(e) => handleMenuOpen(e, row)}>
+          <MoreVertIcon />
         </IconButton>
       ),
     },
@@ -334,6 +358,16 @@ export default function ParentTicketPage(): React.JSX.Element {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* ─── MENU ─── */}
+        <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}>
+          <MenuItem onClick={handleViewDetails}>
+            <ListItemIcon>
+              <EyeIcon size={18} />
+            </ListItemIcon>
+            View
+          </MenuItem>
+        </Menu>
       </Stack>
     </Box>
   );

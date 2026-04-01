@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from 'react';
+import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
   Avatar,
@@ -33,13 +34,18 @@ import { getStudentDetail, verifyStudentByAdmin } from '@/store/reducers/student
 import { assignVanToStudent, getAllSchoolVans, removeVanFromStudent } from '@/store/reducers/van-slice';
 import { PropertyItem } from '@/components/core/property-item';
 import { PropertyList } from '@/components/core/property-list';
-
+import { config } from '@/config';
 
 export default function StudentDetailsPage(): React.JSX.Element {
   const router = useRouter();
   const params = useParams<{ studentId: string }>();
   const studentId = params.studentId;
   const dispatch = useDispatch<AppDispatch>();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Student Details`;
+  }, []);
   const { studentDetail, detailLoading } = useSelector((state: RootState) => state.student);
   const { vans } = useSelector((state: RootState) => state.van);
   const handleStatusToggle = async () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import {
   Box,
   Card,
@@ -22,10 +23,16 @@ import { AppDispatch, RootState } from "@/store";
 import { addAlert, clearAlertStatus } from "@/store/reducers/alert-slice";
 import { getAllSchoolVans } from "@/store/reducers/van-slice";
 import { useRouter } from "next/navigation";
+import { config } from "@/config";
 
 export default function AddAlertForm(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Create Alert`;
+  }, []);
 
   const { loading, success, error } = useSelector(
     (state: RootState) => state.alert

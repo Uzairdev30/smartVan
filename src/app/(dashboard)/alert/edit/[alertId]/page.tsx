@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import {
   Box,
   Card,
@@ -27,6 +28,11 @@ export default function EditAlertPage(): React.JSX.Element {
   const alertId = params?.alertId;
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Edit Alert`;
+  }, []);
 
   const { alertDetail, loading, success, error } = useSelector(
     (state: RootState) => state.alert

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect } from 'react';
 import RouterLink from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,10 +20,10 @@ import { z as zod } from 'zod';
 import { paths } from '@/paths';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { routes } from '@/utils/data';
-// import { addVan } from '@/store/reducers/van-slice';
 import { AppDispatch, RootState } from '@/store';
 import { uploadImage } from '@/utils/uploadImage';
 import { addVan } from '@/store/reducers/van-slice';
+import { config } from '@/config';
 
 /* ----------------------------- Local options ----------------------------- */
 const vehicleTypes = [
@@ -134,6 +135,11 @@ const defaultValues: Values = {
 export default function VanCreateForm(): React.JSX.Element {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Create Van`;
+  }, []);
   const loading = useSelector((state: RootState) => state.van.assignLoading);
 
   const { control, handleSubmit, formState: { errors }, setValue, watch } = useForm<Values>({

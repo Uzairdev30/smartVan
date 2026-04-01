@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import {
   Avatar,
   Box,
@@ -50,10 +51,12 @@ export default function PlannerDetailPage({ params }: { params: { plannerId: str
   const router = useRouter();
   const plannerId = params.plannerId;
 
-  console.log('🔴 Route Detail Page - plannerId:', plannerId);
-  console.log('🔴 Full params:', params);
-
   const dispatch = useDispatch<AppDispatch>();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Route Details`;
+  }, []);
   const { routeDetails, loading } = useSelector((s: RootState) => s.route);
 
   console.log('🔴 Redux routeDetails:', routeDetails);

@@ -3,6 +3,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -19,14 +20,15 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
+import { config } from "@/config";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
 import {
   CheckCircleIcon,
   MinusIcon,
 } from "@/components/icons";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
-import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import {
@@ -43,6 +45,11 @@ export default function Page(): React.JSX.Element {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
+  // Set document title
+    useEffect(() => {
+      document.title = `${config.site.name} | Student List`;
+    }, []);
+
   const { loading, students, pagination } = useSelector(
     (state: RootState) => state.student
   );
@@ -55,6 +62,12 @@ export default function Page(): React.JSX.Element {
   const [updatingStatus, setUpdatingStatus] = React.useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = React.useState(false);
   const [headerActionAnchor, setHeaderActionAnchor] = React.useState<null | HTMLElement>(null);
+
+  // 🔥 Menu States
+  const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [selectedStudent, setSelectedStudent] = React.useState<StudentRecord | null>(null);
+
+  const isMenuOpen = Boolean(menuAnchorEl);
 
   // Sync localStudents with students from Redux
   React.useEffect(() => {
@@ -71,6 +84,22 @@ export default function Page(): React.JSX.Element {
       })
     );
   }, [dispatch, page, limit, filters]);
+
+  // ─── Menu Handlers ───
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, student: StudentRecord) => {
+    setMenuAnchorEl(e.currentTarget);
+    setSelectedStudent(student);
+  };
+
+  const handleMenuClose = () => setMenuAnchorEl(null);
+
+  const handleView = async () => {
+    if (selectedStudent) {
+      await dispatch(getStudentDetail(selectedStudent.student.id)).unwrap();
+      router.push(`/student/${selectedStudent.student.id}`);
+    }
+    handleMenuClose();
+  };
 
   // Refresh function to reload student data
   const handleRefresh = React.useCallback(() => {
@@ -354,15 +383,10 @@ export default function Page(): React.JSX.Element {
       width: "100px",
       align: "right",
       formatter: (row) => {
-        const handleView = async () => {
-          await dispatch(getStudentDetail(row.student.id)).unwrap();
-          router.push(`/student/${row.student.id}`);
-        };
-
         return (
           <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
-            <IconButton size="small" onClick={handleView}>
-              <EyeIcon />
+            <IconButton size="small" onClick={(e) => handleMenuOpen(e, row)}>
+              <MoreVertIcon />
             </IconButton>
           </Stack>
         );
@@ -441,6 +465,16 @@ export default function Page(): React.JSX.Element {
             }}
           />
         </Card>
+
+        {/* ─── MENU ─── */}
+        <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}>
+          <MenuItem onClick={handleView}>
+            <ListItemIcon>
+              <EyeIcon size={18} />
+            </ListItemIcon>
+            View
+          </MenuItem>
+        </Menu>
       </Stack>
     </Box>
   );

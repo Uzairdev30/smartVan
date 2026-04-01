@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import {
   Box,
   Card,
@@ -38,10 +39,16 @@ import {
 } from "@/store/reducers/route-slice";
 import { RouteFilter } from "./RouteFilter";
 import { paths } from "@/paths";
+import { config } from "@/config";
 
 export default function RoutePlannerPage(): React.JSX.Element {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Route List`;
+  }, []);
 
   const { routes, loading, pagination, deleteRouteLoading } = useSelector(
     (state: RootState) => state.route

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import {
   Box,
   Card,
@@ -55,6 +56,11 @@ type FormValues = {
 export default function UpdateRouteForm(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Edit Route`;
+  }, []);
   const params = useParams();
   const { token } = useAuthContext();
   const socket = useSocket(token);

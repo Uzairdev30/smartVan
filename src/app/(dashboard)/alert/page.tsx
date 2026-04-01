@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import {
   Box,
   Card,
@@ -20,6 +21,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { config } from "@/config";
 import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
@@ -142,6 +144,11 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
 export default function AlertPage(): React.JSX.Element {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Alert List`;
+  }, []);
 
   const { loading, alerts, pagination } = useSelector(
     (state: RootState) => state.alert

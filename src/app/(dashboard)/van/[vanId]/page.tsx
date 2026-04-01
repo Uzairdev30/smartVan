@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import {
   Avatar,
   Box,
@@ -33,6 +34,7 @@ import { PencilSimple as EditIcon } from "@phosphor-icons/react/dist/ssr/PencilS
 import { getVanDetailById, bulkUpdateVanStatus, removeDriverFromVan } from "@/store/reducers/van-slice";
 import { getAllDrivers, assignDriverToVan } from "@/store/reducers/driver-slice";
 import Link from "next/link";
+import { config } from "@/config";
 
 // Reusable Detail Item
 function DetailItem({ label, value }: { label: string; value: any }) {
@@ -53,6 +55,11 @@ export default function VanDetailsPage() {
   const vanId = params?.vanId;
 
   const dispatch = useDispatch<AppDispatch>();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Van Details`;
+  }, []);
   const { selectedVan, selectedVanLoading } = useSelector(
     (state: RootState) => state.van
   );
@@ -191,10 +198,10 @@ export default function VanDetailsPage() {
             <CardHeader title="Van Information" />
             <CardContent>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={4}>
+                {/* <Grid item xs={12} sm={6} md={4}>
                   <Typography variant="subtitle1" color="text.secondary">Van ID</Typography>
                   <Typography variant="body1">{selectedVan.id || '—'}</Typography>
-                </Grid>
+                </Grid> */}
                 <Grid item xs={12} sm={6} md={4}>
                   <Typography variant="subtitle1" color="text.secondary">Vehicle Type</Typography>
                   <Typography variant="body1">{selectedVan.vehicleType || '—'}</Typography>

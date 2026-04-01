@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import {
   Box,
   Card,
@@ -24,6 +25,7 @@ import {
   IconButton,
 } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
+import { config } from '@/config';
 
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
@@ -52,6 +54,11 @@ type FormValues = {
 export default function AddRouteForm(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Create Route`;
+  }, []);
   const { token } = useAuthContext();
   const socket = useSocket(token);
 

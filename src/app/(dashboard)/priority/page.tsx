@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from 'react';
+import { useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -18,6 +19,7 @@ import type { ColumnDef } from '@/components/core/data-table';
 import Link from 'next/link';
 import useListApi from '@/hooks/useListApi';
 import { CircularProgress, LinearProgress } from '@mui/material';
+import { config } from '@/config';
 
 interface PageProps {
   searchParams: { email?: string; phone?: string; sortDir?: 'asc' | 'desc'; status?: string };
@@ -25,6 +27,11 @@ interface PageProps {
 
 export default function Page({ searchParams }: PageProps): React.JSX.Element {
   const { email, phone, sortDir, status } = searchParams;
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Complaint List`;
+  }, []);
   const {
     data,
     loading,

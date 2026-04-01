@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useEffect } from 'react';
 import RouterLink from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,6 +23,7 @@ import { routes } from '@/utils/data';
 import { AppDispatch, RootState } from '@/store';
 import { uploadImage } from '@/utils/uploadImage';
 import { getVanDetailById, updateVan } from '@/store/reducers/van-slice';
+import { config } from '@/config';
 
 /* ----------------------------- Local options ----------------------------- */
 const vehicleTypes = [
@@ -116,6 +118,11 @@ export default function VanEditForm(): React.JSX.Element {
   const vanId = params?.vanId;
 
   const dispatch = useDispatch<AppDispatch>();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Edit Van`;
+  }, []);
   const { selectedVan, selectedVanLoading } = useSelector(
     (state: RootState) => state.van
   );

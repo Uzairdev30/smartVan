@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import {
   Avatar,
   Box,
@@ -27,6 +28,7 @@ import { User as UserIcon } from "@phosphor-icons/react/dist/ssr/User";
 import { Bell as BellIcon } from "@phosphor-icons/react/dist/ssr/Bell";
 import { Calendar as CalendarIcon } from "@phosphor-icons/react/dist/ssr/Calendar";
 import { GraduationCap as SchoolIcon } from "@phosphor-icons/react/dist/ssr/GraduationCap";
+import { config } from "@/config";
 import { PencilSimple as EditIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
 
 import { paths } from "@/paths";
@@ -53,6 +55,11 @@ export default function AlertDetailPage(): React.JSX.Element {
   const router = useRouter();
 
   const dispatch = useDispatch<AppDispatch>();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Alert Details`;
+  }, []);
   const { alertDetail, detailLoading } = useSelector((s: RootState) => s.alert);
 
   React.useEffect(() => {

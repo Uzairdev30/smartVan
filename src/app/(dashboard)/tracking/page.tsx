@@ -8,9 +8,15 @@ import { getAllSchools } from '@/store/reducers/suadmin-slice';
 import { RootState, AppDispatch } from '@/store';
 import { TrackingView } from '@/components/tracking';
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
+import { config } from '@/config';
 
 export default function Page(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Live Tracking`;
+  }, []);
 
   const [status, setStatus] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);

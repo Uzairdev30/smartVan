@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -42,10 +43,16 @@ import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
 import { Pencil as EditIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { Trash as DeleteIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { CheckCircleIcon, MinusIcon } from "@/components/icons";
+import { config } from "@/config";
 
 export default function Page(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Vans List`;
+  }, []);
 
   const {
     vans,

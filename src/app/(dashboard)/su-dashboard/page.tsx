@@ -26,6 +26,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { config } from "@/config";
 import { StatsCard, Alert, TripCard } from "@/components/overview";
 import { getDashboardStats } from "@/store/reducers/dashboard-slice";
 import { getAllTrips } from "@/store/reducers/trip-slice";
@@ -37,6 +38,11 @@ import { Option } from "@/components/core/option";
 export default function Page(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  // Set document title
+  useEffect(() => {
+    document.title = `${config.site.name} | Dashboard`;
+  }, []);
 
   // Dashboard state
   const { stats, loading: statsLoading } = useSelector(

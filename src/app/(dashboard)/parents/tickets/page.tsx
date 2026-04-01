@@ -11,7 +11,11 @@ import {
   IconButton,
   Stack,
   Typography,
+  Menu,
+  MenuItem,
+  ListItemIcon,
 } from '@mui/material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Eye as EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { useRouter } from 'next/navigation';
@@ -29,10 +33,31 @@ export default function Page(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
   const { complaints, loading } = useSelector((state: RootState) => state.complaint);
 
+  // 🔥 Menu States
+  const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [selectedComplaint, setSelectedComplaint] = React.useState<any>(null);
+
+  const isMenuOpen = Boolean(menuAnchorEl);
+
   // Fetch complaints on component mount
   React.useEffect(() => {
     dispatch(getAllComplaints({ page: 1, limit: 10 }));
   }, [dispatch]);
+
+  // ─── Menu Handlers ───
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, complaint: any) => {
+    setMenuAnchorEl(e.currentTarget);
+    setSelectedComplaint(complaint);
+  };
+
+  const handleMenuClose = () => setMenuAnchorEl(null);
+
+  const handleView = () => {
+    if (selectedComplaint) {
+      router.push(`/parents/tickets/${selectedComplaint.id}`);
+    }
+    handleMenuClose();
+  };
 
   // Transform API data to table format
   const data = complaints.map((complaint) => ({
@@ -98,8 +123,8 @@ export default function Page(): React.JSX.Element {
       width: '100px',
       align: 'right',
       formatter: (row): React.JSX.Element => (
-        <IconButton onClick={() => router.push(`/parents/tickets/${row.id}`)} size="small">
-          <EyeIcon />
+        <IconButton size="small" onClick={(e) => handleMenuOpen(e, row)}>
+          <MoreVertIcon />
         </IconButton>
       ),
     },
@@ -140,6 +165,16 @@ export default function Page(): React.JSX.Element {
             onRowsPerPageChange={() => {}}
           />
         </Card>
+
+        {/* ─── MENU ─── */}
+        <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}>
+          <MenuItem onClick={handleView}>
+            <ListItemIcon>
+              <EyeIcon size={18} />
+            </ListItemIcon>
+            View
+          </MenuItem>
+        </Menu>
       </Stack>
     </Box>
   );
