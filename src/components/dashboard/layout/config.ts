@@ -57,36 +57,36 @@ export const layoutConfig = {
             { key: "dashboard", title: "Overview", href: paths.dashboard.sudashboard, icon: "house" },
           ],
         },
-         {
+        {
           key: "school",
           items: [
             { key: "school", title: "School Management", href: paths.dashboard.superadmin.school, icon: "building" },
           ],
         },
-         {
+        {
           key: "billing",
           items: [
             { key: "billing", title: "Billing & Subscription", href: paths.dashboard.superadmin.billing, icon: "invoice" },
           ],
         },
-         {
+        {
           key: "banner",
           items: [
             { key: "banner", title: "Banner Management", href: "/su-admin/banner/list", icon: "image" },
           ],
         },
-          {
-        key: "tracking",
-        items: [
-          { key: "tracking", title: "Live Tracking", href: paths.dashboard.tracking, icon: "truck" },
-        ],
-      },
-      {
-        key: "parent",
-        items: [
-          { key: "parent", title: "Complaint Management", href: paths.dashboard.parents.parents, icon: "file" },
-        ],
-      },
+        {
+          key: "tracking",
+          items: [
+            { key: "tracking", title: "Live Tracking", href: paths.dashboard.tracking, icon: "truck" },
+          ],
+        },
+        {
+          key: "parent",
+          items: [
+            { key: "parent", title: "Complaint Management", href: paths.dashboard.parents.parents, icon: "file" },
+          ],
+        },
       ];
     }
 
@@ -108,6 +108,12 @@ export const layoutConfig = {
         key: "student",
         items: [
           { key: "student", title: "Student Management", href: paths.dashboard.student, icon: "users" },
+        ],
+      },
+      {
+        key: "Driver",
+        items: [
+          { key: "driver", title: "Driver Management", href: paths.dashboard.driver?.list, icon: "user" },
         ],
       },
       {

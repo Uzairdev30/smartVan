@@ -28,6 +28,7 @@ import { SignOut as SignOutIcon } from '@phosphor-icons/react/dist/ssr/SignOut';
 import { TextAlignLeft as TextAlignLeftIcon } from '@phosphor-icons/react/dist/ssr/TextAlignLeft';
 import { Translate as TranslateIcon } from '@phosphor-icons/react/dist/ssr/Translate';
 import { Truck as TruckIcon } from '@phosphor-icons/react/dist/ssr/Truck';
+import { User as UserIcon } from '@phosphor-icons/react/dist/ssr/User';
 import { Upload as UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
 import { Users as UsersIcon } from '@phosphor-icons/react/dist/ssr/Users';
 import { WarningDiamond as WarningDiamondIcon } from '@phosphor-icons/react/dist/ssr/WarningDiamond';
@@ -72,6 +73,7 @@ export const icons = {
   receipt: ReceiptIcon,
   translate: TranslateIcon,
   truck: TruckIcon,
+  user: UserIcon,
   upload: UploadIcon,
   users: UsersIcon,
   van:Van,
