@@ -1,4 +1,4 @@
-// app/(dashboard)/driver/page.tsx
+// app/(dashboard)/su-admin/driver/page.tsx
 
 "use client";
 
@@ -13,7 +13,6 @@ import {
   Chip,
   IconButton,
   CircularProgress,
-  Button,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -23,17 +22,14 @@ import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
 import { config } from "@/config";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
-import { DriverFilter, type Filters } from "./driverfilter";
 import { useRouter } from "next/navigation";
-import { paths } from "@/paths";
-import { getAllDrivers, verifyDriver } from "@/services/driver.api";
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
 
   // Set document title
   useEffect(() => {
-    document.title = `${config.site.name} | Driver List`;
+    document.title = `${config.site.name} | Driver List (Super Admin)`;
   }, []);
 
   // 🔥 Menu States
@@ -42,68 +38,48 @@ export default function Page(): React.JSX.Element {
 
   const isMenuOpen = Boolean(menuAnchorEl);
 
-  // API State
-  const [drivers, setDrivers] = React.useState<any[]>([]);
+  // Mock data for drivers
+  const [drivers, setDrivers] = React.useState<any[]>([
+    {
+      id: "1",
+      name: "Muhammad Ahmed",
+      phone: "0300-1234567",
+      cnic: "42101-1234567-1",
+      licenseNumber: "DL-123456",
+      status: "active",
+      image: "/assets/avatar.png",
+      assignedVan: "Van #1",
+      school: "ABC School",
+    },
+    {
+      id: "2",
+      name: "Ali Khan",
+      phone: "0311-9876543",
+      cnic: "42201-7654321-9",
+      licenseNumber: "DL-654321",
+      status: "inactive",
+      image: null,
+      assignedVan: "Not Assigned",
+      school: "XYZ School",
+    },
+    {
+      id: "3",
+      name: "Hassan Raza",
+      phone: "0322-5555555",
+      cnic: "42301-5555555-5",
+      licenseNumber: "DL-555555",
+      status: "active",
+      image: "/assets/avatar-2.png",
+      assignedVan: "Van #3",
+      school: "PQR School",
+    },
+  ]);
+
   const [loading, setLoading] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const [limit, setLimit] = React.useState(10);
-  const [pagination, setPagination] = React.useState({ total: 0, page: 1, limit: 10, totalPages: 1 });
+  const [pagination, setPagination] = React.useState({ total: drivers.length });
   const [selectedDrivers, setSelectedDrivers] = React.useState<any[]>([]);
-  const [filters, setFilters] = React.useState<Filters>({});
-
-  // Fetch drivers from API
-  const fetchDrivers = async () => {
-    setLoading(true);
-    try {
-      const response = await getAllDrivers({ page, limit });
-      console.log('📦 Drivers API Response:', response);
-      console.log('📦 Drivers API Response data:', response?.data);
-      
-      // Check if response has nested data structure
-      let driversData = [];
-      let paginationData = { total: 0, page: 1, limit: 10, totalPages: 1 };
-      
-      if (response?.data) {
-        // If response has message and data fields (like your example)
-        if (response.data.data && Array.isArray(response.data.data)) {
-          driversData = response.data.data;
-          paginationData = response.data.pagination || paginationData;
-        }
-        // If response is directly an array
-        else if (Array.isArray(response.data)) {
-          driversData = response.data;
-        }
-        // If response has data property with array
-        else if (response.data.data) {
-          driversData = response.data.data;
-        }
-      }
-      
-      console.log('✅ Parsed Drivers Data:', driversData);
-      setDrivers(driversData);
-      setPagination(paginationData);
-    } catch (error) {
-      console.error('❌ Error fetching drivers:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDrivers();
-  }, [page, limit]);
-
-  // Sync drivers with filters (for future API integration)
-  React.useEffect(() => {
-    // Add API call here later to fetch drivers with filters
-    console.log('Fetching drivers with filters:', filters);
-  }, [filters]);
-
-  // Refresh function to reload driver data
-  const handleRefresh = React.useCallback(() => {
-    // Add API call here later to fetch drivers with filters
-    console.log('Refreshing drivers with filters:', filters);
-  }, [filters]);
 
   // ─── Menu Handlers ───
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, driver: any) => {
@@ -115,20 +91,9 @@ export default function Page(): React.JSX.Element {
 
   const handleView = () => {
     if (selectedDriver) {
-      router.push(`/driver/${selectedDriver.id}`);
+      router.push(`/su-admin/driver/${selectedDriver.id}`);
     }
     handleMenuClose();
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "success";
-      case "inactive":
-        return "error";
-      default:
-        return "default";
-    }
   };
 
   const columns: ColumnDef<any>[] = [
@@ -136,13 +101,13 @@ export default function Page(): React.JSX.Element {
       name: "Driver",
       width: "240px",
       formatter: (row): React.JSX.Element => {
-        const name = row?.fullname || "";
+        const name = row?.name || "";
         const image = row?.image;
 
         // Inline initials generator
         const initials = name
           .split(" ")
-          .map((w) => w[0]?.toUpperCase())
+          .map((w: string) => w[0]?.toUpperCase())
           .join("");
 
         return (
@@ -185,20 +150,47 @@ export default function Page(): React.JSX.Element {
       }
     },
     {
-      name: "Email",
-      width: "200px",
-      formatter: (row): React.JSX.Element => (
-        <Typography color="text.secondary" variant="body2">
-          {row?.email || "N/A"}
-        </Typography>
-      ),
-    },
-    {
       name: "Phone",
       width: "150px",
       formatter: (row): React.JSX.Element => (
         <Typography color="text.secondary" variant="body2">
-          {row?.phoneNo || "N/A"}
+          {row.phone}
+        </Typography>
+      ),
+    },
+    {
+      name: "CNIC",
+      width: "180px",
+      formatter: (row): React.JSX.Element => (
+        <Typography color="text.secondary" variant="body2">
+          {row.cnic}
+        </Typography>
+      ),
+    },
+    {
+      name: "License Number",
+      width: "150px",
+      formatter: (row): React.JSX.Element => (
+        <Typography color="text.secondary" variant="body2">
+          {row.licenseNumber}
+        </Typography>
+      ),
+    },
+    {
+      name: "Assigned Van",
+      width: "150px",
+      formatter: (row): React.JSX.Element => (
+        <Typography color="text.secondary" variant="body2">
+          {row.assignedVan || "N/A"}
+        </Typography>
+      ),
+    },
+    {
+      name: "School",
+      width: "180px",
+      formatter: (row): React.JSX.Element => (
+        <Typography color="text.secondary" variant="body2">
+          {row.school || "N/A"}
         </Typography>
       ),
     },
@@ -215,13 +207,9 @@ export default function Page(): React.JSX.Element {
             label: "Inactive",
             color: "error" as const,
           },
-          inActive: {
-            label: "Inactive",
-            color: "error" as const,
-          },
         } as const;
 
-        const statusKey = (row?.status?.trim() || "inactive") as keyof typeof mapping;
+        const statusKey = (row?.status?.trim()?.toLowerCase() || "inactive") as keyof typeof mapping;
         const { label, color } = mapping[statusKey] ?? mapping.inactive;
 
         return (
@@ -259,24 +247,11 @@ export default function Page(): React.JSX.Element {
           sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
         >
           <Box sx={{ flex: "1 1 auto" }}>
-            <Typography variant="h5">Driver Management</Typography>
+            <Typography variant="h5">Driver Management (Super Admin)</Typography>
           </Box>
         </Stack>
 
         <Card>
-          {/* Filters can be added here */}
-          <DriverFilter
-            filters={filters}
-            setFilters={(updater) => {
-              setPage(1); // reset page on filter change
-              setFilters((prev) =>
-                typeof updater === "function" ? updater(prev) : updater
-              );
-            }}
-            selected={selectedDrivers}
-            onRefresh={handleRefresh}
-          />
-
           <Box sx={{ overflowX: "auto" }}>
             {loading ? (
               <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>

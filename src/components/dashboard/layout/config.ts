@@ -76,6 +76,18 @@ export const layoutConfig = {
           ],
         },
         {
+          key: "driver",
+          items: [
+            { key: "driver", title: "Driver Management", href: paths.dashboard.driver?.list, icon: "user" },
+          ],
+        },
+        {
+          key: "van",
+          items: [
+            { key: "van", title: "Van Management", href: paths.dashboard.van, icon: "van" },
+          ],
+        },
+        {
           key: "tracking",
           items: [
             { key: "tracking", title: "Live Tracking", href: paths.dashboard.tracking, icon: "truck" },

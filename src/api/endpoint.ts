@@ -25,7 +25,8 @@ export const DRIVER = {
     GET_ALL_DRIVER: '/school/getDriversProfile',
     GET_ALL_DRIVER_OF_SCHOOL: `${BASE_URL}/school/getDriversProfile`,
     ASSIGN_DRIVER_TO_VAN: `${BASE_URL}/Admin/assignVanToDriver`,
-    REMOVE_DRIVER: `${BASE_URL}/van/removeDriverFromVan`
+    REMOVE_DRIVER: `${BASE_URL}/van/removeDriverFromVan`,
+    GET_DRIVER: `${BASE_URL}/van/GetAllDriversByAdmin`
 
 }
 export const VAN = {
