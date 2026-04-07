@@ -1,5 +1,3 @@
-// app/(dashboard)/driver/driverfilter.tsx
-
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -17,8 +15,6 @@ import {
   FilterPopover,
   useFilterContext,
 } from "@/components/core/filter-button";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/store";
 import { changeDriverStatus, removeDriverFromSchool } from "@/services/driver.api";
 
 export interface Filters {
@@ -39,7 +35,6 @@ export function DriverFilter({
   selected,
   onRefresh,
 }: DriverFilterProps): React.JSX.Element {
-  const dispatch = useDispatch<AppDispatch>();
   const [actionAnchor, setActionAnchor] = useState<null | HTMLElement>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
@@ -65,28 +60,13 @@ export function DriverFilter({
   const hasFilters = Object.values(filters || {}).some((val) => !!val);
 
   const handleBulkActivate = async () => {
-    console.log('🔍 Selected data structure for activate:', selected);
-    const ids = selected
-      ?.map((item: any) => item?._id || item?.id)
-      .filter(Boolean);
-    
-    console.log('Extracted IDs for activate:', ids);
-
+    const ids = selected?.map((item: any) => item?._id || item?.id).filter(Boolean);
     if (!ids.length) return;
-    
     try {
       setBulkUpdating(true);
       setActionAnchor(null);
-      
-      // Activate all selected drivers
-      for (const driverId of ids) {
-        await changeDriverStatus({ id: driverId, status: 'Active' });
-      }
-      
-      console.log('✅ Successfully activated drivers:', ids);
-      if (onRefresh) {
-        onRefresh();
-      }
+      await changeDriverStatus({ driverIds: ids, status: "active" });
+      if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Failed to bulk activate drivers:", error);
     } finally {
@@ -95,28 +75,13 @@ export function DriverFilter({
   };
 
   const handleBulkDeactivate = async () => {
-    console.log('🔍 Selected data structure for deactivate:', selected);
-    const ids = selected
-      ?.map((item: any) => item?._id || item?.id)
-      .filter(Boolean);
-    
-    console.log('Extracted IDs for deactivate:', ids);
-
+    const ids = selected?.map((item: any) => item?._id || item?.id).filter(Boolean);
     if (!ids.length) return;
-    
     try {
       setBulkUpdating(true);
       setActionAnchor(null);
-      
-      // Deactivate all selected drivers
-      for (const driverId of ids) {
-        await changeDriverStatus({ id: driverId, status: 'inActive' });
-      }
-      
-      console.log('✅ Successfully deactivated drivers:', ids);
-      if (onRefresh) {
-        onRefresh();
-      }
+      await changeDriverStatus({ driverIds: ids, status: "inActive" });
+      if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Failed to bulk deactivate drivers:", error);
     } finally {
@@ -125,34 +90,21 @@ export function DriverFilter({
   };
 
   const handleBulkDelete = async () => {
-    console.log('Selected data structure for delete:', selected);
-    const ids = selected
-      ?.map((item: any) => item?._id || item?.id)
-      .filter(Boolean);
-    
-    console.log('Extracted IDs for delete:', ids);
-
+    const ids = selected?.map((item: any) => item?._id || item?.id).filter(Boolean);
     if (!ids.length) {
-      alert('Please select at least one driver to delete');
+      alert("Please select at least one driver to delete");
       return;
     }
-
-    const confirmMessage = ids.length === 1 
-      ? 'Are you sure you want to delete this driver?' 
-      : `Are you sure you want to delete ${ids.length} drivers?`;
-
+    const confirmMessage =
+      ids.length === 1
+        ? "Are you sure you want to delete this driver?"
+        : `Are you sure you want to delete ${ids.length} drivers?`;
     if (window.confirm(confirmMessage)) {
       try {
         setBulkUpdating(true);
         setActionAnchor(null);
-        
-        // Remove drivers from school
         await removeDriverFromSchool({ driverIds: ids });
-        
-        console.log('✅ Successfully deleted drivers:', ids);
-        if (onRefresh) {
-          onRefresh();
-        }
+        if (onRefresh) onRefresh();
       } catch (error) {
         console.error("Failed to bulk delete drivers:", error);
       } finally {
@@ -164,7 +116,6 @@ export function DriverFilter({
   return (
     <div>
       <Divider />
-
       <Stack
         direction="row"
         spacing={2}
@@ -175,7 +126,6 @@ export function DriverFilter({
           spacing={2}
           sx={{ alignItems: "center", flex: "1 1 auto", flexWrap: "wrap" }}
         >
-          {/* 🔍 Driver Name */}
           <FilterButton
             displayValue={filters?.driverName || ""}
             label="Driver Name"
@@ -187,7 +137,6 @@ export function DriverFilter({
             value={filters?.driverName || ""}
           />
 
-          {/* 🔍 Status */}
           <FilterButton
             displayValue={filters?.status || ""}
             label="Status"
@@ -199,9 +148,9 @@ export function DriverFilter({
             value={filters?.status || ""}
           />
 
-          {hasFilters ? (
+          {hasFilters && (
             <Button onClick={handleClearFilters}>Clear filters</Button>
-          ) : null}
+          )}
         </Stack>
 
         {selected.length > 0 && (
@@ -214,7 +163,7 @@ export function DriverFilter({
               onClick={(e) => setActionAnchor(e.currentTarget)}
               disabled={bulkUpdating}
             >
-              Action
+              {bulkUpdating ? "Processing..." : "Action"}
             </Button>
           </>
         )}
@@ -223,34 +172,26 @@ export function DriverFilter({
           anchorEl={actionAnchor}
           open={Boolean(actionAnchor)}
           onClose={() => setActionAnchor(null)}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'right',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
         >
           <MenuItem onClick={handleBulkActivate}>
             <ListItemIcon>
               <CheckCircleIcon color="var(--mui-palette-success-main)" />
             </ListItemIcon>
-            <ListItemText>Activate All</ListItemText>
+            <ListItemText>Activate</ListItemText>
           </MenuItem>
-          
           <MenuItem onClick={handleBulkDeactivate}>
             <ListItemIcon>
               <MinusIcon color="var(--mui-palette-error-main)" />
             </ListItemIcon>
-            <ListItemText>Inactive All</ListItemText>
+            <ListItemText>InActive</ListItemText>
           </MenuItem>
-          
           <MenuItem onClick={handleBulkDelete}>
             <ListItemIcon>
               <Trash weight="fill" />
             </ListItemIcon>
-            <ListItemText>Delete All</ListItemText>
+            <ListItemText>Delete</ListItemText>
           </MenuItem>
         </Menu>
       </Stack>
@@ -276,6 +217,7 @@ function GenericFilterPopover({ field }: { field: string }) {
     >
       <FormControl>
         <OutlinedInput
+          autoFocus
           onChange={(e) => setValue(e.target.value)}
           onKeyUp={(e) => e.key === "Enter" && onApply(value)}
           value={value}

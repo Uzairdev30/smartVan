@@ -1,4 +1,3 @@
-// app/(dashboard)/driver/page.tsx
 "use client";
 
 import * as React from "react";
@@ -17,7 +16,6 @@ import {
   MenuItem,
   ListItemIcon,
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
 } from "@mui/material";
@@ -62,38 +60,53 @@ export default function Page(): React.JSX.Element {
   });
   const [selectedDrivers, setSelectedDrivers] = React.useState<any[]>([]);
   const [filters, setFilters] = React.useState<Filters>({});
-  const [updatingStatus, setUpdatingStatus] = React.useState<string | null>(
-    null
-  );
+  const [updatingStatus, setUpdatingStatus] = React.useState<string | null>(null);
 
- const fetchDrivers = async () => {
-  setLoading(true);
-  try {
-    const res = await getAllDrivers({ page, limit, ...filters });
-    setDrivers(res?.data?.data || []);
-    setPagination(
-      res?.data?.pagination || {
-        total: 0,
-        page,
-        limit,
-        totalPages: 1,
-      }
-    );
-  } catch (err) {
-    console.error("Failed to fetch drivers:", err);
-  } finally {
-    setLoading(false);
-  }
-};
+  const fetchDrivers = async () => {
+    setLoading(true);
+    try {
+      const res = await getAllDrivers({ page, limit });
+      setDrivers(res?.data?.data || []);
+      setPagination(
+        res?.data?.pagination || {
+          total: 0,
+          page,
+          limit,
+          totalPages: 1,
+        }
+      );
+    } catch (err) {
+      console.error("Failed to fetch drivers:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   React.useEffect(() => {
     fetchDrivers();
-  }, [page, limit, filters]);
+  }, [page, limit]);
 
-  const handleMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    driver: any
-  ) => {
+  // Client-side filtering for driverName and status
+  const filteredDrivers = React.useMemo(() => {
+    let result = drivers;
+    if (filters.driverName?.trim()) {
+      result = result.filter((d) =>
+        d?.fullname
+          ?.toLowerCase()
+          .includes(filters.driverName!.trim().toLowerCase())
+      );
+    }
+    if (filters.status?.trim()) {
+      result = result.filter((d) =>
+        d?.status
+          ?.toLowerCase()
+          .includes(filters.status!.trim().toLowerCase())
+      );
+    }
+    return result;
+  }, [drivers, filters]);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, driver: any) => {
     setMenuAnchorEl(event.currentTarget);
     setSelectedDriver(driver);
   };
@@ -120,18 +133,18 @@ export default function Page(): React.JSX.Element {
   };
 
   const handleDeleteConfirm = async () => {
-  if (!selectedDriver) return;
-  try {
-    await removeDriverFromSchool({
-      driverIds: [selectedDriver?._id || selectedDriver?.id],
-    });
-    setDeleteDialogOpen(false);
-    setSelectedDriver(null);
-    fetchDrivers();
-  } catch (err) {
-    console.error("Delete failed:", err);
-  }
-};
+    if (!selectedDriver) return;
+    try {
+      await removeDriverFromSchool({
+        driverIds: [selectedDriver?._id || selectedDriver?.id],
+      });
+      setDeleteDialogOpen(false);
+      setSelectedDriver(null);
+      fetchDrivers();
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
@@ -145,21 +158,18 @@ export default function Page(): React.JSX.Element {
     const currentStatus = (driver?.status || "inActive").toLowerCase();
     const newStatus = currentStatus === "active" ? "inActive" : "active";
 
-    // Optimistic update
     setDrivers((prev) =>
       prev.map((d) =>
-        (d?._id || d?.id) === driverId
-          ? { ...d, status: newStatus }
-          : d
+        (d?._id || d?.id) === driverId ? { ...d, status: newStatus } : d
       )
     );
 
     try {
-      await changeDriverStatus({ id: driverId, status: newStatus });
+      await changeDriverStatus({ driverIds: [driverId], status: newStatus });
       fetchDrivers();
     } catch (err) {
       console.error("Status update failed:", err);
-      fetchDrivers(); // revert on failure
+      fetchDrivers();
     } finally {
       setUpdatingStatus(null);
     }
@@ -222,7 +232,6 @@ export default function Page(): React.JSX.Element {
         const driverId = row?._id || row?.id;
         const rawStatus = (row?.status || "inActive").toLowerCase();
         const isActive = rawStatus === "active";
-
         return (
           <Chip
             icon={
@@ -283,7 +292,6 @@ export default function Page(): React.JSX.Element {
           <DriverFilter
             filters={filters}
             setFilters={(updater) => {
-              setPage(1);
               setFilters((prev) =>
                 typeof updater === "function" ? updater(prev) : updater
               );
@@ -297,10 +305,10 @@ export default function Page(): React.JSX.Element {
               <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
                 <CircularProgress />
               </Box>
-            ) : drivers?.length ? (
+            ) : filteredDrivers?.length ? (
               <DataTable<any>
                 columns={columns}
-                rows={drivers}
+                rows={filteredDrivers}
                 selectable
                 onSelectionChange={(_, rows) =>
                   setSelectedDrivers(rows as any[])
@@ -338,7 +346,6 @@ export default function Page(): React.JSX.Element {
           />
         </Card>
 
-        {/* Row Actions Menu */}
         <Menu
           anchorEl={menuAnchorEl}
           open={isMenuOpen}
@@ -360,7 +367,6 @@ export default function Page(): React.JSX.Element {
           </MenuItem>
         </Menu>
 
-        {/* Delete Confirmation Dialog */}
         <Dialog
           open={deleteDialogOpen}
           onClose={handleDeleteCancel}
@@ -369,22 +375,14 @@ export default function Page(): React.JSX.Element {
         >
           <DialogContent sx={{ pb: 2 }}>
             <Box sx={{ textAlign: "center", py: 2 }}>
-              <Typography
-                variant="body1"
-                color="text.primary"
-                fontSize="1.1rem"
-              >
+              <Typography variant="body1" color="text.primary" fontSize="1.1rem">
                 Are you sure you want to remove this driver?
               </Typography>
             </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleDeleteCancel}>Cancel</Button>
-            <Button
-              onClick={handleDeleteConfirm}
-              variant="contained"
-              color="error"
-            >
+            <Button onClick={handleDeleteConfirm} variant="contained" color="error">
               Remove Driver
             </Button>
           </DialogActions>
