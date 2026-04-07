@@ -20,15 +20,34 @@ const axiosInstance = axios.create({
 // intercept request
 axiosInstance.interceptors.request.use(
   (config) => {
-    const rawPersistData = localStorage.getItem("custom-auth-token");
-    const persistData: any = rawPersistData
-      //? deepParseJson(rawPersistData)
-      //: null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const accessToken = persistData;
+    // Try multiple possible token keys
+    const tokenKeys = ['token', 'custom-auth-token', 'authToken', 'accessToken'];
+    let accessToken = null;
+    
+    for (const key of tokenKeys) {
+      const rawToken = localStorage.getItem(key);
+      if (rawToken) {
+        try {
+          // Try to parse as JSON
+          const parsed = JSON.parse(rawToken);
+          if (typeof parsed === 'string') {
+            accessToken = parsed;
+          } else if (parsed.accessToken || parsed.token) {
+            accessToken = parsed.accessToken || parsed.token;
+          }
+        } catch {
+          // If not JSON, use as-is
+          accessToken = rawToken;
+        }
+        break;
+      }
+    }
     
     if (accessToken) {
       config.headers[REQUEST_HEADER_AUTH_KEY] = `${TOKEN_TYPE}${accessToken}`;
+      console.log('✅ Token attached from localStorage');
+    } else {
+      console.warn('⚠️ No access token found in localStorage');
     }
 
     return config;

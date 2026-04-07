@@ -31,46 +31,58 @@ import { User as UserIcon } from "@phosphor-icons/react/dist/ssr/User";
 import { useRouter, useParams } from "next/navigation";
 import { config } from "@/config";
 import { paths } from "@/paths";
+import { getDriverById } from "@/services/driver.api";
 
 export default function DriverDetailPage(): React.JSX.Element {
   const router = useRouter();
-  const params = useParams();
-  const driverId = params.driverId as string;
+  const params = useParams<{ driverId: string }>();
+  
+  // Multiple ways to get driverId
+  const driverId = params?.driverId || 
+                   (typeof window !== 'undefined' ? window.location.pathname.split('/').pop() : null);
+
+  console.log('📦 Driver ID from useParams:', params?.driverId);
+  console.log('📦 Driver ID from URL:', driverId);
+  console.log('📦 All params:', params);
+  console.log('📦 URL pathname:', typeof window !== 'undefined' ? window.location.pathname : 'N/A');
 
   // Set document title
   useEffect(() => {
     document.title = `${config.site.name} | Driver Details`;
   }, []);
 
-  // Mock driver data (replace with API call later)
-  const driver = {
-    id: driverId,
-    fullname: "Muhammad Ahmed",
-    email: "muhammad.ahmed@email.com",
-    phone: "0300-1234567",
-    cnic: "42101-1234567-1",
-    licenseNumber: "DL-123456",
-    licenseExpiry: "2025-12-31",
-    address: "House #123, Street 45, Gulshan-e-Iqbal, Karachi",
-    status: "active",
-    image: "/assets/avatar.png",
-    assignedVan: {
-      carNumber: "ABC-123",
-      model: "Suzuki Bolan",
-      year: "2022",
-      color: "White"
-    },
-    route: {
-      name: "Route A - North Nazimabad",
-      stops: 15,
-      students: 25
-    },
-    emergencyContact: {
-      name: "Ahmed Khan",
-      relationship: "Brother",
-      phone: "0311-9876543"
+  // API State
+  const [driver, setDriver] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(false);
+
+  // Fetch driver details from API
+  useEffect(() => {
+    console.log('🔄 useEffect triggered, driverId:', driverId);
+    
+    if (!driverId || driverId === 'driver') {
+      console.error('❌ No driverId found in URL params');
+      return;
     }
-  };
+
+    const fetchDriver = async () => {
+      setLoading(true);
+      try {
+        console.log('📞 Calling getDriverById with:', driverId);
+        const response = await getDriverById(driverId);
+        console.log('📦 Driver Detail API Response:', response);
+        
+        if (response?.data) {
+          setDriver(response.data.data || response.data);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching driver details:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDriver();
+  }, [driverId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -92,146 +104,159 @@ export default function DriverDetailPage(): React.JSX.Element {
         Back to Drivers
       </Button>
 
-      <Stack spacing={3} mt={3}>
-        {/* Main Driver Card */}
-        <Card sx={{ p: 2 }}>
-          <CardContent>
-            {/* Top: Avatar + Driver Info + Status */}
-            <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-              {/* Left: Avatar + Info */}
-              <Box display="flex" alignItems="center" gap={2}>
-                <Avatar
-                  src={driver?.image || undefined}
-                  sx={{ width: 56, height: 56 }}
-                >
-                  {!driver?.image && driver?.fullname?.split(' ').map((w) => w[0]?.toUpperCase()).join('')}
-                </Avatar>
-                <Box>
-                  <Typography variant="h6">{driver?.fullname || 'Driver Name N/A'}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    License: {driver?.licenseNumber || 'N/A'} | Phone: {driver?.phone || 'N/A'}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Email: {driver?.email || 'N/A'}
-                  </Typography>
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : driver ? (
+        <Stack spacing={3} mt={3}>
+          {/* Main Driver Card */}
+          <Card sx={{ p: 2 }}>
+            <CardContent>
+              {/* Top: Avatar + Driver Info + Status */}
+              <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                {/* Left: Avatar + Info */}
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Avatar
+                    src={driver?.image || undefined}
+                    sx={{ width: 56, height: 56 }}
+                  >
+                    {!driver?.image && driver?.fullname?.split(' ').map((w) => w[0]?.toUpperCase()).join('')}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h6">{driver?.fullname || 'Driver Name N/A'}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      License: {driver?.licenseNumber || 'N/A'} | Phone: {driver?.phoneNo || 'N/A'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Email: {driver?.email || 'N/A'}
+                    </Typography>
+                  </Box>
                 </Box>
+
+                {/* Right: Status Display + Actions */}
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip
+                    label={driver?.status?.charAt(0).toUpperCase() + driver?.status?.slice(1) || 'Inactive'}
+                    color={getStatusColor(driver?.status) as any}
+                    size="small"
+                  />
+                </Stack>
               </Box>
+            </CardContent>
+          </Card>
 
-              {/* Right: Status Display + Actions */}
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Chip
-                  label={driver?.status?.charAt(0).toUpperCase() + driver?.status?.slice(1) || 'Inactive'}
-                  color={getStatusColor(driver?.status) as any}
-                  size="small"
-                />
-              </Stack>
-            </Box>
-          </CardContent>
-        </Card>
+          {/* Driver Information Card */}
+          <Card>
+            <CardHeader title="Driver Information" />
+            <CardContent>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle1" color="text.secondary">Full Name</Typography>
+                  <Typography variant="body1">{driver?.fullname || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle1" color="text.secondary">CNIC</Typography>
+                  <Typography variant="body1">{driver?.cnic || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle1" color="text.secondary">License Number</Typography>
+                  <Typography variant="body1">{driver?.licenseNumber || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle1" color="text.secondary">License Expiry</Typography>
+                  <Typography variant="body1">{driver?.licenseExpiry || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle1" color="text.secondary">Phone</Typography>
+                  <Typography variant="body1">{driver?.phone || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle1" color="text.secondary">Email</Typography>
+                  <Typography variant="body1">{driver?.email || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" color="text.secondary">Address</Typography>
+                  <Typography variant="body1">{driver?.address || '—'}</Typography>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
 
-        {/* Driver Information Card */}
-        <Card>
-          <CardHeader title="Driver Information" />
-          <CardContent>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Full Name</Typography>
-                <Typography variant="body1">{driver?.fullname || '—'}</Typography>
+          {/* Vehicle & Route Assignment Card */}
+          <Card>
+            <CardHeader 
+              avatar={<Avatar><CarIcon /></Avatar>}
+              title="Vehicle & Route Assignment" 
+            />
+            <CardContent>
+              <Grid container spacing={3}>
+                {/* Van Details */}
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle1" color="text.secondary">Car Number</Typography>
+                  <Typography variant="body1">{driver?.assignedVan?.carNumber || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle1" color="text.secondary">Model</Typography>
+                  <Typography variant="body1">{driver?.assignedVan?.model || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle1" color="text.secondary">Year</Typography>
+                  <Typography variant="body1">{driver?.assignedVan?.year || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle1" color="text.secondary">Color</Typography>
+                  <Typography variant="body1">{driver?.assignedVan?.color || '—'}</Typography>
+                </Grid>
+                
+                <Divider sx={{ my: 2, gridColumn: '1 / -1' }} />
+                
+                {/* Route Details */}
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle1" color="text.secondary">Route Name</Typography>
+                  <Typography variant="body1">{driver?.route?.name || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle1" color="text.secondary">Total Stops</Typography>
+                  <Typography variant="body1">{driver?.route?.stops || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle1" color="text.secondary">Total Students</Typography>
+                  <Typography variant="body1">{driver?.route?.students || '—'}</Typography>
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">CNIC</Typography>
-                <Typography variant="body1">{driver?.cnic || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">License Number</Typography>
-                <Typography variant="body1">{driver?.licenseNumber || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">License Expiry</Typography>
-                <Typography variant="body1">{driver?.licenseExpiry || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Phone</Typography>
-                <Typography variant="body1">{driver?.phone || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Email</Typography>
-                <Typography variant="body1">{driver?.email || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="subtitle1" color="text.secondary">Address</Typography>
-                <Typography variant="body1">{driver?.address || '—'}</Typography>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Vehicle & Route Assignment Card */}
-        <Card>
-          <CardHeader 
-            avatar={<Avatar><CarIcon /></Avatar>}
-            title="Vehicle & Route Assignment" 
-          />
-          <CardContent>
-            <Grid container spacing={3}>
-              {/* Van Details */}
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Car Number</Typography>
-                <Typography variant="body1">{driver?.assignedVan?.carNumber || '—'}</Typography>
+          {/* Emergency Contact Card */}
+          <Card>
+            <CardHeader title="Emergency Contact" />
+            <CardContent>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle1" color="text.secondary">Contact Name</Typography>
+                  <Typography variant="body1">{driver?.emergencyContact?.name || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle1" color="text.secondary">Relationship</Typography>
+                  <Typography variant="body1">{driver?.emergencyContact?.relationship || '—'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle1" color="text.secondary">Phone</Typography>
+                  <Typography variant="body1">{driver?.emergencyContact?.phone || '—'}</Typography>
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Model</Typography>
-                <Typography variant="body1">{driver?.assignedVan?.model || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Year</Typography>
-                <Typography variant="body1">{driver?.assignedVan?.year || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Color</Typography>
-                <Typography variant="body1">{driver?.assignedVan?.color || '—'}</Typography>
-              </Grid>
-              
-              <Divider sx={{ my: 2, gridColumn: '1 / -1' }} />
-              
-              {/* Route Details */}
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Route Name</Typography>
-                <Typography variant="body1">{driver?.route?.name || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Total Stops</Typography>
-                <Typography variant="body1">{driver?.route?.stops || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Total Students</Typography>
-                <Typography variant="body1">{driver?.route?.students || '—'}</Typography>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-
-        {/* Emergency Contact Card */}
-        <Card>
-          <CardHeader title="Emergency Contact" />
-          <CardContent>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Contact Name</Typography>
-                <Typography variant="body1">{driver?.emergencyContact?.name || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Relationship</Typography>
-                <Typography variant="body1">{driver?.emergencyContact?.relationship || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Phone</Typography>
-                <Typography variant="body1">{driver?.emergencyContact?.phone || '—'}</Typography>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-      </Stack>
+            </CardContent>
+          </Card>
+        </Stack>
+      ) : (
+        <Box sx={{ textAlign: 'center', mt: 4 }}>
+          <Typography variant="h6">Driver not found</Typography>
+          <Button variant="outlined" onClick={() => router.push('/driver')} sx={{ mt: 2 }}>
+            Back to All Drivers
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 }

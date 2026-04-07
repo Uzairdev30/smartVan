@@ -17,16 +17,21 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
+import { Trash } from "@phosphor-icons/react/dist/ssr";
 import { config } from "@/config";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
 import { DriverFilter, type Filters } from "./driverfilter";
 import { useRouter } from "next/navigation";
 import { paths } from "@/paths";
-import { getAllDrivers, verifyDriver } from "@/services/driver.api";
+import { getAllDrivers, changeDriverStatus, removeDriverFromSchool } from "@/services/driver.api";
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
@@ -39,6 +44,7 @@ export default function Page(): React.JSX.Element {
   // 🔥 Menu States
   const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
   const [selectedDriver, setSelectedDriver] = React.useState<any | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
   const isMenuOpen = Boolean(menuAnchorEl);
 
@@ -55,7 +61,20 @@ export default function Page(): React.JSX.Element {
   const fetchDrivers = async () => {
     setLoading(true);
     try {
-      const response = await getAllDrivers({ page, limit });
+      // Build API params with filters
+      const apiParams: any = { page, limit };
+      
+      if (filters?.driverName) {
+        apiParams.driverName = filters.driverName;
+      }
+      
+      if (filters?.status) {
+        apiParams.status = filters.status;
+      }
+
+      console.log('📡 API Params:', apiParams);
+      
+      const response = await getAllDrivers(apiParams);
       console.log('📦 Drivers API Response:', response);
       console.log('📦 Drivers API Response data:', response?.data);
       
@@ -91,19 +110,14 @@ export default function Page(): React.JSX.Element {
 
   useEffect(() => {
     fetchDrivers();
-  }, [page, limit]);
-
-  // Sync drivers with filters (for future API integration)
-  React.useEffect(() => {
-    // Add API call here later to fetch drivers with filters
-    console.log('Fetching drivers with filters:', filters);
-  }, [filters]);
+  }, [page, limit, filters]);
 
   // Refresh function to reload driver data
   const handleRefresh = React.useCallback(() => {
-    // Add API call here later to fetch drivers with filters
-    console.log('Refreshing drivers with filters:', filters);
-  }, [filters]);
+    console.log('🔄 Refreshing drivers with filters:', filters);
+    setPage(1); // Reset to first page
+    fetchDrivers();
+  }, [filters, page, limit]);
 
   // ─── Menu Handlers ───
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, driver: any) => {
@@ -115,9 +129,44 @@ export default function Page(): React.JSX.Element {
 
   const handleView = () => {
     if (selectedDriver) {
-      router.push(`/driver/${selectedDriver.id}`);
+      console.log('👉 Navigating to driver:', selectedDriver._id || selectedDriver.id);
+      router.push(`/driver/${selectedDriver._id || selectedDriver.id}`);
     }
     handleMenuClose();
+  };
+
+  const handleDelete = () => {
+    if (selectedDriver) {
+      setDeleteDialogOpen(true);
+    }
+    handleMenuClose();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedDriver) return;
+
+    const driverId = selectedDriver._id || selectedDriver.id;
+    const driverName = selectedDriver.fullname || 'this driver';
+
+    try {
+      console.log('🗑️ Deleting driver:', driverId);
+      
+      await removeDriverFromSchool({ driverIds: [driverId] });
+      
+      console.log('✅ Driver deleted successfully:', driverName);
+      
+      // Refresh the list
+      fetchDrivers();
+      setDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('❌ Error deleting driver:', error);
+      alert('Failed to delete driver. Please try again.');
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setSelectedDriver(null);
   };
 
   const getStatusColor = (status: string) => {
@@ -128,6 +177,41 @@ export default function Page(): React.JSX.Element {
         return "error";
       default:
         return "default";
+    }
+  };
+
+  // Toggle driver status
+  const [updatingStatus, setUpdatingStatus] = React.useState<string | null>(null);
+
+  const handleStatusToggle = async (driverId: string, currentStatus: string) => {
+    if (updatingStatus) return; // Prevent multiple clicks
+
+    const newStatus = currentStatus.toLowerCase() === 'active' ? 'inActive' : 'Active';
+
+    try {
+      setUpdatingStatus(driverId);
+
+      // Update UI immediately
+      setDrivers(prev => prev.map(d => {
+        if (d._id === driverId) {
+          return { ...d, status: newStatus };
+        }
+        return d;
+      }));
+
+      // Call API
+      await changeDriverStatus({
+        id: driverId,
+        status: newStatus,
+      });
+
+      // Refresh the data
+      fetchDrivers();
+    } catch (error) {
+      console.error("Failed to toggle driver status:", error);
+      fetchDrivers(); // Revert on error
+    } finally {
+      setUpdatingStatus(null);
     }
   };
 
@@ -223,13 +307,16 @@ export default function Page(): React.JSX.Element {
 
         const statusKey = (row?.status?.trim() || "inactive") as keyof typeof mapping;
         const { label, color } = mapping[statusKey] ?? mapping.inactive;
+        const isUpdating = updatingStatus === row._id;
 
         return (
           <Chip
-            label={label}
+            label={isUpdating ? "Updating..." : label}
             size="small"
             color={color}
             variant="outlined"
+            onClick={() => handleStatusToggle(row._id, row.status)}
+            sx={{ cursor: 'pointer' }}
           />
         );
       },
@@ -329,7 +416,31 @@ export default function Page(): React.JSX.Element {
             </ListItemIcon>
             View
           </MenuItem>
+          <MenuItem onClick={handleDelete}>
+            <ListItemIcon>
+              <Trash size={18} />
+            </ListItemIcon>
+            Delete
+          </MenuItem>
         </Menu>
+
+        {/* ─── DELETE CONFIRMATION DIALOG ─── */}
+        <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
+          <DialogTitle>Delete Driver</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to delete this driver?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCancelDelete} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmDelete} color="error">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Stack>
     </Box>
   );

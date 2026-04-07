@@ -29,14 +29,11 @@ import { useParams } from "next/navigation";
 import { ArrowLeft as ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
 import { User as UserIcon } from "@phosphor-icons/react/dist/ssr/User";
 import { House as HouseIcon } from "@phosphor-icons/react/dist/ssr/House";
-import { PencilSimple as EditIcon } from "@phosphor-icons/react/dist/ssr/PencilSimple";
 
 import { getVanDetailById, bulkUpdateVanStatus, removeDriverFromVan } from "@/store/reducers/van-slice";
 import { getAllDrivers, assignDriverToVan } from "@/store/reducers/driver-slice";
-import Link from "next/link";
 import { config } from "@/config";
 
-// Reusable Detail Item
 function DetailItem({ label, value }: { label: string; value: any }) {
   return (
     <Box sx={{ mb: 2 }}>
@@ -56,10 +53,10 @@ export default function VanDetailsPage() {
 
   const dispatch = useDispatch<AppDispatch>();
 
-  // Set document title
   useEffect(() => {
     document.title = `${config.site.name} | Van Details`;
   }, []);
+
   const { selectedVan, selectedVanLoading } = useSelector(
     (state: RootState) => state.van
   );
@@ -78,43 +75,38 @@ export default function VanDetailsPage() {
     dispatch(getAllDrivers({ page: 1, limit: 1000 }));
   }, [dispatch]);
 
+  // true = Driver's own van → hide Status & Driver button
+  // false = School van → show Status & Driver button
+  const isOwn: boolean = selectedVan?.isOwn === true || selectedVan?.ownVan === true;
+
   const handleStatusToggle = async () => {
     if (!selectedVan?.id || !selectedVan?.status) return;
-
-    const newStatus = selectedVan.status.toLowerCase() === 'active' ? 'inActive' : 'active';
-
+    const newStatus =
+      selectedVan.status.toLowerCase() === "active" ? "inActive" : "active";
     try {
       await dispatch(
-        bulkUpdateVanStatus({
-          vanIds: [selectedVan.id],
-          status: newStatus,
-        })
+        bulkUpdateVanStatus({ vanIds: [selectedVan.id], status: newStatus })
       ).unwrap();
-
-      // Refresh van detail
       dispatch(getVanDetailById(vanId));
     } catch (error: any) {
       console.error("Failed to toggle van status:", error);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const statusLower = status?.toLowerCase() || 'inactive';
-    return statusLower === 'active' ? 'success' : 'error';
-  };
+  const getStatusColor = (status: string) =>
+    status?.toLowerCase() === "active" ? "success" : "error";
 
-  const getStatusLabel = (status: string) => {
-    const statusLower = status?.toLowerCase() || 'inactive';
-    return statusLower === 'active' ? 'Active' : 'InActive';
-  };
+  const getStatusLabel = (status: string) =>
+    status?.toLowerCase() === "active" ? "Active" : "InActive";
 
   const handleAssignDriver = async () => {
     if (!selectedDriver || !vanId) return;
-
     try {
-      await dispatch(assignDriverToVan({ driverId: selectedDriver, vanId })).unwrap();
+      await dispatch(
+        assignDriverToVan({ driverId: selectedDriver, vanId })
+      ).unwrap();
       setModalOpen(false);
-      dispatch(getVanDetailById(vanId)); // refresh
+      dispatch(getVanDetailById(vanId));
     } catch (error) {
       console.error("Assign Driver Error:", error);
     }
@@ -122,13 +114,11 @@ export default function VanDetailsPage() {
 
   const handleRemoveDriver = async () => {
     if (!selectedVan?.driverId || !vanId) return;
-
     try {
-      await dispatch(removeDriverFromVan({
-        driverId: selectedVan.driverId,
-        vanId: vanId
-      })).unwrap();
-      dispatch(getVanDetailById(vanId)); // refresh
+      await dispatch(
+        removeDriverFromVan({ driverId: selectedVan.driverId, vanId })
+      ).unwrap();
+      dispatch(getVanDetailById(vanId));
     } catch (error: any) {
       console.error("Remove Driver Error:", error);
     }
@@ -136,12 +126,15 @@ export default function VanDetailsPage() {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Button startIcon={<ArrowLeftIcon />} onClick={() => window.history.back()}>
+      <Button
+        startIcon={<ArrowLeftIcon />}
+        onClick={() => window.history.back()}
+      >
         Back to Vans
       </Button>
 
       {selectedVanLoading || driversLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />
         </Box>
       ) : selectedVan ? (
@@ -149,8 +142,11 @@ export default function VanDetailsPage() {
           {/* Main Van Card */}
           <Card sx={{ p: 2 }}>
             <CardContent>
-              {/* Top: Avatar + Van Info + Status */}
-              <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="flex-start"
+              >
                 {/* Left: Avatar + Info */}
                 <Box display="flex" alignItems="center" gap={2}>
                   <Avatar
@@ -161,34 +157,41 @@ export default function VanDetailsPage() {
                   </Avatar>
                   <Box>
                     <Typography variant="h6">
-                      {selectedVan.vehicleType || 'Van Type N/A'} — {selectedVan.carNumber || selectedVan.numberPlate || 'N/A'}
+                      {selectedVan.vehicleType || "Van Type N/A"} —{" "}
+                      {selectedVan.carNumber ||
+                        selectedVan.numberPlate ||
+                        "N/A"}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Capacity: {selectedVan.venCapacity || selectedVan.capacity || 'N/A'} | Condition: {selectedVan.condition || 'N/A'}
+                      Capacity:{" "}
+                      {selectedVan.venCapacity || selectedVan.capacity || "N/A"}{" "}
+                      | Condition: {selectedVan.condition || "N/A"}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Device ID: {selectedVan.deviceId || 'N/A'}
+                      Device ID: {selectedVan.deviceId || "N/A"}
                     </Typography>
                   </Box>
                 </Box>
 
-                {/* Right: Status Display + Actions */}
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Chip
-                    label={getStatusLabel(selectedVan.status)}
-                    color={getStatusColor(selectedVan.status)}
-                    onClick={handleStatusToggle}
-                    sx={{ cursor: 'pointer' }}
-                  />
-                  <Button 
-                    variant="outlined" 
-                    size="small" 
-                    startIcon={<UserIcon />}
-                    onClick={() => setModalOpen(true)}
-                  >
-                    Driver
-                  </Button>
-                </Stack>
+                {/* Right: Status + Driver button — only shown when NOT isOwn */}
+                {!isOwn && (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Chip
+                      label={getStatusLabel(selectedVan.status)}
+                      color={getStatusColor(selectedVan.status) as any}
+                      onClick={handleStatusToggle}
+                      sx={{ cursor: "pointer" }}
+                    />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<UserIcon />}
+                      onClick={() => setModalOpen(true)}
+                    >
+                      Driver
+                    </Button>
+                  </Stack>
+                )}
               </Box>
             </CardContent>
           </Card>
@@ -198,29 +201,45 @@ export default function VanDetailsPage() {
             <CardHeader title="Van Information" />
             <CardContent>
               <Grid container spacing={3}>
-                {/* <Grid item xs={12} sm={6} md={4}>
-                  <Typography variant="subtitle1" color="text.secondary">Van ID</Typography>
-                  <Typography variant="body1">{selectedVan.id || '—'}</Typography>
-                </Grid> */}
                 <Grid item xs={12} sm={6} md={4}>
-                  <Typography variant="subtitle1" color="text.secondary">Vehicle Type</Typography>
-                  <Typography variant="body1">{selectedVan.vehicleType || '—'}</Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Vehicle Type
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedVan.vehicleType || "—"}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
-                  <Typography variant="subtitle1" color="text.secondary">Car Number</Typography>
-                  <Typography variant="body1">{selectedVan.carNumber || selectedVan.numberPlate || '—'}</Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Car Number
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedVan.carNumber || selectedVan.numberPlate || "—"}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
-                  <Typography variant="subtitle1" color="text.secondary">Capacity</Typography>
-                  <Typography variant="body1">{selectedVan.venCapacity || selectedVan.capacity || '—'}</Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Capacity
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedVan.venCapacity || selectedVan.capacity || "—"}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
-                  <Typography variant="subtitle1" color="text.secondary">Condition</Typography>
-                  <Typography variant="body1">{selectedVan.condition || '—'}</Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Condition
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedVan.condition || "—"}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
-                  <Typography variant="subtitle1" color="text.secondary">Device ID</Typography>
-                  <Typography variant="body1">{selectedVan.deviceId || '—'}</Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Device ID
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedVan.deviceId || "—"}
+                  </Typography>
                 </Grid>
               </Grid>
             </CardContent>
@@ -232,20 +251,36 @@ export default function VanDetailsPage() {
             <CardContent>
               <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle1" color="text.secondary">Driver Name</Typography>
-                  <Typography variant="body1">{selectedVan.driverName || '—'}</Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Driver Name
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedVan.driverName || "—"}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle1" color="text.secondary">Driver Phone</Typography>
-                  <Typography variant="body1">{selectedVan.driverPhone || '—'}</Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Driver Phone
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedVan.driverPhone || "—"}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle1" color="text.secondary">Driver Email</Typography>
-                  <Typography variant="body1">{selectedVan.driverEmail || '—'}</Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Driver Email
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedVan.driverEmail || "—"}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle1" color="text.secondary">Driver CNIC</Typography>
-                  <Typography variant="body1">{selectedVan.cnic || '—'}</Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Driver CNIC
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedVan.cnic || "—"}
+                  </Typography>
                 </Grid>
               </Grid>
             </CardContent>
@@ -257,100 +292,107 @@ export default function VanDetailsPage() {
             <CardContent>
               <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle1" color="text.secondary">Assigned Route</Typography>
-                  <Typography variant="body1">{selectedVan.route || selectedVan.assignRoute || '—'}</Typography>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Assigned Route
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedVan.route || selectedVan.assignRoute || "—"}
+                  </Typography>
                 </Grid>
               </Grid>
             </CardContent>
           </Card>
-
         </Stack>
       ) : (
-        <Box sx={{ textAlign: 'center', mt: 4 }}>
+        <Box sx={{ textAlign: "center", mt: 4 }}>
           <Typography variant="h6">Van not found</Typography>
-          <Button variant="outlined" onClick={() => window.history.back()} sx={{ mt: 2 }}>
+          <Button
+            variant="outlined"
+            onClick={() => window.history.back()}
+            sx={{ mt: 2 }}
+          >
             Back to All Vans
           </Button>
         </Box>
       )}
 
-      {/* Driver Management Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            bgcolor: "background.paper",
-            p: 4,
-            width: 500,
-            borderRadius: 2,
-          }}
-        >
-          <Typography variant="h6" mb={2}>
-            Driver Management
-          </Typography>
-
-          {/* Current Driver Status */}
-          <Box mb={3}>
-            <Typography variant="body2" color="text.secondary" mb={1}>
-              Current Driver: {selectedVan?.driverName || 'No driver assigned'}
+      {/* Driver Management Modal — only accessible when NOT isOwn */}
+      {!isOwn && (
+        <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              bgcolor: "background.paper",
+              p: 4,
+              width: 500,
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="h6" mb={2}>
+              Driver Management
             </Typography>
-            {selectedVan?.driverId && (
-              <Button
-                variant="outlined"
-                color="error"
-                fullWidth
-                onClick={handleRemoveDriver}
-                sx={{ mb: 2 }}
+
+            <Box mb={3}>
+              <Typography variant="body2" color="text.secondary" mb={1}>
+                Current Driver:{" "}
+                {selectedVan?.driverName || "No driver assigned"}
+              </Typography>
+              {selectedVan?.driverId && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  onClick={handleRemoveDriver}
+                  sx={{ mb: 2 }}
+                >
+                  Remove Current Driver
+                </Button>
+              )}
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle1" mb={2}>
+              Assign New Driver
+            </Typography>
+
+            <FormControl fullWidth>
+              <InputLabel>Select Driver</InputLabel>
+              <Select
+                value={selectedDriver}
+                label="Select Driver"
+                onChange={(e) => setSelectedDriver(e.target.value)}
+                MenuProps={{
+                  PaperProps: { sx: { maxHeight: 250, overflowY: "auto" } },
+                }}
               >
-                Remove Current Driver
+                {drivers
+                  ?.filter((driver: any) => driver?.isDelete === false)
+                  .map((driver: any) => (
+                    <MenuItem key={driver.id} value={driver.id}>
+                      {driver.fullname} — {driver.phoneNo || "N/A"}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+
+            <Stack direction="row" spacing={2} justifyContent="flex-end" mt={3}>
+              <Button variant="outlined" onClick={() => setModalOpen(false)}>
+                Cancel
               </Button>
-            )}
+              <Button
+                variant="contained"
+                disabled={!selectedDriver}
+                onClick={handleAssignDriver}
+              >
+                Assign Driver
+              </Button>
+            </Stack>
           </Box>
-
-          {/* Assign New Driver */}
-          <Divider sx={{ my: 2 }} />
-          <Typography variant="subtitle1" mb={2}>
-            Assign New Driver
-          </Typography>
-
-          <FormControl fullWidth>
-            <InputLabel>Select Driver</InputLabel>
-            <Select
-              value={selectedDriver}
-              label="Select Driver"
-              onChange={(e) => setSelectedDriver(e.target.value)}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    maxHeight: 250,
-                    overflowY: "auto",
-                  },
-                },
-              }}
-            >
-              {drivers
-                ?.filter((driver: any) => driver?.isDelete === false)
-                .map((driver: any) => (
-                  <MenuItem key={driver.id} value={driver.id}>
-                    {driver.fullname} — {driver.phoneNo || "N/A"}
-                  </MenuItem>
-                ))}
-            </Select>
-          </FormControl>
-
-          <Stack direction="row" spacing={2} justifyContent="flex-end" mt={3}>
-            <Button variant="outlined" onClick={() => setModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="contained" disabled={!selectedDriver} onClick={handleAssignDriver}>
-              Assign Driver
-            </Button>
-          </Stack>
-        </Box>
-      </Modal>
+        </Modal>
+      )}
     </Box>
   );
 }

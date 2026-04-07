@@ -19,6 +19,7 @@ import {
 } from "@/components/core/filter-button";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
+import { changeDriverStatus, removeDriverFromSchool } from "@/services/driver.api";
 
 export interface Filters {
   driverName?: string;
@@ -66,7 +67,7 @@ export function DriverFilter({
   const handleBulkActivate = async () => {
     console.log('🔍 Selected data structure for activate:', selected);
     const ids = selected
-      ?.map((item: any) => item?.id)
+      ?.map((item: any) => item?._id || item?.id)
       .filter(Boolean);
     
     console.log('Extracted IDs for activate:', ids);
@@ -76,8 +77,13 @@ export function DriverFilter({
     try {
       setBulkUpdating(true);
       setActionAnchor(null);
-      // Add API call here later
-      console.log('Activating drivers:', ids);
+      
+      // Activate all selected drivers
+      for (const driverId of ids) {
+        await changeDriverStatus({ id: driverId, status: 'Active' });
+      }
+      
+      console.log('✅ Successfully activated drivers:', ids);
       if (onRefresh) {
         onRefresh();
       }
@@ -91,7 +97,7 @@ export function DriverFilter({
   const handleBulkDeactivate = async () => {
     console.log('🔍 Selected data structure for deactivate:', selected);
     const ids = selected
-      ?.map((item: any) => item?.id)
+      ?.map((item: any) => item?._id || item?.id)
       .filter(Boolean);
     
     console.log('Extracted IDs for deactivate:', ids);
@@ -101,8 +107,13 @@ export function DriverFilter({
     try {
       setBulkUpdating(true);
       setActionAnchor(null);
-      // Add API call here later
-      console.log('Deactivating drivers:', ids);
+      
+      // Deactivate all selected drivers
+      for (const driverId of ids) {
+        await changeDriverStatus({ id: driverId, status: 'inActive' });
+      }
+      
+      console.log('✅ Successfully deactivated drivers:', ids);
       if (onRefresh) {
         onRefresh();
       }
@@ -116,7 +127,7 @@ export function DriverFilter({
   const handleBulkDelete = async () => {
     console.log('Selected data structure for delete:', selected);
     const ids = selected
-      ?.map((item: any) => item?.id)
+      ?.map((item: any) => item?._id || item?.id)
       .filter(Boolean);
     
     console.log('Extracted IDs for delete:', ids);
@@ -134,8 +145,11 @@ export function DriverFilter({
       try {
         setBulkUpdating(true);
         setActionAnchor(null);
-        // Add API call here later
-        console.log('Deleting drivers:', ids);
+        
+        // Remove drivers from school
+        await removeDriverFromSchool({ driverIds: ids });
+        
+        console.log('✅ Successfully deleted drivers:', ids);
         if (onRefresh) {
           onRefresh();
         }
