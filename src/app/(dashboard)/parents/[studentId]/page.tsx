@@ -1,29 +1,50 @@
+// app/(dashboard)/parents/[studentId]/page.tsx
+
+"use client"; // ✅ Yeh missing tha — useEffect sirf Client Component mein kaam karta hai
+
 import * as React from 'react';
 import { useEffect } from 'react';
-import { Avatar, Box, Button, Card, CardContent, CardHeader, Chip, Divider, Grid, IconButton, Stack, Typography } from '@mui/material';
+import { 
+  Avatar, 
+  Box, 
+  Button,
+  Card, 
+  CardContent, 
+  CardHeader, 
+  Chip, 
+  Divider, 
+  Grid, 
+  IconButton, 
+  Stack, 
+  Typography 
+} from '@mui/material';
 import { ArrowLeft as ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { PencilSimple as PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr/PencilSimple';
 import { User as UserIcon } from '@phosphor-icons/react/dist/ssr/User';
 import { House as HouseIcon } from '@phosphor-icons/react/dist/ssr/House';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PropertyItem } from '@/components/core/property-item';
 import { PropertyList } from '@/components/core/property-list';
 import { config } from '@/config';
 
 export default function ParentDetailPage() {
-  // Set document title
+  const router = useRouter();
+
   useEffect(() => {
-    document.title = `${config.site.name} | Complaint Details`;
+    document.title = `${config.site.name} | Parent Details`;
   }, []);
 
   return (
     <Box sx={{ p: 4 }}>
       <Stack spacing={4}>
         {/* Back Button */}
-        <Link href="/admin/parents" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <ArrowLeftIcon />
-          <Typography variant="subtitle2">Back to Parents</Typography>
-        </Link>
+        <Button
+          startIcon={<ArrowLeftIcon />}
+          onClick={() => router.back()}
+          sx={{ alignSelf: 'flex-start' }}
+        >
+          Back to Parents
+        </Button>
 
         {/* Header */}
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="flex-start">
@@ -73,7 +94,10 @@ export default function ParentDetailPage() {
                     van: 'Van #12',
                     route: 'Nazimabad Block A'
                   }].map((student, index) => (
-                    <Box key={index} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, p: 2 }}>
+                    <Box
+                      key={index}
+                      sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}
+                    >
                       <Typography variant="subtitle1">{student.name}</Typography>
                       <Typography variant="body2" color="text.secondary">School ID: {student.schoolId}</Typography>
                       <Typography variant="body2" color="text.secondary">Class: {student.class}</Typography>

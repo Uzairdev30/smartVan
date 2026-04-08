@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from '@mui/material/Link';
 import { toast } from '@/components/core/toaster';
-
 import {
   Avatar, Box, Button, Card, CardActions, CardContent, FormControl,
   FormHelperText, Grid, InputLabel, OutlinedInput, Stack,
@@ -25,14 +24,7 @@ import { AppDispatch, RootState } from '@/store';
 import { uploadImage } from "@/utils/uploadImage";
 import { config } from '@/config';
 
-export default function Page(): React.JSX.Element {
-  const router = useRouter();
-
-  // Set document title
-  useEffect(() => {
-    document.title = `${config.site.name} | Create Student`;
-  }, []);
-
+// ✅ fileToBase64 — function ke bahar
 function fileToBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -42,6 +34,7 @@ function fileToBase64(file: Blob): Promise<string> {
   });
 }
 
+// ✅ schema — function ke bahar
 const schema = zod.object({
   kidImage: zod.string().optional(),
   fullname: zod.string().min(1, 'Full name is required').max(255),
@@ -54,10 +47,11 @@ const schema = zod.object({
   dob: zod.string()
     .refine((date) => new Date(date) <= new Date(), 'Date of Birth cannot be in the future'),
   parentEmail: zod.string().email('Enter a valid parent email').optional(),
-
 });
 
 type Values = zod.infer<typeof schema>;
+
+// ✅ defaultValues — function ke bahar
 const defaultValues: Values = {
   kidImage: '',
   fullname: '',
@@ -71,10 +65,16 @@ const defaultValues: Values = {
   parentEmail: ''
 };
 
-export default function StudentCreateForm(): React.JSX.Element {
+// ✅ Sirf ek export default
+export default function Page(): React.JSX.Element {
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>()
-  const loading = useSelector((state: RootState) => state.student.loading)
+  const dispatch = useDispatch<AppDispatch>();
+  const loading = useSelector((state: RootState) => state.student.loading);
+
+  useEffect(() => {
+    document.title = `${config.site.name} | Create Student`;
+  }, []);
+
   const {
     control,
     handleSubmit,
@@ -92,33 +92,28 @@ export default function StudentCreateForm(): React.JSX.Element {
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     try {
       const imageUrl = await uploadImage(file);
       setValue("kidImage", imageUrl);
     } catch (error: any) {
       toast.error(error.message || 'Something went wrong');
-
     }
   };
 
   const onSubmit = async (values: Values) => {
     try {
       const resultAction = await dispatch(addStudent(values));
-
       if (addStudent.fulfilled.match(resultAction)) {
-
-      } else {
+        toast.success('Student added successfully');
+        router.push(paths.dashboard.student);
       }
     } catch (error) {
       toast.error('Something went wrong');
       console.error(error);
     }
-    // toast.success('Student saved successfully');
-    // router.push(paths.dashboard.students.details('1'));
   };
 
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <Box sx={{ maxWidth: 'var(--Content-maxWidth)', m: 'var(--Content-margin)', p: 'var(--Content-padding)', width: 'var(--Content-width)' }}>
@@ -245,7 +240,7 @@ export default function StudentCreateForm(): React.JSX.Element {
                   />
                 </Grid>
 
-
+                {/* Parent Email */}
                 <Grid item md={6} xs={12}>
                   <Controller
                     control={control}
@@ -304,7 +299,7 @@ export default function StudentCreateForm(): React.JSX.Element {
                     />
                   </Grid>
 
-                  {/* Pick/Drop Exceptions Multi-Select */}
+                  {/* Pick/Drop Exceptions */}
                   <Grid item md={6} xs={12}>
                     <Controller
                       control={control}
@@ -330,18 +325,18 @@ export default function StudentCreateForm(): React.JSX.Element {
                       )}
                     />
                   </Grid>
-
-
                 </Grid>
               </Stack>
             </Stack>
           </CardContent>
+
           <CardActions sx={{ justifyContent: 'flex-end' }}>
             <Button variant="text" color="inherit" sx={{ minWidth: 100 }} onClick={() => router.back()}>
               Cancel
             </Button>
-
-            <Button type="submit" variant="contained" loading={loading}>Add New Student</Button>
+            <Button type="submit" variant="contained" loading={loading}>
+              Add New Student
+            </Button>
           </CardActions>
         </Card>
       </form>

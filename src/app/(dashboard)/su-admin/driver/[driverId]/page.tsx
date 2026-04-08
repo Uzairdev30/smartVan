@@ -20,7 +20,7 @@ import {
 import { ArrowLeft as ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
 import { User as UserIcon } from "@phosphor-icons/react/dist/ssr/User";
 import { Car as CarIcon } from "@phosphor-icons/react/dist/ssr/Car";
-import { School as SchoolIcon } from "@phosphor-icons/react/dist/ssr/School";
+import { Buildings as SchoolIcon } from "@phosphor-icons/react/dist/ssr/Buildings"; // ✅ School icon nahi hai, Buildings use kiya
 import { useRouter, useParams } from "next/navigation";
 import { config } from "@/config";
 
@@ -29,12 +29,10 @@ export default function DriverDetailPage(): React.JSX.Element {
   const params = useParams();
   const driverId = params.driverId as string;
 
-  // Set document title
   useEffect(() => {
     document.title = `${config.site.name} | Driver Details (Super Admin)`;
   }, []);
 
-  // Mock driver data
   const driver = {
     id: driverId,
     fullname: "Muhammad Ahmed",
@@ -71,12 +69,9 @@ export default function DriverDetailPage(): React.JSX.Element {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
-        return "success";
-      case "inactive":
-        return "error";
-      default:
-        return "default";
+      case "active": return "success";
+      case "inactive": return "error";
+      default: return "default";
     }
   };
 
@@ -90,14 +85,9 @@ export default function DriverDetailPage(): React.JSX.Element {
         {/* Main Driver Card */}
         <Card sx={{ p: 2 }}>
           <CardContent>
-            {/* Top: Avatar + Driver Info + Status */}
             <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-              {/* Left: Avatar + Info */}
               <Box display="flex" alignItems="center" gap={2}>
-                <Avatar
-                  src={driver?.image || undefined}
-                  sx={{ width: 56, height: 56 }}
-                >
+                <Avatar src={driver?.image || undefined} sx={{ width: 56, height: 56 }}>
                   {!driver?.image && driver?.fullname?.split(' ').map((w) => w[0]?.toUpperCase()).join('')}
                 </Avatar>
                 <Box>
@@ -110,8 +100,6 @@ export default function DriverDetailPage(): React.JSX.Element {
                   </Typography>
                 </Box>
               </Box>
-
-              {/* Right: Status Display */}
               <Stack direction="row" spacing={1} alignItems="center">
                 <Chip
                   label={driver?.status?.charAt(0).toUpperCase() + driver?.status?.slice(1) || 'Inactive'}
@@ -186,7 +174,6 @@ export default function DriverDetailPage(): React.JSX.Element {
           <CardHeader avatar={<Avatar><CarIcon /></Avatar>} title="Vehicle & Route Assignment" />
           <CardContent>
             <Grid container spacing={3}>
-              {/* Van Details */}
               <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle1" color="text.secondary">Car Number</Typography>
                 <Typography variant="body1">{driver?.assignedVan?.carNumber || '—'}</Typography>
@@ -203,10 +190,7 @@ export default function DriverDetailPage(): React.JSX.Element {
                 <Typography variant="subtitle1" color="text.secondary">Color</Typography>
                 <Typography variant="body1">{driver?.assignedVan?.color || '—'}</Typography>
               </Grid>
-              
               <Divider sx={{ my: 2, gridColumn: '1 / -1' }} />
-              
-              {/* Route Details */}
               <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle1" color="text.secondary">Route Name</Typography>
                 <Typography variant="body1">{driver?.route?.name || '—'}</Typography>

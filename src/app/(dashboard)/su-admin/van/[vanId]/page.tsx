@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { 
   Avatar, 
   Box, 
+  Button,  // ✅ Button import add kiya (pehle missing tha)
   Card, 
   CardContent, 
   CardHeader, 
@@ -19,7 +20,7 @@ import {
 import { ArrowLeft as ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
 import { Car as CarIcon } from "@phosphor-icons/react/dist/ssr/Car";
 import { User as UserIcon } from "@phosphor-icons/react/dist/ssr/User";
-import { School as SchoolIcon } from "@phosphor-icons/react/dist/ssr/School";
+import { Buildings as SchoolIcon } from "@phosphor-icons/react/dist/ssr/Buildings"; // ✅ School → Buildings
 import { useRouter, useParams } from "next/navigation";
 import { config } from "@/config";
 
@@ -28,12 +29,10 @@ export default function VanDetailPage(): React.JSX.Element {
   const params = useParams();
   const vanId = params.vanId as string;
 
-  // Set document title
   useEffect(() => {
     document.title = `${config.site.name} | Van Details (Super Admin)`;
   }, []);
 
-  // Mock van data
   const van = {
     id: vanId,
     carNumber: "ABC-123",
@@ -73,14 +72,10 @@ export default function VanDetailPage(): React.JSX.Element {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
-        return "success";
-      case "inactive":
-        return "error";
-      case "maintenance":
-        return "warning";
-      default:
-        return "default";
+      case "active": return "success";
+      case "inactive": return "error";
+      case "maintenance": return "warning";
+      default: return "default";
     }
   };
 
@@ -94,12 +89,10 @@ export default function VanDetailPage(): React.JSX.Element {
         {/* Main Van Card */}
         <Card sx={{ p: 2 }}>
           <CardContent>
-            {/* Top: Icon + Van Info + Status */}
             <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-              {/* Left: Icon + Info */}
               <Box display="flex" alignItems="center" gap={2}>
-                <Avatar sx={{ width: 56, height: 56 }} bgcolor="primary.main">
-                  <CarIcon fontSize="large" />
+                <Avatar sx={{ width: 56, height: 56, bgcolor: "primary.main" }}>
+                  <CarIcon />
                 </Avatar>
                 <Box>
                   <Typography variant="h6">{van?.carNumber || 'Van Number N/A'}</Typography>
@@ -111,8 +104,6 @@ export default function VanDetailPage(): React.JSX.Element {
                   </Typography>
                 </Box>
               </Box>
-
-              {/* Right: Status Display */}
               <Stack direction="row" spacing={1} alignItems="center">
                 <Chip
                   label={van?.status?.charAt(0).toUpperCase() + van?.status?.slice(1) || 'Inactive'}
@@ -219,12 +210,7 @@ export default function VanDetailPage(): React.JSX.Element {
               {van?.routes?.map((route: any, index: number) => (
                 <Box
                   key={index}
-                  sx={{
-                    border: '1px solid #e0e0e0',
-                    borderRadius: 2,
-                    p: 2,
-                    bgcolor: '#f5f5f5'
-                  }}
+                  sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, bgcolor: 'background.default' }}
                 >
                   <Stack spacing={1}>
                     <Typography variant="subtitle2" fontWeight={600}>
@@ -233,24 +219,23 @@ export default function VanDetailPage(): React.JSX.Element {
                     <Grid container spacing={2}>
                       <Grid item xs={12} sm={4}>
                         <Typography variant="body2" color="text.secondary">
-                          <strong>Total Stops:</strong> {route.stops}
+                          Total Stops: {route.stops}
                         </Typography>
                       </Grid>
                       <Grid item xs={12} sm={4}>
                         <Typography variant="body2" color="text.secondary">
-                          <strong>Total Students:</strong> {route.students}
+                          Total Students: {route.students}
                         </Typography>
                       </Grid>
                       <Grid item xs={12} sm={4}>
                         <Typography variant="body2" color="text.secondary">
-                          <strong>Timing:</strong> {route.timing}
+                          Timing: {route.timing}
                         </Typography>
                       </Grid>
                     </Grid>
                   </Stack>
                 </Box>
               ))}
-              
               {!van?.routes?.length && (
                 <Typography color="text.secondary">No routes assigned</Typography>
               )}
