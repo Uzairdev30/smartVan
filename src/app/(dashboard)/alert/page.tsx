@@ -8,7 +8,6 @@ import {
   Divider,
   Stack,
   Typography,
-  Chip,
   IconButton,
   CircularProgress,
   Button,
@@ -19,22 +18,31 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { config } from "@/config";
+import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
+import { Pencil as EditIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
+import { Trash as DeleteIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
+import { config } from "@/config";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-import { deleteAlert, getAlertById, getAllAlerts } from "@/store/reducers/alert-slice";
+import {
+  deleteAlert,
+  getAlertById,
+  getAllAlerts,
+} from "@/store/reducers/alert-slice";
 import dayjs from "dayjs";
 import { formatLabel } from "@/utils/data";
 import { paths } from "@/paths";
 
 type AlertRecord = {
-  _id: number;
+  _id: string;
   alertType: string;
   message: string;
   recipientType: string;
@@ -46,18 +54,27 @@ type AlertRecord = {
 const AlertActions = ({ row }: { row: AlertRecord }) => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [deleteAlertLoading, setDeleteAlertLoading] = React.useState(false);
+
   const open = Boolean(anchorEl);
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
-  const handleMenuClose = () => setAnchorEl(null);
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const handleView = async () => {
     try {
       await dispatch(getAlertById(row._id)).unwrap();
       router.push(`${paths.dashboard.alert}/${row._id}`);
+    } catch (error) {
+      console.error("View failed:", error);
     } finally {
       handleMenuClose();
     }
@@ -92,7 +109,16 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
   return (
     <>
       <Stack direction="row" spacing={0} sx={{ justifyContent: "flex-end" }}>
-        <IconButton size="small" onClick={handleMenuOpen}>
+        <IconButton
+          size="small"
+          onClick={handleMenuOpen}
+          sx={{
+            boxShadow: "none",
+            "&:hover": {
+              backgroundColor: "transparent",
+            },
+          }}
+        >
           <MoreVertIcon />
         </IconButton>
 
@@ -102,50 +128,84 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
           onClose={handleMenuClose}
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
           transformOrigin={{ vertical: "top", horizontal: "right" }}
+          PaperProps={{
+            elevation: 0,
+            sx: {
+              boxShadow: "none",
+              border: "1px solid #e0e0e0", // optional, clean look ke liye
+            },
+          }}
         >
-          <MenuItem onClick={handleView}>View</MenuItem>
-          <MenuItem onClick={handleEdit}>Edit</MenuItem>
-          <MenuItem onClick={handleDelete} sx={{ color: "error.main" }}>Delete</MenuItem>
+          <MenuItem onClick={handleView}>
+            <ListItemIcon>
+              <EyeIcon size={18} />
+            </ListItemIcon>
+            <ListItemText primary="View" />
+          </MenuItem>
+
+          <MenuItem onClick={handleEdit}>
+            <ListItemIcon>
+              <EditIcon size={18} />
+            </ListItemIcon>
+            <ListItemText primary="Edit" />
+          </MenuItem>
+
+          <MenuItem onClick={handleDelete} sx={{ color: "error.main" }}>
+            <ListItemIcon sx={{ color: "error.main" }}>
+              <DeleteIcon size={18} />
+            </ListItemIcon>
+            <ListItemText primary="Delete" />
+          </MenuItem>
         </Menu>
       </Stack>
 
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        onClose={handleCancelDelete}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle>Delete Alert</DialogTitle>
+
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this alert "{row.alertType}"?
+            Are you sure you want to delete this alert{" "}
+            <strong>"{row.alertType}"</strong>?
           </DialogContentText>
         </DialogContent>
+
         <DialogActions>
           <Button onClick={handleCancelDelete} disabled={deleteAlertLoading}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleConfirmDelete} 
-            variant="contained" 
+
+          <Button
+            onClick={handleConfirmDelete}
+            variant="contained"
             color="error"
             disabled={deleteAlertLoading}
-            startIcon={deleteAlertLoading ? <CircularProgress size={16} /> : <TrashIcon size={18} />}
+            startIcon={
+              deleteAlertLoading ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <TrashIcon size={18} />
+              )
+            }
           >
-            {deleteAlertLoading ? 'Deleting...' : 'Delete Alert'}
+            {deleteAlertLoading ? "Deleting..." : "Delete Alert"}
           </Button>
         </DialogActions>
       </Dialog>
     </>
   );
 };
+
 // ─── Main Component ───────────────────────────────
 export default function AlertPage(): React.JSX.Element {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
-  // Set document title
   useEffect(() => {
     document.title = `${config.site.name} | Alert List`;
   }, []);
@@ -175,18 +235,24 @@ export default function AlertPage(): React.JSX.Element {
     {
       name: "Alert Title",
       width: "200px",
-      formatter: (row) => <Typography variant="body2">{row.alertType}</Typography>,
+      formatter: (row) => (
+        <Typography variant="body2">{row.alertType}</Typography>
+      ),
     },
     {
       name: "Message",
       width: "300px",
-      formatter: (row) => <Typography variant="body2">{row.message}</Typography>,
+      formatter: (row) => (
+        <Typography variant="body2">{row.message}</Typography>
+      ),
     },
     {
       name: "Send To",
       width: "150px",
       formatter: (row) => (
-        <Typography variant="body2">{formatLabel(row.recipientType)}</Typography>
+        <Typography variant="body2">
+          {formatLabel(row.recipientType)}
+        </Typography>
       ),
     },
     {
@@ -198,26 +264,6 @@ export default function AlertPage(): React.JSX.Element {
         </Typography>
       ),
     },
-    // {
-    //   name: "Status",
-    //   width: "120px",
-    //   formatter: (row) => {
-    //     const color =
-    //       row.status === "Active"
-    //         ? "green"
-    //         : row.status === "Sent"
-    //         ? "blue"
-    //         : "gray";
-    //     return (
-    //       <Chip
-    //         label={row.status}
-    //         size="small"
-    //         style={{ borderColor: color, color }}
-    //         variant="outlined"
-    //       />
-    //     );
-    //   },
-    // },
     {
       name: "Actions",
       width: "100px",
@@ -237,6 +283,7 @@ export default function AlertPage(): React.JSX.Element {
           }}
         >
           <Typography variant="h5">Alerts</Typography>
+
           <Button
             variant="contained"
             color="primary"
@@ -252,8 +299,8 @@ export default function AlertPage(): React.JSX.Element {
               <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
                 <CircularProgress />
               </Box>
-            ) : alerts.length ? (
-              <DataTable<any>
+            ) : alerts?.length ? (
+              <DataTable<AlertRecord>
                 columns={columns}
                 rows={alerts}
                 selectable={false}
@@ -266,7 +313,7 @@ export default function AlertPage(): React.JSX.Element {
                   sx={{ textAlign: "center" }}
                   variant="body2"
                 >
-                  No Data found
+                  No Data Found
                 </Typography>
               </Box>
             )}
@@ -275,21 +322,17 @@ export default function AlertPage(): React.JSX.Element {
           <Divider />
 
           <CustomersPagination
-            count={pagination?.total}
+            count={pagination?.total || 0}
             page={Math.max(0, page - 1)}
             rowsPerPage={limit}
             onPaginationChange={(_, newPage) => {
               setPage(newPage + 1);
-              dispatch(
-                getAllAlerts({ page: newPage + 1, limit })
-              );
               setSelectedAlerts([]);
             }}
             onRowsPerPageChange={(event) => {
               const newLimit = parseInt(event.target.value, 10);
               setLimit(newLimit);
               setPage(1);
-              dispatch(getAllAlerts({ page: 1, limit: newLimit }));
               setSelectedAlerts([]);
             }}
           />

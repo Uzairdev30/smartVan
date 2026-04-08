@@ -357,8 +357,9 @@ export default function Page(): React.JSX.Element {
             View
           </MenuItem>
           <MenuItem onClick={handleDeleteClick}>
-            <ListItemIcon>
-              <Trash size={18} />
+            <ListItemIcon sx={{ color: "error.main" }}>
+              <Trash weight="fill" />
+
             </ListItemIcon>
             Delete
           </MenuItem>

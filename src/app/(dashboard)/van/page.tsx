@@ -362,48 +362,58 @@ export default function Page(): React.JSX.Element {
     },
   };
 
-  const actionsColumn: ColumnDef<any> = {
-    name: "Actions",
-    width: "120px",
-    align: "right",
-    formatter: (row) => (
-      <Stack direction="row" spacing={0} sx={{ justifyContent: "flex-end" }}>
-        <IconButton size="small" onClick={(e) => handleMenuOpen(e, row)}>
-          <MoreVertIcon />
-        </IconButton>
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
-        >
-          <MenuItem onClick={handleView}>
+ const actionsColumn: ColumnDef<any> = {
+  name: "Actions",
+  width: "120px",
+  align: "right",
+  formatter: (row) => (
+    <Stack direction="row" spacing={0} sx={{ justifyContent: "flex-end" }}>
+      <IconButton size="small" onClick={(e) => handleMenuOpen(e, row)}>
+        <MoreVertIcon />
+      </IconButton>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        PaperProps={{
+          elevation: 0,
+          sx: {
+            boxShadow: "none",
+            border: "1px solid #e0e0e0", // optional, clean look ke liye
+          },
+        }}
+      >
+        <MenuItem onClick={handleView}>
+          <ListItemIcon>
+            <EyeIcon size={18} />
+          </ListItemIcon>
+          <ListItemText primary="View" />
+        </MenuItem>
+
+        {!isVanOwn && (
+          <MenuItem onClick={handleEdit}>
             <ListItemIcon>
-              <EyeIcon size={18} />
+              <EditIcon size={18} />
             </ListItemIcon>
-            <ListItemText primary="View" />
+            <ListItemText primary="Edit" />
           </MenuItem>
-          {!isVanOwn && (
-            <MenuItem onClick={handleEdit}>
-              <ListItemIcon>
-                <EditIcon size={18} />
-              </ListItemIcon>
-              <ListItemText primary="Edit" />
-            </MenuItem>
-          )}
-          {!isVanOwn && (
-            <MenuItem onClick={handleDelete}>
-              <ListItemIcon>
-                <DeleteIcon size={18} />
-              </ListItemIcon>
-              <ListItemText primary="Delete" />
-            </MenuItem>
-          )}
-        </Menu>
-      </Stack>
-    ),
-  };
+        )}
+
+        {!isVanOwn && (
+          <MenuItem onClick={handleDelete}>
+            <ListItemIcon>
+              <DeleteIcon size={18} />
+            </ListItemIcon>
+            <ListItemText primary="Delete" />
+          </MenuItem>
+        )}
+      </Menu>
+    </Stack>
+  ),
+};
 
   const columns: ColumnDef<any>[] = [
     ...baseColumns,

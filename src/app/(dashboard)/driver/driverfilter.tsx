@@ -188,10 +188,10 @@ export function DriverFilter({
             <ListItemText>InActive</ListItemText>
           </MenuItem>
           <MenuItem onClick={handleBulkDelete}>
-            <ListItemIcon>
+            <ListItemIcon sx={{ color: "error.main" }}> 
               <Trash weight="fill" />
             </ListItemIcon>
-            <ListItemText>Delete</ListItemText>
+            <ListItemText>Delete All</ListItemText>
           </MenuItem>
         </Menu>
       </Stack>

@@ -24,8 +24,8 @@ import { deleteStudentsAndRefetch, bulkUpdateStudentStatus } from "@/store/reduc
 export interface Filters {
   carNumber?: string;
   driverName?: string;
-  kidsName?:string;
-  parentName?:string;
+  kidsName?: string;
+  parentName?: string;
   grade?: string;
 }
 
@@ -72,7 +72,7 @@ export function StudentFilter({
     const ids = selected
       ?.map((item: any) => item?.student?.id || item?.id)
       .filter(Boolean);
-    
+
     console.log('Extracted IDs for delete:', ids);
 
     if (!ids.length) {
@@ -80,8 +80,8 @@ export function StudentFilter({
       return;
     }
 
-    const confirmMessage = ids.length === 1 
-      ? 'Are you sure you want to delete this student?' 
+    const confirmMessage = ids.length === 1
+      ? 'Are you sure you want to delete this student?'
       : `Are you sure you want to delete ${ids.length} students?`;
 
     if (window.confirm(confirmMessage)) {
@@ -102,11 +102,11 @@ export function StudentFilter({
     const ids = selected
       ?.map((item: any) => item?.student?.id || item?.id)
       .filter(Boolean);
-    
+
     console.log('Extracted IDs:', ids);
 
     if (!ids.length) return;
-    
+
     try {
       setBulkUpdating(true);
       setActionAnchor(null);
@@ -133,7 +133,7 @@ export function StudentFilter({
       .filter(Boolean);
 
     if (!ids.length) return;
-    
+
     try {
       setBulkUpdating(true);
       setActionAnchor(null);
@@ -191,7 +191,7 @@ export function StudentFilter({
             popover={<GenericFilterPopover field="Driver Name" />}
             value={filters?.driverName || ""}
           />
- <FilterButton
+          <FilterButton
             displayValue={filters?.kidsName || ""}
             label="Student Name"
             onFilterApply={(value) =>
@@ -201,7 +201,7 @@ export function StudentFilter({
             popover={<GenericFilterPopover field="Student Name" />}
             value={filters?.kidsName || ""}
           />
-           <FilterButton
+          <FilterButton
             displayValue={filters?.parentName || ""}
             label="Parent Name"
             onFilterApply={(value) =>
@@ -241,7 +241,7 @@ export function StudentFilter({
             </Button>
           </>
         )}
-        
+
         <Menu
           anchorEl={actionAnchor}
           open={Boolean(actionAnchor)}
@@ -261,22 +261,36 @@ export function StudentFilter({
             </ListItemIcon>
             <ListItemText>Activate All</ListItemText>
           </MenuItem>
-          
+
           <MenuItem onClick={handleBulkDeactivate}>
             <ListItemIcon>
               <MinusIcon color="var(--mui-palette-error-main)" />
             </ListItemIcon>
             <ListItemText>Inactive All</ListItemText>
           </MenuItem>
-          
+
           <MenuItem onClick={handleBulkDelete}>
-            <ListItemIcon>
+            <ListItemIcon sx={{ color: "error.main" }}>
               <Trash weight="fill" />
             </ListItemIcon>
             <ListItemText>Delete All</ListItemText>
           </MenuItem>
+
+          <MenuItem>
+           <ListItemIcon>
+              <CheckCircleIcon color="var(--mui-palette-success-main)" />
+            </ListItemIcon>
+            <ListItemText>Assign Van All</ListItemText>
+          </MenuItem>
+
+          <MenuItem onClick={handleBulkDelete}>
+            <ListItemIcon sx={{ color: "error.main" }}>
+              <Trash weight="fill" />
+            </ListItemIcon>
+            <ListItemText>Remove Van All</ListItemText>
+          </MenuItem>
         </Menu>
-              </Stack>
+      </Stack>
     </div>
   );
 }

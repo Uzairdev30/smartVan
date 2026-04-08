@@ -91,9 +91,9 @@ export default function RoutePlannerPage(): React.JSX.Element {
     console.log('🔵 selectedRoute:', selectedRoute);
     console.log('🔵 selectedRoute._id:', selectedRoute?._id);
     console.log('🔵 selectedRoute.id:', selectedRoute?.id);
-    
+
     const routeId = selectedRoute?._id || selectedRoute?.id;
-    
+
     if (routeId) {
       await dispatch(getRouteById(routeId));
       router.push(`/planner/${routeId}`);
@@ -118,10 +118,10 @@ export default function RoutePlannerPage(): React.JSX.Element {
     const routeId = selectedRoute?._id || selectedRoute?.id;
     await dispatch(deleteRouteByAdmin({ routeId: routeId }));
     setDeleteDialogOpen(false);
-    
+
     // Refresh the routes list
     dispatch(getAllRoutes({ page, limit, ...filters }));
-    
+
     // Close modal if it's open and navigate back to list
     if (routesModalOpen) {
       setRoutesModalOpen(false);
@@ -153,7 +153,7 @@ export default function RoutePlannerPage(): React.JSX.Element {
         // Separate pick and drop times
         const pickTime = row.routes?.find((r: any) => r.tripType === "pick")?.startTime;
         const dropTime = row.routes?.find((r: any) => r.tripType === "drop")?.startTime;
-        
+
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             {pickTime ? (
@@ -191,7 +191,7 @@ export default function RoutePlannerPage(): React.JSX.Element {
               onClick={() => handleViewRoutes(row)}
             >
               View Routes
-              
+
             </Typography>
           ) : (
             <Typography color="text.secondary" variant="body2">
@@ -324,7 +324,17 @@ export default function RoutePlannerPage(): React.JSX.Element {
         </Dialog>
 
         {/* ─── MENU ─── */}
-        <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}>
+        <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          PaperProps={{
+            elevation: 0,
+            sx: {
+              boxShadow: "none",
+              border: "1px solid #e0e0e0", // optional, clean look ke liye
+            },
+          }}
+        >
           <MenuItem onClick={handleViewRoute}>
             <ListItemIcon>
               <EyeIcon size={18} />
@@ -339,8 +349,8 @@ export default function RoutePlannerPage(): React.JSX.Element {
             Edit
           </MenuItem>
 
-          <MenuItem onClick={handleDeleteRoute}>
-            <ListItemIcon>
+          <MenuItem onClick={handleDeleteRoute} sx={{ color: "error.main" }}>
+            <ListItemIcon sx={{ color: "error.main" }}>
               <TrashIcon size={18} />
             </ListItemIcon>
             Delete
