@@ -151,7 +151,7 @@ export default function Page(): React.JSX.Element {
               icon={CustomerService}
               title="Total Drivers"
               variant="delayed"
-              onClick={() => router.push("/van")}
+              onClick={() => router.push("/driver")}
             />
           </Grid>
           <Grid size={{ md: 3, xs: 6 }}>

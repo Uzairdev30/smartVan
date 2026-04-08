@@ -118,11 +118,8 @@ export default function Page(): React.JSX.Element {
 
   const handleView = () => {
     if (selectedDriver) {
-      router.push(
-        paths.dashboard.drivers.details(
-          selectedDriver?._id || selectedDriver?.id
-        )
-      );
+      const id = selectedDriver?._id || selectedDriver?.id;
+      router.push(`/driver/${id}`);
     }
     handleMenuClose();
   };
@@ -248,8 +245,8 @@ export default function Page(): React.JSX.Element {
               updatingStatus === driverId
                 ? "Updating..."
                 : isActive
-                ? "Active"
-                : "InActive"
+                  ? "Active"
+                  : "InActive"
             }
             size="small"
             color={isActive ? "success" : "error"}
