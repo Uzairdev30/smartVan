@@ -23,6 +23,8 @@ import { config } from "@/config";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
 import { useRouter } from "next/navigation";
+import { SUADMIN } from "@/api/endpoint";
+import axios from "@/api/axios";
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
@@ -38,48 +40,39 @@ export default function Page(): React.JSX.Element {
 
   const isMenuOpen = Boolean(menuAnchorEl);
 
-  // Mock data for drivers
-  const [drivers, setDrivers] = React.useState<any[]>([
-    {
-      id: "1",
-      name: "Muhammad Ahmed",
-      phone: "0300-1234567",
-      cnic: "42101-1234567-1",
-      licenseNumber: "DL-123456",
-      status: "active",
-      image: "/assets/avatar.png",
-      assignedVan: "Van #1",
-      school: "ABC School",
-    },
-    {
-      id: "2",
-      name: "Ali Khan",
-      phone: "0311-9876543",
-      cnic: "42201-7654321-9",
-      licenseNumber: "DL-654321",
-      status: "inactive",
-      image: null,
-      assignedVan: "Not Assigned",
-      school: "XYZ School",
-    },
-    {
-      id: "3",
-      name: "Hassan Raza",
-      phone: "0322-5555555",
-      cnic: "42301-5555555-5",
-      licenseNumber: "DL-555555",
-      status: "active",
-      image: "/assets/avatar-2.png",
-      assignedVan: "Van #3",
-      school: "PQR School",
-    },
-  ]);
-
-  const [loading, setLoading] = React.useState(false);
+  // State for drivers data
+  const [drivers, setDrivers] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [page, setPage] = React.useState(1);
   const [limit, setLimit] = React.useState(10);
-  const [pagination, setPagination] = React.useState({ total: drivers.length });
+  const [pagination, setPagination] = React.useState({ total: 0, totalPages: 1 });
   const [selectedDrivers, setSelectedDrivers] = React.useState<any[]>([]);
+
+  // Fetch drivers data
+  const fetchDrivers = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      // Using the correct endpoint directly
+      const response = await axios.get('/admin/getAllDriversForSuperAdmin', {
+        params: { page, limit }
+      });
+      
+      if (response.data?.data) {
+        setDrivers(response.data.data);
+        setPagination(response.data.pagination || { total: 0, totalPages: 1 });
+      }
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+      setDrivers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, limit]);
+
+  // Fetch drivers on component mount and when page/limit changes
+  useEffect(() => {
+    fetchDrivers();
+  }, [fetchDrivers]);
 
   // ─── Menu Handlers ───
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, driver: any) => {
@@ -91,7 +84,7 @@ export default function Page(): React.JSX.Element {
 
   const handleView = () => {
     if (selectedDriver) {
-      router.push(`/su-admin/driver/${selectedDriver.id}`);
+      router.push(`/su-admin/driver/${selectedDriver._id}`);
     }
     handleMenuClose();
   };
@@ -101,7 +94,7 @@ export default function Page(): React.JSX.Element {
       name: "Driver",
       width: "240px",
       formatter: (row): React.JSX.Element => {
-        const name = row?.name || "";
+        const name = row?.fullname || "";
         const image = row?.image;
 
         // Inline initials generator
@@ -142,9 +135,14 @@ export default function Page(): React.JSX.Element {
               </div>
             )}
 
-            <Typography color="text.primary" variant="body2">
-              {name}
-            </Typography>
+            <Box>
+              <Typography color="text.primary" variant="body2">
+                {name}
+              </Typography>
+              <Typography color="text.secondary" variant="caption">
+                {row?.email || "No email"}
+              </Typography>
+            </Box>
           </Stack>
         );
       }
@@ -154,43 +152,25 @@ export default function Page(): React.JSX.Element {
       width: "150px",
       formatter: (row): React.JSX.Element => (
         <Typography color="text.secondary" variant="body2">
-          {row.phone}
+          {row.phoneNo || "N/A"}
         </Typography>
       ),
     },
     {
-      name: "CNIC",
+      name: "School ID",
       width: "180px",
       formatter: (row): React.JSX.Element => (
         <Typography color="text.secondary" variant="body2">
-          {row.cnic}
+          {row.schoolId || "Not Assigned"}
         </Typography>
       ),
     },
     {
-      name: "License Number",
+      name: "FCM Token",
       width: "150px",
       formatter: (row): React.JSX.Element => (
         <Typography color="text.secondary" variant="body2">
-          {row.licenseNumber}
-        </Typography>
-      ),
-    },
-    {
-      name: "Assigned Van",
-      width: "150px",
-      formatter: (row): React.JSX.Element => (
-        <Typography color="text.secondary" variant="body2">
-          {row.assignedVan || "N/A"}
-        </Typography>
-      ),
-    },
-    {
-      name: "School",
-      width: "180px",
-      formatter: (row): React.JSX.Element => (
-        <Typography color="text.secondary" variant="body2">
-          {row.school || "N/A"}
+          {row.fcmToken ? "Active" : "Inactive"}
         </Typography>
       ),
     },
@@ -204,6 +184,10 @@ export default function Page(): React.JSX.Element {
             color: "success" as const,
           },
           inactive: {
+            label: "Inactive",
+            color: "error" as const,
+          },
+          inActive: {
             label: "Inactive",
             color: "error" as const,
           },

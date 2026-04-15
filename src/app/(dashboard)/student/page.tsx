@@ -19,6 +19,13 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Modal,
+  FormControl,
+  InputLabel,
+  Select,
+  Alert,
+  List,
+  ListItem,
 } from "@mui/material";
 import { config } from "@/config";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
@@ -27,8 +34,13 @@ import {
   CheckCircleIcon,
   MinusIcon,
 } from "@/components/icons";
+import Grid from "@mui/material/Grid";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
+import { Van as VanIcon } from "@phosphor-icons/react/dist/ssr/Van";
+import { CheckCircle as CheckIcon } from "@phosphor-icons/react/dist/ssr/CheckCircle";
+import { Warning as WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
+import { XCircle as XIcon } from "@phosphor-icons/react/dist/ssr/XCircle";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import {
@@ -38,6 +50,7 @@ import {
   deleteStudentsAndRefetch,
   bulkUpdateStudentStatus,
 } from "@/store/reducers/student-slice";
+import { assignVanToStudent, getAllSchoolVans, removeVanFromStudent } from "@/store/reducers/van-slice";
 import type { StudentRecord } from "@/types/student";
 import { StudentFilter, type Filters } from "./studentfilter";
 
@@ -54,6 +67,8 @@ export default function Page(): React.JSX.Element {
     (state: RootState) => state.student
   );
 
+  const { vans } = useSelector((state: RootState) => state.van);
+
   const [localStudents, setLocalStudents] = React.useState<StudentRecord[]>([]);
   const [selectedStudents, setSelectedStudents] = React.useState<StudentRecord[]>([]);
   const [filters, setFilters] = React.useState<Filters>({});
@@ -61,12 +76,13 @@ export default function Page(): React.JSX.Element {
   const [limit, setLimit] = React.useState(10);
   const [updatingStatus, setUpdatingStatus] = React.useState<string | null>(null);
   const [bulkUpdating, setBulkUpdating] = React.useState(false);
-  const [headerActionAnchor, setHeaderActionAnchor] = React.useState<null | HTMLElement>(null);
 
   // 🔥 Menu States
   const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [headerActionAnchor, setHeaderActionAnchor] = React.useState<null | HTMLElement>(null);
   const [selectedStudent, setSelectedStudent] = React.useState<StudentRecord | null>(null);
 
+  
   const isMenuOpen = Boolean(menuAnchorEl);
 
   // Sync localStudents with students from Redux
@@ -84,6 +100,11 @@ export default function Page(): React.JSX.Element {
       })
     );
   }, [dispatch, page, limit, filters]);
+
+  // Fetch vans for assignment modal
+  React.useEffect(() => {
+    dispatch(getAllSchoolVans({ page: 1, limit: 1000 }));
+  }, [dispatch]);
 
   // ─── Menu Handlers ───
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, student: StudentRecord) => {
@@ -190,6 +211,85 @@ export default function Page(): React.JSX.Element {
     }
   };
 
+  // Individual van assignment states
+  const [vanModalOpen, setVanModalOpen] = React.useState(false);
+  const [selectedVan, setSelectedVan] = React.useState("");
+  const [assignmentResult, setAssignmentResult] = React.useState<any>(null);
+  const [showResult, setShowResult] = React.useState(false);
+  const [isAssigning, setIsAssigning] = React.useState(false);
+
+  // Individual van assignment handlers
+  const handleAssignVan = async () => {
+    if (!selectedStudent || !selectedVan) return;
+
+    try {
+      setIsAssigning(true);
+      
+      console.log('Assigning van to student:', { studentId: selectedStudent.student.id, vanId: selectedVan });
+      
+      const result = await dispatch(assignVanToStudent({ 
+        kidIds: [selectedStudent.student.id], 
+        vanId: selectedVan 
+      })).unwrap();
+      
+      setAssignmentResult(result);
+      setShowResult(true);
+      
+      // Only close modal and refresh if assignment was successful
+      if (result.summary?.assigned > 0) {
+        setTimeout(() => {
+          setVanModalOpen(false);
+          setSelectedVan("");
+          setShowResult(false);
+          dispatch(getAllStudents({ page, limit, ...filters }));
+        }, 3000);
+      }
+    } catch (err: any) {
+      console.error('Assignment error:', err);
+      setAssignmentResult({
+        message: err.message || 'Failed to assign van',
+        error: true
+      });
+      setShowResult(true);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleRemoveVan = async () => {
+    if (!selectedStudent) return;
+
+    if (window.confirm(`Are you sure you want to remove van from ${selectedStudent.student.fullname}?`)) {
+      try {
+        setIsAssigning(true);
+        
+        console.log('Removing van from student:', { studentId: selectedStudent.student.id });
+        
+        await dispatch(removeVanFromStudent({ 
+          kidIds: [selectedStudent.student.id] 
+        })).unwrap();
+        
+        // Refresh data
+        dispatch(getAllStudents({ page, limit, ...filters }));
+        setVanModalOpen(false);
+        
+      } catch (error) {
+        console.error("Failed to remove van:", error);
+      } finally {
+        setIsAssigning(false);
+      }
+    }
+  };
+
+  const handleVanModalOpen = (action: 'assign' | 'remove') => {
+    if (action === 'assign') {
+      setSelectedVan(selectedStudent?.van?.id || "");
+    }
+    setVanModalOpen(true);
+    handleMenuClose();
+  };
+
+  
   const columns: ColumnDef<StudentRecord>[] = [
     {
       name: "Student",
@@ -395,87 +495,317 @@ export default function Page(): React.JSX.Element {
   ];
 
   return (
-    <Box sx={{ bgcolor: "var(--mui-palette-background-level1)", p: 3 }}>
-      <Stack spacing={3}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={3}
-          sx={{ alignItems: "flex-start" }}
-        >
-          <Box sx={{ flex: "1 1 auto" }}>
-            <Typography variant="h5">Student Management</Typography>
+    <>
+      <Box sx={{ bgcolor: "var(--mui-palette-background-level1)", p: 3 }}>
+        <Stack spacing={3}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h5">Student List</Typography>
           </Box>
         </Stack>
+      </Box>
 
-        <Card>
-          <StudentFilter
-            filters={filters}
-            setFilters={(updater) => {
-              setPage(1); // reset page on filter change
-              setFilters((prev) =>
-                typeof updater === "function" ? updater(prev) : updater
-              );
-            }}
-            selected={selectedStudents}
-            onRefresh={handleRefresh}
-          />
+      <Card>
+        <StudentFilter
+          filters={filters}
+          setFilters={(updater) => {
+            setPage(1); // reset page on filter change
+            setFilters((prev) =>
+              typeof updater === "function" ? updater(prev) : updater
+            );
+          }}
+          selected={selectedStudents}
+          onRefresh={handleRefresh}
+        />
+        <Box sx={{ overflowX: "auto" }}>
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : students?.length ? (
+            <DataTable<any>
+              columns={columns}
+              rows={localStudents}
+              selectable
+              onSelectionChange={(_, rows) =>
+                setSelectedStudents(rows as StudentRecord[])
+              }
+            />
+          ) : (
+            <Box sx={{ p: 3 }}>
+              <Typography
+                color="text.secondary"
+                sx={{ textAlign: "center" }}
+                variant="body2"
+              >
+                No Data found
+              </Typography>
+            </Box>
+          )}
+        </Box>
+        <Divider />
+        <CustomersPagination
+          count={pagination?.total || 0}
+          page={(page || 1) - 1}
+          rowsPerPage={limit}
+          onPaginationChange={(_, newPage) => {
+            setPage(newPage + 1);
+            setSelectedStudents([]);
+          }}
+          onRowsPerPageChange={(event) => {
+            const newLimit = parseInt(event.target.value, 10);
+            setLimit(newLimit);
+            setPage(1);
+            setSelectedStudents([]);
+          }}
+        />
+      </Card>
 
-          <Box sx={{ overflowX: "auto" }}>
-            {loading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-                <CircularProgress />
-              </Box>
-            ) : students?.length ? (
-              <DataTable<any>
-                columns={columns}
-                rows={localStudents}
-                selectable
-                onSelectionChange={(_, rows) =>
-                  setSelectedStudents(rows as StudentRecord[])
-                }
-              />
-            ) : (
-              <Box sx={{ p: 3 }}>
-                <Typography
-                  color="text.secondary"
-                  sx={{ textAlign: "center" }}
-                  variant="body2"
-                >
-                  No Data found
+      {/* ─── MENU ─── */}
+      <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}>
+        <MenuItem onClick={handleView}>
+          <ListItemIcon>
+            <EyeIcon size={18} />
+          </ListItemIcon>
+          View
+        </MenuItem>
+      </Menu>
+
+      {/* ─── VAN ASSIGNMENT MODAL ─── */}
+      <Modal open={vanModalOpen} onClose={() => {
+        setVanModalOpen(false);
+        setShowResult(false);
+        setAssignmentResult(null);
+        setSelectedVan("");
+      }}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            bgcolor: "background.paper",
+            p: 4,
+            width: showResult ? 600 : 500,
+            maxHeight: "80vh",
+            overflowY: "auto",
+            borderRadius: 2,
+          }}
+        >
+          {!showResult ? (
+            <>
+              <Typography variant="h6" mb={2}>
+                Van Management
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Student: {selectedStudent?.student?.fullname}
+              </Typography>
+
+              {/* Current Van Status */}
+              <Box mb={3}>
+                <Typography variant="body2" color="text.secondary" mb={1}>
+                  Current Van: {selectedStudent?.van?.carNumber || 'No van assigned'}
                 </Typography>
+                {selectedStudent?.student?.vanId && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    fullWidth
+                    onClick={handleRemoveVan}
+                    disabled={isAssigning}
+                    sx={{ mb: 2 }}
+                  >
+                    Remove Current Van
+                  </Button>
+                )}
               </Box>
-            )}
-          </Box>
 
-          <Divider />
+              {/* Assign New Van */}
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="subtitle1" mb={2}>
+                Assign New Van
+              </Typography>
 
-          <CustomersPagination
-            count={pagination?.total || 0}
-            page={(page || 1) - 1}
-            rowsPerPage={limit}
-            onPaginationChange={(_, newPage) => {
-              setPage(newPage + 1);
-              setSelectedStudents([]);
-            }}
-            onRowsPerPageChange={(event) => {
-              const newLimit = parseInt(event.target.value, 10);
-              setLimit(newLimit);
-              setPage(1);
-              setSelectedStudents([]);
-            }}
-          />
-        </Card>
+              <FormControl fullWidth sx={{ mb: 3 }}>
+                <InputLabel>Select Van</InputLabel>
+                <Select
+                  value={selectedVan}
+                  label="Select Van"
+                  onChange={(e) => setSelectedVan(e.target.value)}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 250,
+                        overflowY: "auto",
+                      },
+                    },
+                  }}
+                >
+                  {vans
+                    .filter((item) => item.van.status?.toLowerCase() === 'active')
+                    .map((item) => (
+                      <MenuItem key={item.van.id} value={item.van.id}>
+                        {item.van.vehicleType} — {item.van.carNumber}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
 
-        {/* ─── MENU ─── */}
-        <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}>
-          <MenuItem onClick={handleView}>
-            <ListItemIcon>
-              <EyeIcon size={18} />
-            </ListItemIcon>
-            View
-          </MenuItem>
-        </Menu>
-      </Stack>
-    </Box>
+              <Stack direction="row" spacing={2} justifyContent="flex-end">
+                <Button variant="outlined" onClick={() => {
+                  setVanModalOpen(false);
+                  setSelectedVan("");
+                }}>
+                  Cancel
+                </Button>
+                <Button 
+                  variant="contained" 
+                  disabled={!selectedVan || isAssigning}
+                  onClick={handleAssignVan}
+                >
+                  {isAssigning ? 'Assigning...' : 'Assign Van'}
+                </Button>
+              </Stack>
+            </>
+          ) : (
+            <>
+              {/* Assignment Results */}
+              <Typography variant="h6" mb={2}>
+                Van Assignment Result
+              </Typography>
+
+              {assignmentResult?.error ? (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {assignmentResult.message}
+                </Alert>
+              ) : (
+                <>
+                  {/* Summary */}
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    {assignmentResult?.message || 'Van assignment processed successfully'}
+                  </Alert>
+
+                  {assignmentResult?.summary && (
+                    <Box mb={2}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Summary:
+                      </Typography>
+                      <Stack spacing={1}>
+                        <Typography variant="body2">
+                          • Total Requested: {assignmentResult.summary.totalRequested}
+                        </Typography>
+                        <Typography variant="body2" color="success.main">
+                          • Successfully Assigned: {assignmentResult.summary.assigned}
+                        </Typography>
+                        <Typography variant="body2" color="info.main">
+                          • Already in this Van: {assignmentResult.summary.alreadySameVan}
+                        </Typography>
+                        <Typography variant="body2" color="warning.main">
+                          • Assigned to Other Van: {assignmentResult.summary.differentVan}
+                        </Typography>
+                      </Stack>
+                    </Box>
+                  )}
+
+                  {/* Details */}
+                  {assignmentResult?.details && (
+                    <>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Details:
+                      </Typography>
+                      
+                      {/* Successfully Assigned */}
+                      {assignmentResult.details.assignedKids?.length > 0 && (
+                        <Box mb={2}>
+                          <Typography variant="body2" color="success.main" gutterBottom>
+                             Successfully Assigned:
+                          </Typography>
+                          <List dense>
+                            {assignmentResult.details.assignedKids.map((kid: any) => (
+                              <ListItem key={kid.id} sx={{ py: 0 }}>
+                                <ListItemIcon sx={{ minWidth: 32 }}>
+                                  <CheckIcon color="green" size={16} />
+                                </ListItemIcon>
+                                <ListItemText primary={kid.name} />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+                      )}
+
+                      {/* Already Same Van */}
+                      {assignmentResult.details.alreadySameVanKids?.length > 0 && (
+                        <Box mb={2}>
+                          <Typography variant="body2" color="info.main" gutterBottom>
+                            ℹ️ Already in this Van:
+                          </Typography>
+                          <List dense>
+                            {assignmentResult.details.alreadySameVanKids.map((kid: any) => (
+                              <ListItem key={kid.id} sx={{ py: 0 }}>
+                                <ListItemIcon sx={{ minWidth: 32 }}>
+                                  <WarningIcon color="blue" size={16} />
+                                </ListItemIcon>
+                                <ListItemText 
+                                  primary={kid.name}
+                                  secondary={kid.reason}
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+                      )}
+
+                      {/* Different Van */}
+                      {assignmentResult.details.differentVanKids?.length > 0 && (
+                        <Box mb={2}>
+                          <Typography variant="body2" color="warning.main" gutterBottom>
+                            ⚠️ Remove from current van then assign this van:
+                          </Typography>
+                          <List dense>
+                            {assignmentResult.details.differentVanKids.map((kid: any) => (
+                              <ListItem key={kid.id} sx={{ py: 0 }}>
+                                <ListItemIcon sx={{ minWidth: 32 }}>
+                                  <XIcon color="orange" size={16} />
+                                </ListItemIcon>
+                                <ListItemText 
+                                  primary={kid.name}
+                                  secondary={kid.reason}
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+                      )}
+                    </>
+                  )}
+
+                  {/* Driver Notification */}
+                  {assignmentResult?.driverNotification?.sent && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      📱 Driver notification sent ({assignmentResult.driverNotification.assignedCount} students)
+                    </Alert>
+                  )}
+                  
+                  {/* Close Button */}
+                  <Stack direction="row" spacing={2} justifyContent="flex-end" mt={3}>
+                    <Button 
+                      variant="contained" 
+                      onClick={() => {
+                        setVanModalOpen(false);
+                        setShowResult(false);
+                        setAssignmentResult(null);
+                        setSelectedVan("");
+                      }}
+                    >
+                      Close
+                    </Button>
+                  </Stack>
+                </>
+              )}
+            </>
+          )}
+        </Box>
+      </Modal>
+    </>
   );
 }

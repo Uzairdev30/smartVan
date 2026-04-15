@@ -40,8 +40,20 @@ import {
 import { RouteFilter } from "./RouteFilter";
 import { paths } from "@/paths";
 import { config } from "@/config";
+// ✅ helper function (component se bahar)
+const formatTimeToAMPM = (time: string) => {
+  if (!time) return "";
 
+  const date = new Date(time);
+
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
 export default function RoutePlannerPage(): React.JSX.Element {
+
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
@@ -87,10 +99,10 @@ export default function RoutePlannerPage(): React.JSX.Element {
   };
 
   const handleViewRoute = async () => {
-    console.log('🔵 handleViewRoute called');
-    console.log('🔵 selectedRoute:', selectedRoute);
-    console.log('🔵 selectedRoute._id:', selectedRoute?._id);
-    console.log('🔵 selectedRoute.id:', selectedRoute?.id);
+    console.log('handleViewRoute called');
+    console.log('selectedRoute:', selectedRoute);
+    console.log('selectedRoute._id:', selectedRoute?._id);
+    console.log('selectedRoute.id:', selectedRoute?.id);
 
     const routeId = selectedRoute?._id || selectedRoute?.id;
 
@@ -151,8 +163,11 @@ export default function RoutePlannerPage(): React.JSX.Element {
       width: "200px",
       formatter: (row) => {
         // Separate pick and drop times
-        const pickTime = row.routes?.find((r: any) => r.tripType === "pick")?.startTime;
-        const dropTime = row.routes?.find((r: any) => r.tripType === "drop")?.startTime;
+        const pickRaw = row.routes?.find((r: any) => r.tripType === "pick")?.startTime;
+        const dropRaw = row.routes?.find((r: any) => r.tripType === "drop")?.startTime;
+
+        const pickTime = formatTimeToAMPM(pickRaw);
+        const dropTime = formatTimeToAMPM(dropRaw);
 
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>

@@ -17,6 +17,17 @@ export default function MapComponent({ onPositionChange, initialLat, initialLng,
   const { token } = useAuthContext();
   // const socket = useSocket(token || undefined); // Commented out to avoid type errors
 
+  // Load Google Maps API with places library for autocomplete
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+  console.log('Google Maps API Key:', apiKey ? 'Present' : 'Missing');
+  console.log('API Key length:', apiKey.length);
+  
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: apiKey,
+    libraries: ['places'], // Ensure the places library is loaded
+  });
+
   const [markerPosition, setMarkerPosition] = useState({
     lat: initialLat && Number.isFinite(Number(initialLat)) ? Number(initialLat) : 24.8607,
     lng: initialLng && Number.isFinite(Number(initialLng)) ? Number(initialLng) : 67.0011,
@@ -57,25 +68,72 @@ export default function MapComponent({ onPositionChange, initialLat, initialLng,
     // }
   };  
 
-  // Autocomplete logic (NO loader here)
+  // Autocomplete logic with proper loading check
   useEffect(() => {
-    if (!inputRef.current || !window.google) return;
+    console.log('Autocomplete useEffect triggered');
+    console.log('isLoaded:', isLoaded);
+    console.log('inputRef.current:', inputRef.current);
+    console.log('window.google:', window.google);
 
-    const autocomplete = new window.google.maps.places.Autocomplete(
-      inputRef.current
-    );
+    if (!isLoaded || !inputRef.current || !window.google) {
+      console.log('Skipping autocomplete initialization - missing dependencies');
+      return;
+    }
 
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-
-      if (place.geometry?.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-
-        handleLocationSelect(lat, lng);
+    console.log('Initializing autocomplete...');
+    
+    try {
+      // Remove all previous autocomplete instances
+      if (inputRef.current) {
+        // Clear any existing autocomplete
+        inputRef.current.removeEventListener('keydown', () => {});
       }
-    });
-  }, []);
+
+      const autocomplete = new window.google.maps.places.Autocomplete(
+        inputRef.current,
+        {
+          types: ['geocode'],
+          fields: ['place_id', 'geometry', 'name', 'formatted_address'],
+          componentRestrictions: { country: ['pk'] } // Restrict to Pakistan
+        }
+      );
+
+      console.log('Autocomplete created successfully');
+
+      autocomplete.addListener('place_changed', () => {
+        console.log('Place changed event triggered');
+        const place = autocomplete.getPlace();
+        console.log('Selected place:', place);
+
+        if (place.geometry?.location) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          console.log('Location selected:', { lat, lng });
+
+          handleLocationSelect(lat, lng);
+          
+          // Clear input after selection
+          if (inputRef.current) {
+            inputRef.current.value = place.name || place.formatted_address || '';
+          }
+        } else {
+          console.log('No geometry found for selected place');
+        }
+      });
+
+      console.log('Place changed listener added');
+
+      // Cleanup function
+      return () => {
+        console.log('Cleaning up autocomplete listeners');
+        if (window.google?.maps?.event) {
+          window.google.maps.event.clearInstanceListeners(autocomplete);
+        }
+      };
+    } catch (error) {
+      console.error('Error initializing autocomplete:', error);
+    }
+  }, [isLoaded, handleLocationSelect]);
 
   // Marker drag handler
   const handleMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
@@ -116,6 +174,30 @@ export default function MapComponent({ onPositionChange, initialLat, initialLng,
     }
   }, []);
 
+  if (!isLoaded) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100%',
+        backgroundColor: '#f5f5f5'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid #f3f3f3',
+            borderTop: '4px solid #4285f4',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 20px'
+          }}></div>
+          <p style={{ color: '#666', fontFamily: 'Arial, sans-serif' }}>Loading Google Maps...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -127,6 +209,37 @@ export default function MapComponent({ onPositionChange, initialLat, initialLng,
       padding: '0',
       boxSizing: 'border-box'
     }}>
+      {/* Google Maps Search Input */}
+      <input
+        ref={inputRef}
+        type="text"
+        placeholder="Search for a location..."
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          zIndex: 1000,
+          padding: '12px 16px',
+          width: '350px',
+          borderRadius: '8px',
+          border: '1px solid #ddd',
+          fontSize: '14px',
+          fontFamily: 'Arial, sans-serif',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          backgroundColor: 'white',
+          outline: 'none',
+          transition: 'all 0.2s ease',
+        }}
+        onFocus={(e) => {
+          e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+          e.target.style.borderColor = '#4285f4';
+        }}
+        onBlur={(e) => {
+          e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+          e.target.style.borderColor = '#ddd';
+        }}
+      />
+      
       <GoogleMap
         mapContainerStyle={{
           width: '100%',

@@ -107,11 +107,23 @@ export default function AddRouteForm(): React.JSX.Element {
       .catch(console.error);
   }, [dispatch]);
 
+  const formatToISO = (time: string) => {
+    const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+    return new Date(`${today}T${time}`).toISOString();
+  };
+
   const onSubmit = async (data: FormValues) => {
     const payload = {
       ...data,
-      startPoint: { lat: parseFloat(data.startLat), long: parseFloat(data.startLong) },
-      endPoint: { lat: parseFloat(data.endLat), long: parseFloat(data.endLong) },
+      startTime: formatToISO(data.startTime), // ✅ THIS WAS MISSING
+      startPoint: {
+        lat: parseFloat(data.startLat),
+        long: parseFloat(data.startLong),
+      },
+      endPoint: {
+        lat: parseFloat(data.endLat),
+        long: parseFloat(data.endLong),
+      },
     };
     await dispatch(createRoute(payload));
   };
@@ -229,11 +241,11 @@ export default function AddRouteForm(): React.JSX.Element {
               {/* Trip Days */}
               <Grid item xs={12}>
                 <FormControl component="fieldset" fullWidth>
-                      <InputLabel>Trip Days</InputLabel>
+                  <InputLabel>Trip Days</InputLabel>
                   <Typography
                     variant="h6"
-                    sx={{ 
-                      mb: 2, 
+                    sx={{
+                      mb: 2,
                       fontWeight: 600,
                       color: '#2c3e50',
                       display: 'flex',
@@ -336,9 +348,9 @@ export default function AddRouteForm(): React.JSX.Element {
       </Card>
 
       {/* Map Picker Dialog */}
-      <Dialog 
-        open={!!openPicker} 
-        onClose={() => setOpenPicker(null)} 
+      <Dialog
+        open={!!openPicker}
+        onClose={() => setOpenPicker(null)}
         maxWidth={false}
         fullWidth
         PaperProps={{
@@ -360,9 +372,9 @@ export default function AddRouteForm(): React.JSX.Element {
           }
         }}
       >
-        <DialogContent sx={{ 
-          width: '90%', 
-          height: '80%', 
+        <DialogContent sx={{
+          width: '90%',
+          height: '80%',
           maxWidth: '1000px',
           maxHeight: '700px',
           margin: 'auto',

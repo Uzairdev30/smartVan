@@ -259,8 +259,26 @@ export default function AlertPage(): React.JSX.Element {
       name: "Date/Time",
       width: "180px",
       formatter: (row) => (
-        <Typography variant="body2">
-          {dayjs(row.date).format("DD MMM YYYY, hh:mm A")}
+        <Typography variant="body2" sx={{ lineHeight: 1.4 }}>
+          <Box component="span" sx={{ fontWeight: 600 }}>
+            {dayjs(row.date).format("DD MMM YYYY")}
+          </Box>
+
+          <Box
+            component="span"
+            sx={{
+              display: "inline-block",
+              fontSize: "11px",
+              color: "primary.main",
+              backgroundColor: "action.hover",
+              px: 1,
+              py: 0.3,
+              borderRadius: "8px",
+              ml: 1,
+            }}
+          >
+            {dayjs(row.date).format("hh:mm A")}
+          </Box>
         </Typography>
       ),
     },

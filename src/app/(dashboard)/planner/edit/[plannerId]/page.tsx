@@ -38,6 +38,7 @@ import { useForm, Controller } from "react-hook-form";
 import MapComponent from "@/components/MapSelection";
 import useSocket from "@/lib/sockets/socket";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { config } from "@/config";
 
 type FormValues = {
   vanId: string;
@@ -122,7 +123,9 @@ export default function UpdateRouteForm(): React.JSX.Element {
         vanId: routeDetails.vanId || "",
         driverId: routeDetails.driverId || "",
         title: routeDetails.title || "",
-        startTime: routeDetails.startTime || "",
+        startTime: routeDetails.startTime
+        ? routeDetails.startTime.slice(11, 16)
+        : "",
         tripType: routeDetails.tripType || "pick",
         tripDays: routeDetails.tripDays || {
           monday: false,
@@ -140,13 +143,18 @@ export default function UpdateRouteForm(): React.JSX.Element {
       });
     }
   }, [routeDetails, reset]);
+const formatToISO = (time: string) => {
+  if (!time) return "";
 
+  const today = new Date().toISOString().split("T")[0];
+  return new Date(`${today}T${time}:00`).toISOString();
+};
   const onSubmit = async (data: FormValues) => {
     const payload = {
       routeId: routeDetails?._id,
       vanId: data.vanId,
       title: data.title,
-      startTime: data.startTime,
+      startTime: formatToISO(data.startTime),
       tripType: data.tripType,
       tripDays: data.tripDays,
       startPoint: {

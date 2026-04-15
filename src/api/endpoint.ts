@@ -17,6 +17,8 @@ export const STUDENT = {
     GET_STUDENT_BY_ID: '/Admin/getStudentById',
     ASSIGN_VAN: '/Admin/assignVanToStudent',
     VERIFY_STUDENT_BY_ADMIN: '/kid/changeKidStatus',
+    ASSIGN_VAN_TO_STUDENT: '/kid/assignVanToStudents',
+    REMOVE_VAN_TO_STUDENT: 'kid/removeVanFromKid',
 }
 export const SCHOOL = {
     GET_ALL_SCHOOL: '/Admin/getAllSchools'
@@ -78,7 +80,11 @@ export const SUADMIN={
     GET_ALL_BANNERS:'/promotion-banner/findAll',
     GET_BANNER_BY_ID:'/promotion-banner',
     UPDATE_BANNER:'/promotion-banner',
-    DELETE_BANNER:'/promotion-banner'
+    DELETE_BANNER:'/promotion-banner',
+    
+    //driver 
+    GET_ALL_DRIVER_FOR_SUPERADMIN: `${BASE_URL}/admin/getAllDriversForSuperAdmin`,
+    GET_DRIVER_DETAIL_SUPERADMIN: `${BASE_URL}/van/getDriverById`
 }
 
 export const DASHBOARD ={
