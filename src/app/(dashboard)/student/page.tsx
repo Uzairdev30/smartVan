@@ -495,16 +495,13 @@ export default function Page(): React.JSX.Element {
   ];
 
   return (
-    <>
-      <Box sx={{ bgcolor: "var(--mui-palette-background-level1)", p: 3 }}>
-        <Stack spacing={3}>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h5">Student List</Typography>
-          </Box>
-        </Stack>
-      </Box>
+    <Box sx={{ bgcolor: "var(--mui-palette-background-level1)", p: 3 }}>
+      <Stack spacing={3}>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="h5">Student List</Typography>
+        </Box>
 
-      <Card>
+        <Card>
         <StudentFilter
           filters={filters}
           setFilters={(updater) => {
@@ -558,7 +555,8 @@ export default function Page(): React.JSX.Element {
             setSelectedStudents([]);
           }}
         />
-      </Card>
+        </Card>
+      </Stack>
 
       {/* ─── MENU ─── */}
       <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}>
@@ -806,6 +804,6 @@ export default function Page(): React.JSX.Element {
           )}
         </Box>
       </Modal>
-    </>
+    </Box>
   );
 }
