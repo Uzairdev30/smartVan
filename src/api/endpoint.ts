@@ -84,7 +84,10 @@ export const SUADMIN={
     
     //driver 
     GET_ALL_DRIVER_FOR_SUPERADMIN: `${BASE_URL}/admin/getAllDriversForSuperAdmin`,
-    GET_DRIVER_DETAIL_SUPERADMIN: `${BASE_URL}/van/getDriverById`
+    GET_DRIVER_DETAIL_SUPERADMIN: `${BASE_URL}/van/getDriverById`,
+
+    //vans
+    GET_ALL_VAN_FOR_SUPERADMIN: `${BASE_URL}/admin/GetVansBySuperAdmin`
 }
 
 export const DASHBOARD ={

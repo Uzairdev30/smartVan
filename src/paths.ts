@@ -77,6 +77,8 @@ export const paths = {
     alert: '/alert',
     superadmin:{
       school:'/su-admin/school-management',
+      van:'/su-admin/van',
+      driver:'/su-admin/driver',
       billing:'/su-admin/billing',
       createbilling:'/su-admin/billing/create',
       banner:'/su-admin/banner'
