@@ -64,6 +64,12 @@ export const layoutConfig = {
           ],
         },
         {
+          key: "tracking",
+          items: [
+            { key: "tracking", title: "Live Tracking", href: paths.dashboard.tracking, icon: "truck" },
+          ],
+        },
+        {
           key: "billing",
           items: [
             { key: "billing", title: "Billing & Subscription", href: paths.dashboard.superadmin.billing, icon: "invoice" },
@@ -76,6 +82,12 @@ export const layoutConfig = {
           ],
         },
         {
+          key: "student",
+          items: [
+            { key: "student", title: "Student Management", href: paths.dashboard.superadmin.student, icon: "student" },
+          ],
+        },
+        {
           key: "driver",
           items: [
             { key: "driver", title: "Driver Management", href: paths.dashboard.superadmin.driver, icon: "user" },
@@ -85,12 +97,6 @@ export const layoutConfig = {
           key: "van",
           items: [
             { key: "van", title: "Van Management", href: paths.dashboard.superadmin.van, icon: "van" },
-          ],
-        },
-        {
-          key: "tracking",
-          items: [
-            { key: "tracking", title: "Live Tracking", href: paths.dashboard.tracking, icon: "truck" },
           ],
         },
         {
@@ -111,19 +117,19 @@ export const layoutConfig = {
         ],
       },
       {
+        key: "student",
+        items: [
+          { key: "student", title: "Student Management", href: paths.dashboard.student, icon: "student" },
+        ],
+      },
+      {
         key: "tracking",
         items: [
           { key: "tracking", title: "Live Tracking", href: paths.dashboard.tracking, icon: "truck" },
         ],
       },
       {
-        key: "student",
-        items: [
-          { key: "student", title: "Student Management", href: paths.dashboard.student, icon: "users" },
-        ],
-      },
-      {
-        key: "Driver",
+        key: "driver",
         items: [
           { key: "driver", title: "Driver Management", href: paths.dashboard.driver?.list, icon: "user" },
         ],

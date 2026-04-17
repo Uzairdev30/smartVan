@@ -79,6 +79,7 @@ export const paths = {
       school:'/su-admin/school-management',
       van:'/su-admin/van',
       driver:'/su-admin/driver',
+      student:'/su-admin/student',
       billing:'/su-admin/billing',
       createbilling:'/su-admin/billing/create',
       banner:'/su-admin/banner'

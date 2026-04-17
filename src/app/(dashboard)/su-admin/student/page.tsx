@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import {
   Box,
   Card,
+  CardContent,
+  CardHeader,
   Divider,
   Stack,
   Typography,
@@ -19,6 +21,10 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem as SelectMenuItem,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Eye as EyeIcon } from "@phosphor-icons/react/dist/ssr/Eye";
@@ -28,78 +34,54 @@ import { CustomersPagination } from "@/components/dashboard/customer/customers-p
 import { useRouter } from "next/navigation";
 import { SUADMIN } from "@/api/endpoint";
 import axios from "@/api/axios";
-import { VanFilter, type VanFilters } from "./driverfilter";
-import { FormControl, InputLabel, Select, MenuItem as SelectMenuItem } from "@mui/material";
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
 
   useEffect(() => {
-    document.title = `${config.site.name} | Van List`;
+    document.title = `${config.site.name} | Student List`;
   }, []);
 
   const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [selectedVan, setSelectedVan] = React.useState<any | null>(null);
+  const [selectedStudent, setSelectedStudent] = React.useState<any | null>(null);
   const isMenuOpen = Boolean(menuAnchorEl);
 
-  const [vans, setVans] = React.useState<any[]>([]);
+  const [students, setStudents] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const [limit, setLimit] = React.useState(10);
   const [pagination, setPagination] = React.useState({ total: 0, totalPages: 1 });
-  const [filters, setFilters] = React.useState<VanFilters>({});
   const [selectedSchool, setSelectedSchool] = React.useState<string>('all');
   const [schools, setSchools] = React.useState<any[]>([]);
-  const [routesModalOpen, setRoutesModalOpen] = React.useState(false);
-  const [selectedRoutes, setSelectedRoutes] = React.useState<any[]>([]);
-  const [localVans, setLocalVans] = React.useState<any[]>([]);
+  const [detailsModalOpen, setDetailsModalOpen] = React.useState(false);
+  const [selectedStudentDetails, setSelectedStudentDetails] = React.useState<any>(null);
+  const [localStudents, setLocalStudents] = React.useState<any[]>([]);
 
-  // Fetch vans data
-  const fetchVans = React.useCallback(async () => {
+  // Fetch students data
+  const fetchStudents = React.useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(SUADMIN.GET_ALL_VAN_FOR_SUPERADMIN, {
-        params: { page, limit, schoolId: selectedSchool === 'all' ? undefined : selectedSchool, ...filters },
+      const response = await axios.get('/admin/GetStudentsBySuperAdmin', {
+        params: { page, limit, schoolId: selectedSchool === 'all' ? undefined : selectedSchool }
       });
 
       if (response.data?.data) {
-        setVans(response.data.data);
-        setLocalVans(response.data.data);
+        setStudents(response.data.data);
+        setLocalStudents(response.data.data);
         setPagination(response.data.pagination || { total: 0, totalPages: 1 });
       }
     } catch (error) {
-      console.error("Error fetching vans:", error);
-      setVans([]);
+      console.error("Error fetching students:", error);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
-  }, [page, limit, selectedSchool, filters]);
+  }, [page, limit, selectedSchool]);
 
-  // Client-side filtering for carNumber, driverName, and status
-  const filteredVans = React.useMemo(() => {
-    let result = localVans;
-    if (filters.carNumber?.trim()) {
-      result = result.filter((v) =>
-        v?.van?.carNumber
-          ?.toLowerCase()
-          .includes(filters.carNumber.toLowerCase())
-      );
-    }
-    if (filters.driverName?.trim()) {
-      result = result.filter((v) =>
-        v?.driver?.fullname
-          ?.toLowerCase()
-          .includes(filters.driverName.toLowerCase())
-      );
-    }
-    if (filters.status?.trim()) {
-      result = result.filter((v) => {
-        const status = v?.van?.status?.toLowerCase();
-        return status === filters.status.toLowerCase();
-      });
-    }
-    return result;
-  }, [localVans, filters]);
+  // Client-side filtering
+  const filteredStudents = React.useMemo(() => {
+    return localStudents;
+  }, [localStudents]);
 
   // Fetch schools for filter dropdown
   const fetchSchools = React.useCallback(async () => {
@@ -113,37 +95,36 @@ export default function Page(): React.JSX.Element {
     }
   }, []);
 
-  // Fetch vans on component mount and when page/limit/filters change
+  // Fetch students on component mount and when page/limit changes
   useEffect(() => {
-    fetchVans();
-  }, [fetchVans]);
+    fetchStudents();
+  }, [fetchStudents]);
 
   // Fetch schools on component mount
   useEffect(() => {
     fetchSchools();
   }, [fetchSchools]);
 
-  // ─── Menu Handlers ───
-  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, van: any) => {
+  // Menu Handlers
+  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, student: any) => {
     setMenuAnchorEl(e.currentTarget);
-    setSelectedVan(van);
+    setSelectedStudent(student);
   };
 
   const handleMenuClose = () => setMenuAnchorEl(null);
 
   const handleView = () => {
-    if (selectedVan) {
-      router.push(`/su-admin/van/${selectedVan._id}`);
+    if (selectedStudent) {
+      router.push(`/su-admin/student/${selectedStudent.student.id}`);
     }
     handleMenuClose();
   };
 
-  const handleViewRoutes = (row: any) => {
-    setSelectedRoutes(row.routes);
-    setRoutesModalOpen(true);
+  const handleViewDetails = (student: any) => {
+    setSelectedStudentDetails(student);
+    setDetailsModalOpen(true);
   };
 
-  // ✅ Columns (Direct Nested Access)
   const columns: ColumnDef<any>[] = [
     {
       name: "S.No",
@@ -154,14 +135,13 @@ export default function Page(): React.JSX.Element {
       ),
     },
     {
-      name: "Driver",
+      name: "Student Name",
       width: "240px",
       formatter: (row): React.JSX.Element => {
-        const name = row?.driver?.fullname || "No Driver Assigned";
-        const image = row?.driver?.image;
-        const phone = row?.driver?.phoneNo || "N/A";
+        const name = row?.student?.fullname || "No Name";
+        const image = row?.student?.image;
+        const grade = row?.student?.grade || "N/A";
 
-        // Inline initials generator
         const initials = name
           .split(" ")
           .map((w: string) => w[0]?.toUpperCase())
@@ -204,7 +184,7 @@ export default function Page(): React.JSX.Element {
                 {name}
               </Typography>
               <Typography color="text.secondary" variant="caption">
-                {phone}
+                Grade: {grade}
               </Typography>
             </Box>
           </Stack>
@@ -212,32 +192,31 @@ export default function Page(): React.JSX.Element {
       },
     },
     {
-      name: "Car Number",
+      name: "Gender",
       formatter: (row) => (
-        <Typography  color="text.secondary" variant="body2">
-          {row?.van?.carNumber || "N/A"}
+        <Typography color="text.secondary" variant="body2">
+          {row?.student?.gender || "N/A"}
         </Typography>
       ),
     },
     {
-      name: "Vehicle Type",
+      name: "Age",
       formatter: (row) => (
         <Typography color="text.secondary" variant="body2">
-          {row?.van?.vehicleType || "N/A"}
+          {row?.student?.age || "N/A"}
         </Typography>
       ),
     },
-    
     {
-      name: "Condition",
+      name: "DOB",
       formatter: (row) => (
         <Typography color="text.secondary" variant="body2">
-          {row?.van?.condition || "N/A"}
+          {row?.student?.dob ? new Date(row.student.dob).toLocaleDateString() : "N/A"}
         </Typography>
       ),
     },
-   {
-      name: "Routes",
+    {
+      name: "Details",
       formatter: (row) => (
         <Box
           sx={{
@@ -245,29 +224,23 @@ export default function Page(): React.JSX.Element {
             justifyContent: "flex-start",
             alignItems: "center",
             height: "100%",
-            cursor: row.routes?.length ? "pointer" : "default",
+            cursor: "pointer",
           }}
         >
-          {row.routes?.length ? (
-            <Typography
-              variant="body2"
-              color="primary"
-              onClick={() => handleViewRoutes(row)}
-            >
-              View Routes
-            </Typography>
-          ) : (
-            <Typography color="text.secondary" variant="body2">
-              No routes assigned
-            </Typography>
-          )}
+          <Typography
+            variant="body2"
+            color="primary"
+            onClick={() => handleViewDetails(row)}
+          >
+            View Details
+          </Typography>
         </Box>
       ),
     },
     {
       name: "Status",
       formatter: (row) => {
-        const status = row?.van?.status?.toLowerCase();
+        const status = row?.student?.status?.toLowerCase();
 
         return (
           <Chip
@@ -299,7 +272,7 @@ export default function Page(): React.JSX.Element {
           sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
         >
           <Box sx={{ flex: "1 1 auto" }}>
-            <Typography variant="h5">Van Management</Typography>
+            <Typography variant="h5">Student List</Typography>
           </Box>
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <Select
@@ -321,25 +294,15 @@ export default function Page(): React.JSX.Element {
         </Stack>
 
         <Card>
-          <VanFilter
-            filters={filters}
-            setFilters={(updater) => {
-              setFilters((prev) =>
-                typeof updater === "function" ? updater(prev) : updater
-              );
-            }}
-            onRefresh={() => fetchVans()}
-          />
-
           <Box sx={{ overflowX: "auto" }}>
             {loading ? (
               <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
                 <CircularProgress />
               </Box>
-            ) : filteredVans?.length ? (
+            ) : filteredStudents?.length ? (
               <DataTable
                 columns={columns}
-                rows={filteredVans}
+                rows={filteredStudents}
                 selectable={false}
               />
             ) : (
@@ -349,7 +312,7 @@ export default function Page(): React.JSX.Element {
                   sx={{ textAlign: "center" }}
                   variant="body2"
                 >
-                  No Vans Found
+                  No Students Found
                 </Typography>
               </Box>
             )}
@@ -372,11 +335,11 @@ export default function Page(): React.JSX.Element {
           />
         </Card>
 
-        {/* Routes Modal */}
+        {/* Details Modal */}
         <Dialog
-          open={routesModalOpen}
-          onClose={() => setRoutesModalOpen(false)}
-          maxWidth="sm"
+          open={detailsModalOpen}
+          onClose={() => setDetailsModalOpen(false)}
+          maxWidth="md"
           fullWidth
         >
           <DialogTitle
@@ -388,33 +351,63 @@ export default function Page(): React.JSX.Element {
               gap: 1,
             }}
           >
-            Routes Details
+            Parent / Van / Driver (Details)
           </DialogTitle>
           <DialogContent>
-            {selectedRoutes.length === 0 ? (
-              <Typography>No routes assigned</Typography>
-            ) : (
-              <Stack spacing={1} mt={1}>
-                {selectedRoutes.map((route) => (
-                  <Box
-                    key={route.id}
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      border: "1px solid #eee",
-                      borderRadius: 1,
-                      p: 1,
-                    }}
-                  >
-                    <Typography variant="body2">{route.title}</Typography>
-                    <Chip label={route.tripType} size="small" color="primary" />
-                  </Box>
-                ))}
+            <Box sx={{ mt: 2 }}>
+              {/* 1 Row with 3 Columns */}
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+                {/* Parent Details Column */}
+                <Card sx={{ flex: 1 }}>
+                  <CardHeader title="Parent Information" />
+                  <CardContent>
+                    {selectedStudentDetails?.parent?.id ? (
+                      <Stack spacing={1}>
+                        <Typography><strong>Name:</strong> {selectedStudentDetails.parent.fullname}</Typography>
+                        <Typography><strong>Email:</strong> {selectedStudentDetails.parent.email}</Typography>
+                        <Typography><strong>Phone:</strong> {selectedStudentDetails.parent.phoneNo}</Typography>
+                        <Typography><strong>Address:</strong> {selectedStudentDetails.parent.address}</Typography>
+                      </Stack>
+                    ) : (
+                      <Typography color="text.secondary">No parent assigned</Typography>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Van Details Column */}
+                <Card sx={{ flex: 1 }}>
+                  <CardHeader title="Van Information" />
+                  <CardContent>
+                    {selectedStudentDetails?.van?.id ? (
+                      <Stack spacing={1}>
+                        <Typography><strong>Vehicle Type:</strong> {selectedStudentDetails.van.vehicleType}</Typography>
+                        <Typography><strong>Car Number:</strong> {selectedStudentDetails.van.carNumber}</Typography>
+                      </Stack>
+                    ) : (
+                      <Typography color="text.secondary">No van assigned</Typography>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Driver Details Column */}
+                <Card sx={{ flex: 1 }}>
+                  <CardHeader title="Driver Information" />
+                  <CardContent>
+                    {selectedStudentDetails?.driver?.id ? (
+                      <Stack spacing={1}>
+                        <Typography><strong>Name:</strong> {selectedStudentDetails.driver.fullname}</Typography>
+                        <Typography><strong>Phone:</strong> {selectedStudentDetails.driver.phoneNo}</Typography>
+                      </Stack>
+                    ) : (
+                      <Typography color="text.secondary">No driver assigned</Typography>
+                    )}
+                  </CardContent>
+                </Card>
               </Stack>
-            )}
+            </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setRoutesModalOpen(false)}>Close</Button>
+            <Button onClick={() => setDetailsModalOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
 

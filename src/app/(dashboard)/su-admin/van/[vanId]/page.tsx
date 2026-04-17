@@ -20,9 +20,10 @@ import {
 import { ArrowLeft as ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
 import { Car as CarIcon } from "@phosphor-icons/react/dist/ssr/Car";
 import { User as UserIcon } from "@phosphor-icons/react/dist/ssr/User";
-import { Buildings as SchoolIcon } from "@phosphor-icons/react/dist/ssr/Buildings"; // ✅ School → Buildings
+import { Buildings as SchoolIcon } from "@phosphor-icons/react/dist/ssr/Buildings"; 
 import { useRouter, useParams } from "next/navigation";
 import { config } from "@/config";
+import axios from "@/api/axios";
 
 export default function VanDetailPage(): React.JSX.Element {
   const router = useRouter();
@@ -33,42 +34,33 @@ export default function VanDetailPage(): React.JSX.Element {
     document.title = `${config.site.name} | Van Details (Super Admin)`;
   }, []);
 
-  const van = {
-    id: vanId,
-    carNumber: "ABC-123",
-    model: "Suzuki Bolan",
-    year: "2022",
-    color: "White",
-    capacity: 30,
-    chassisNumber: "MBLHA123456789012",
-    engineNumber: "HA123E456789",
-    registrationExpiry: "2025-12-31",
-    insuranceExpiry: "2025-06-30",
-    status: "active",
-    assignedDriver: {
-      name: "Muhammad Ahmed",
-      phone: "0300-1234567",
-      licenseNumber: "DL-123456"
-    },
-    school: {
-      name: "ABC School",
-      code: "SCH-001",
-      city: "Karachi"
-    },
-    routes: [
-      {
-        name: "Route A - North Nazimabad",
-        stops: 15,
-        students: 25,
-        timing: "7:00 AM - 8:00 AM"
+  // State for van data
+  const [van, setVan] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  // Fetch van details
+  const fetchVanDetails = React.useCallback(async () => {
+    if (!vanId) return;
+    
+    try {
+      setLoading(true);
+      const response = await axios.get(`/van/getVanById/${vanId}`);
+      
+      if (response.data?.data) {
+        setVan(response.data.data);
       }
-    ],
-    maintenance: {
-      lastService: "2024-01-15",
-      nextService: "2024-04-15",
-      serviceType: "Regular Maintenance"
+    } catch (error) {
+      console.error('Error fetching van details:', error);
+      setVan(null);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [vanId]);
+
+  // Fetch van details on component mount
+  useEffect(() => {
+    fetchVanDetails();
+  }, [fetchVanDetails]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -78,6 +70,29 @@ export default function VanDetailPage(): React.JSX.Element {
       default: return "default";
     }
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 4, display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+        <Typography>Loading van details...</Typography>
+      </Box>
+    );
+  }
+
+  if (!van) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Button startIcon={<ArrowLeftIcon />} onClick={() => router.back()}>
+          Back to Vans
+        </Button>
+        <Box sx={{ mt: 3, textAlign: "center" }}>
+          <Typography variant="h6" color="error">
+            Van not found
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 4 }}>
@@ -95,12 +110,12 @@ export default function VanDetailPage(): React.JSX.Element {
                   <CarIcon />
                 </Avatar>
                 <Box>
-                  <Typography variant="h6">{van?.carNumber || 'Van Number N/A'}</Typography>
+                  <Typography variant="h6">{van?.numberPlate || 'Van Number N/A'}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {van?.model} ({van?.year}) | {van?.color}
+                    {van?.vehicleType} | Capacity: {van?.capacity} seats
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Capacity: {van?.capacity} seats
+                    Condition: {van?.condition || 'N/A'}
                   </Typography>
                 </Box>
               </Box>
@@ -121,40 +136,36 @@ export default function VanDetailPage(): React.JSX.Element {
           <CardContent>
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Car Number</Typography>
-                <Typography variant="body1">{van?.carNumber || '—'}</Typography>
+                <Typography variant="subtitle1" color="text.secondary">Number Plate</Typography>
+                <Typography variant="body1">{van?.numberPlate || '—'}</Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Model</Typography>
-                <Typography variant="body1">{van?.model || '—'}</Typography>
+                <Typography variant="subtitle1" color="text.secondary">Vehicle Type</Typography>
+                <Typography variant="body1">{van?.vehicleType || '—'}</Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Year</Typography>
-                <Typography variant="body1">{van?.year || '—'}</Typography>
+                <Typography variant="subtitle1" color="text.secondary">Condition</Typography>
+                <Typography variant="body1">{van?.condition || '—'}</Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Color</Typography>
-                <Typography variant="body1">{van?.color || '—'}</Typography>
+                <Typography variant="subtitle1" color="text.secondary">Capacity</Typography>
+                <Typography variant="body1">{van?.capacity || '—'} seats</Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Seating Capacity</Typography>
-                <Typography variant="body1">{van?.capacity || '—'}</Typography>
+                <Typography variant="subtitle1" color="text.secondary">Device ID</Typography>
+                <Typography variant="body1">{van?.deviceId || '—'}</Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Chassis Number</Typography>
-                <Typography variant="body1">{van?.chassisNumber || '—'}</Typography>
+                <Typography variant="subtitle1" color="text.secondary">Status</Typography>
+                <Typography variant="body1">{van?.status || '—'}</Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Engine Number</Typography>
-                <Typography variant="body1">{van?.engineNumber || '—'}</Typography>
+                <Typography variant="subtitle1" color="text.secondary">Own Van</Typography>
+                <Typography variant="body1">{van?.ownVan ? 'Yes' : 'No'}</Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Registration Expiry</Typography>
-                <Typography variant="body1">{van?.registrationExpiry || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Insurance Expiry</Typography>
-                <Typography variant="body1">{van?.insuranceExpiry || '—'}</Typography>
+                <Typography variant="subtitle1" color="text.secondary">Route</Typography>
+                <Typography variant="body1">{van?.route || '—'}</Typography>
               </Grid>
             </Grid>
           </CardContent>
@@ -167,15 +178,23 @@ export default function VanDetailPage(): React.JSX.Element {
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle1" color="text.secondary">Driver Name</Typography>
-                <Typography variant="body1">{van?.assignedDriver?.name || '—'}</Typography>
+                <Typography variant="body1">{van?.driverName || '—'}</Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle1" color="text.secondary">Driver Phone</Typography>
-                <Typography variant="body1">{van?.assignedDriver?.phone || '—'}</Typography>
+                <Typography variant="body1">{van?.driverPhone || '—'}</Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">License Number</Typography>
-                <Typography variant="body1">{van?.assignedDriver?.licenseNumber || '—'}</Typography>
+                <Typography variant="subtitle1" color="text.secondary">Driver Email</Typography>
+                <Typography variant="body1">{van?.driverEmail || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" color="text.secondary">Driver CNIC</Typography>
+                <Typography variant="body1">{van?.driverCnic || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle1" color="text.secondary">Driver ID</Typography>
+                <Typography variant="body1">{van?.driverId || '—'}</Typography>
               </Grid>
             </Grid>
           </CardContent>
@@ -186,18 +205,6 @@ export default function VanDetailPage(): React.JSX.Element {
           <CardHeader avatar={<Avatar><SchoolIcon /></Avatar>} title="School Assignment" />
           <CardContent>
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">School Name</Typography>
-                <Typography variant="body1">{van?.school?.name || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">School Code</Typography>
-                <Typography variant="body1">{van?.school?.code || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">City</Typography>
-                <Typography variant="body1">{van?.school?.city || '—'}</Typography>
-              </Grid>
             </Grid>
           </CardContent>
         </Card>
@@ -209,27 +216,22 @@ export default function VanDetailPage(): React.JSX.Element {
             <Stack spacing={2}>
               {van?.routes?.map((route: any, index: number) => (
                 <Box
-                  key={index}
+                  key={route.id || index}
                   sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, bgcolor: 'background.default' }}
                 >
                   <Stack spacing={1}>
                     <Typography variant="subtitle2" fontWeight={600}>
-                      {route.name}
+                      {route.routeName}
                     </Typography>
                     <Grid container spacing={2}>
                       <Grid item xs={12} sm={4}>
                         <Typography variant="body2" color="text.secondary">
-                          Total Stops: {route.stops}
+                          Trip Type: {route.tripType}
                         </Typography>
                       </Grid>
                       <Grid item xs={12} sm={4}>
                         <Typography variant="body2" color="text.secondary">
-                          Total Students: {route.students}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <Typography variant="body2" color="text.secondary">
-                          Timing: {route.timing}
+                          Start Time: {route.startTime ? new Date(route.startTime).toLocaleString() : '—'}
                         </Typography>
                       </Grid>
                     </Grid>
@@ -243,26 +245,6 @@ export default function VanDetailPage(): React.JSX.Element {
           </CardContent>
         </Card>
 
-        {/* Maintenance History Card */}
-        <Card>
-          <CardHeader title="Maintenance History" />
-          <CardContent>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Last Service Date</Typography>
-                <Typography variant="body1">{van?.maintenance?.lastService || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">Next Service Date</Typography>
-                <Typography variant="body1">{van?.maintenance?.nextService || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="subtitle1" color="text.secondary">Service Type</Typography>
-                <Typography variant="body1">{van?.maintenance?.serviceType || '—'}</Typography>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
       </Stack>
     </Box>
   );
