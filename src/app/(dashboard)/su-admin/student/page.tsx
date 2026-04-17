@@ -34,6 +34,7 @@ import { CustomersPagination } from "@/components/dashboard/customer/customers-p
 import { useRouter } from "next/navigation";
 import { SUADMIN } from "@/api/endpoint";
 import axios from "@/api/axios";
+import { StudentFilter, type StudentFilters } from "./students-filters";
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
@@ -56,6 +57,7 @@ export default function Page(): React.JSX.Element {
   const [detailsModalOpen, setDetailsModalOpen] = React.useState(false);
   const [selectedStudentDetails, setSelectedStudentDetails] = React.useState<any>(null);
   const [localStudents, setLocalStudents] = React.useState<any[]>([]);
+  const [filters, setFilters] = React.useState<StudentFilters>({});
 
   // Fetch students data
   const fetchStudents = React.useCallback(async () => {
@@ -80,8 +82,60 @@ export default function Page(): React.JSX.Element {
 
   // Client-side filtering
   const filteredStudents = React.useMemo(() => {
-    return localStudents;
-  }, [localStudents]);
+    return localStudents.filter((student) => {
+      const studentName = student?.student?.fullname || '';
+      const age = student?.student?.age || '';
+      const dob = student?.student?.dob ? new Date(student.student.dob) : null;
+      const status = student?.student?.status || '';
+      const parentName = student?.parent?.fullname || '';
+      
+      // Student Name filter
+      if (filters.studentName && !studentName.toLowerCase().includes(filters.studentName.toLowerCase())) {
+        return false;
+      }
+      
+      // Age filter
+      if (filters.age && !age.toString().includes(filters.age)) {
+        return false;
+      }
+      
+      // DOB filter
+      if (filters.dob && dob) {
+        const filterDob = new Date(filters.dob);
+        const studentDob = new Date(dob);
+        if (filterDob.toDateString() !== studentDob.toDateString()) {
+          return false;
+        }
+      }
+      
+      // Status filter
+      if (filters.status && status.toLowerCase() !== filters.status.toLowerCase()) {
+        return false;
+      }
+      
+      // Parent Name filter
+      if (filters.parentName && !parentName.toLowerCase().includes(filters.parentName.toLowerCase())) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [localStudents, filters]);
+
+  // Handle filter changes
+  const handleFiltersApply = React.useCallback((newFilters: StudentFilters) => {
+    setFilters(newFilters);
+  }, []);
+
+  // Clear all filters
+  const handleFiltersClear = React.useCallback(() => {
+    setFilters({});
+  }, []);
+
+  // Check if any filters are active
+  const hasActiveFilters = React.useMemo(() => {
+    return Object.values(filters).some((value) => value && value !== '');
+  }, [filters]);
 
   // Fetch schools for filter dropdown
   const fetchSchools = React.useCallback(async () => {
@@ -274,26 +328,33 @@ export default function Page(): React.JSX.Element {
           <Box sx={{ flex: "1 1 auto" }}>
             <Typography variant="h5">Student List</Typography>
           </Box>
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <Select
-              value={selectedSchool}
-              label="Filter by School"
-              onChange={(e) => {
-                setSelectedSchool(e.target.value);
-                setPage(1);
-              }}
-            >
-              <SelectMenuItem value="all">All Schools</SelectMenuItem>
-              {schools?.map((school: any) => (
-                <SelectMenuItem key={school._id} value={school._id}>
-                  {school.schoolName || school.name}
-                </SelectMenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Stack direction="row" spacing={2}>
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <Select
+                value={selectedSchool}
+                label="Filter by School"
+                onChange={(e) => {
+                  setSelectedSchool(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <SelectMenuItem value="all">All Schools</SelectMenuItem>
+                {schools?.map((school: any) => (
+                  <SelectMenuItem key={school._id} value={school._id}>
+                    {school.schoolName || school.name}
+                  </SelectMenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
         </Stack>
 
         <Card>
+          <StudentFilter
+            filters={filters}
+            setFilters={setFilters}
+            onRefresh={fetchStudents}
+          />
           <Box sx={{ overflowX: "auto" }}>
             {loading ? (
               <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
