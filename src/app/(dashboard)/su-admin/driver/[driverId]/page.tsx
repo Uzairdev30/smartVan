@@ -45,7 +45,7 @@ export default function DriverDetailPage(): React.JSX.Element {
     
     try {
       setLoading(true);
-      const response = await axios.get(`${SUADMIN.GET_DRIVER_DETAIL_SUPERADMIN}/${driverId}`);
+      const response = await axios.get(`/van/getDriverById/${driverId}`);
       
       if (response.data?.data) {
         setDriver(response.data.data);
@@ -173,19 +173,15 @@ export default function DriverDetailPage(): React.JSX.Element {
           <CardHeader avatar={<Avatar><SchoolIcon /></Avatar>} title="School Assignment" />
           <CardContent>
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <Typography variant="subtitle1" color="text.secondary">School Name</Typography>
                 <Typography variant="body1">{driver?.schoolName || 'Not Assigned'}</Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">School ID</Typography>
-                <Typography variant="body1">{driver?.schoolId || 'Not Assigned'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <Typography variant="subtitle1" color="text.secondary">User Type</Typography>
                 <Typography variant="body1">{driver?.userType || '—'}</Typography>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <Typography variant="subtitle1" color="text.secondary">Notification Toggle</Typography>
                 <Typography variant="body1">{driver?.notificationToggle ? 'Enabled' : 'Disabled'}</Typography>
               </Grid>
@@ -194,14 +190,10 @@ export default function DriverDetailPage(): React.JSX.Element {
         </Card>
 
         {/* System Information Card */}
-        <Card>
+        {/* <Card>
           <CardHeader title="System Information" />
           <CardContent>
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle1" color="text.secondary">User ID</Typography>
-                <Typography variant="body1">{driver?._id || '—'}</Typography>
-              </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle1" color="text.secondary">Verified</Typography>
                 <Typography variant="body1">{driver?.isVerified ? 'Yes' : 'No'}</Typography>
@@ -228,7 +220,7 @@ export default function DriverDetailPage(): React.JSX.Element {
               </Grid>
             </Grid>
           </CardContent>
-        </Card>
+        </Card> */}
       </Stack>
     </Box>
   );
