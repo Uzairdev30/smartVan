@@ -4,12 +4,9 @@ import React, { useState } from "react";
 import {
   Avatar,
   Box,
-  Card,
-  CardContent,
   Grid,
   Stack,
   Typography,
-  Divider,
   Chip,
   Paper,
   Button,
@@ -19,59 +16,136 @@ import {
   DialogActions,
   TextField,
   IconButton,
+  Divider,
 } from "@mui/material";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import EmailIcon from '@mui/icons-material/Email';
-import PhoneIcon from '@mui/icons-material/Phone';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import BusinessIcon from '@mui/icons-material/Business';
-import CreditCardIcon from '@mui/icons-material/CreditCard';
-import RouteIcon from '@mui/icons-material/Route';
-import PeopleIcon from '@mui/icons-material/People';
-import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
-import CloseIcon from '@mui/icons-material/Close';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import BusinessIcon from "@mui/icons-material/Business";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import RouteIcon from "@mui/icons-material/Route";
+import PeopleIcon from "@mui/icons-material/People";
+import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
+import CloseIcon from "@mui/icons-material/Close";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import api from "@/api/axios";
 import { toast } from "@/components/core/toaster";
 import { AUTH } from "@/api/endpoint";
 
-// 🔹 Modern Detail Item Component
-function DetailItem({ label, value, icon }: { label: string; value: any; icon?: React.ReactNode }) {
+/* =========================
+   Helpers
+========================= */
+const normalizeText = (value?: string) =>
+  value && value.trim() && value.trim() !== "-" ? value.trim() : "—";
+
+const formatAddress = (address: string) => {
+  if (!address) {
+    return {
+      line1: "—",
+      area: "—",
+      city: "—",
+      country: "—",
+      postalCode: "—",
+    };
+  }
+
+  const parts = address
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const postalMatch = address.match(/\b\d{5,6}\b/);
+  const postalCode = postalMatch ? postalMatch[0] : "—";
+
+  let line1 = "—";
+  let area = "—";
+  let city = "—";
+  let country = "Pakistan"; // default rakh lo
+
+  if (parts.length === 1) {
+    line1 = parts[0];
+  }
+
+  if (parts.length === 2) {
+    line1 = parts[0];
+    city = parts[1];
+  }
+
+  if (parts.length === 3) {
+    line1 = parts[0];
+    area = parts[1];
+    city = parts[2];
+  }
+
+  if (parts.length >= 4) {
+    line1 = parts[0];
+    area = parts[1];
+    city = parts[2];
+    country = parts[3];
+  }
+
+  return {
+    line1: normalizeText(line1),
+    area: normalizeText(area),
+    city: normalizeText(city),
+    country: normalizeText(country),
+    postalCode,
+  };
+};
+
+/* =========================
+   UI Components
+========================= */
+function DetailItem({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: any;
+  icon?: React.ReactNode;
+}) {
   return (
-    <Box sx={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 2,
-      p: 2,
-      borderRadius: 2,
-      bgcolor: 'grey.50',
-      border: '1px solid',
-      borderColor: 'divider',
-      transition: 'all 0.2s ease-in-out',
-      '&:hover': {
-        bgcolor: 'primary.50',
-        transform: 'translateY(-2px)',
-        boxShadow: 2
-      }
-    }}>
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        bgcolor: "grey.50",
+        border: "1px solid",
+        borderColor: "divider",
+        transition: "all 0.2s ease-in-out",
+        "&:hover": {
+          bgcolor: "primary.50",
+          transform: "translateY(-2px)",
+          boxShadow: 2,
+        },
+      }}
+    >
       {icon && (
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'primary.main',
-          minWidth: 40
-        }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "primary.main",
+            minWidth: 40,
+          }}
+        >
           {icon}
         </Box>
       )}
+
       <Box sx={{ flex: 1 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', mb: 0.5 }}>
+        <Typography variant="body2" color="text.secondary" fontWeight={700} sx={{ mb: 0.5 }}>
           {label}
         </Typography>
-        <Typography variant="body1" fontWeight="600" color="text.primary">
+        <Typography variant="body1" fontWeight={400} color="text.primary">
           {value || "—"}
         </Typography>
       </Box>
@@ -79,8 +153,153 @@ function DetailItem({ label, value, icon }: { label: string; value: any; icon?: 
   );
 }
 
-// 🔹 Change Password Modal Component
-function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+const LocationCard = ({ title, address }: { title: string; address: string }) => {
+  const formatted = formatAddress(address);
+
+  return (
+    <Box
+      sx={{
+        p: 2.5,
+        borderRadius: 3,
+        border: "1px solid",
+        borderColor: "divider",
+        bgcolor: "background.paper",
+        boxShadow: 1,
+        transition: "all 0.2s ease-in-out",
+        "&:hover": {
+          bgcolor: "primary.50",
+          transform: "translateY(-2px)",
+          boxShadow: 2,
+        },
+      }}
+    >
+      <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: "primary.50",
+            color: "primary.main",
+            flexShrink: 0,
+          }}
+        >
+          <LocationOnIcon fontSize="small" />
+        </Box>
+
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="subtitle1" fontWeight={700} noWrap>
+            {title}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            School location
+          </Typography>
+        </Box>
+
+        <Chip
+          label="Location"
+          size="small"
+          color="primary"
+          variant="outlined"
+          sx={{ flexShrink: 0 }}
+        />
+      </Stack>
+
+      <Divider sx={{ mb: 2 }} />
+
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              bgcolor: "grey.50",
+              border: "1px solid",
+              borderColor: "divider",
+              height: "100%",
+            }}
+          >
+            <Typography variant="body2" color="text.secondary" fontWeight={700} sx={{ mb: 0.5 }}>
+              City
+            </Typography>
+            <Typography variant="body1" fontWeight={400}>
+              {formatted.city}
+            </Typography>
+
+            <Typography variant="body2" color="text.secondary" fontWeight={700} sx={{ mt: 2, mb: 0.5 }}>
+              Postal Code
+            </Typography>
+            {formatted.postalCode !== "—" ? (
+              <Chip
+                label={formatted.postalCode}
+                size="small"
+                sx={{
+                  bgcolor: "primary.50",
+                  color: "primary.main",
+                  fontWeight: 700,
+                }}
+              />
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                —
+              </Typography>
+            )}
+
+            <Typography variant="body2" color="text.secondary" fontWeight={700} sx={{ mt: 2, mb: 0.5 }}>
+              Country
+            </Typography>
+            <Typography variant="body2" color="text.primary">
+              {formatted.country}
+            </Typography>
+          </Box>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              bgcolor: "grey.50",
+              border: "1px solid",
+              borderColor: "divider",
+              height: "100%",
+            }}
+          >
+            <Typography variant="body2" color="text.secondary" fontWeight={700} sx={{ mb: 0.5 }}>
+              Address Line
+            </Typography>
+            <Typography variant="body1" fontWeight={400}>
+              {formatted.line1}
+            </Typography>
+
+            <Typography variant="body2" color="text.secondary" fontWeight={700} sx={{ mt: 2, mb: 0.5 }}>
+              Area
+            </Typography>
+            <Typography variant="body2" color="text.primary">
+              {formatted.area}
+            </Typography>
+          </Box>
+        </Grid>
+
+        
+      </Grid>
+    </Box>
+  );
+};
+
+/* =========================
+   Password Modal
+========================= */
+function ChangePasswordModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -91,7 +310,7 @@ function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (newPassword !== confirmPassword) {
       toast.error("New password and confirm password do not match");
       return;
@@ -105,8 +324,8 @@ function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => 
     setLoading(true);
     try {
       const response = await api.post(AUTH.CHANGE_PASSWORD, {
-        oldPassword: oldPassword,
-        newPassword: newPassword
+        oldPassword,
+        newPassword,
       });
 
       if (response.data.status) {
@@ -135,7 +354,7 @@ function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => 
           aria-label="close"
           onClick={onClose}
           sx={{
-            position: 'absolute',
+            position: "absolute",
             right: 8,
             top: 8,
             color: (theme) => theme.palette.grey[500],
@@ -144,6 +363,7 @@ function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => 
           <CloseIcon />
         </IconButton>
       </DialogTitle>
+
       <form onSubmit={handleSubmit}>
         <DialogContent>
           <Stack spacing={3}>
@@ -163,9 +383,10 @@ function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => 
                   >
                     {showOldPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
-                )
+                ),
               }}
             />
+
             <TextField
               label="New Password"
               type={showNewPassword ? "text" : "password"}
@@ -182,9 +403,10 @@ function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => 
                   >
                     {showNewPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
-                )
+                ),
               }}
             />
+
             <TextField
               label="Confirm New Password"
               type={showConfirmPassword ? "text" : "password"}
@@ -201,11 +423,12 @@ function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => 
                   >
                     {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
-                )
+                ),
               }}
             />
           </Stack>
         </DialogContent>
+
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
           <Button type="submit" variant="contained" disabled={loading}>
@@ -217,40 +440,44 @@ function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => 
   );
 }
 
-// 🔹 MAIN COMPONENT
+/* =========================
+   Main Page
+========================= */
 export default function SchoolDetails() {
   const school = useSelector((state: RootState) => state.auth.userProfile);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   if (!school) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <Typography variant="h6" color="text.secondary">Loading...</Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: 400,
+        }}
+      >
+        <Typography variant="h6" color="text.secondary">
+          Loading...
+        </Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
-      {/* Profile Header */}
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          mb: 4,
-          borderRadius: 3,
-        }}
-      >
+    <Box sx={{ maxWidth: 1200, mx: "auto", p: 3 }}>
+      <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3 }}>
         <Stack direction="row" spacing={3} alignItems="center">
           <Avatar
             src={school?.schoolImage}
             sx={{
               width: 80,
               height: 80,
-              border: '3px solid white',
-              boxShadow: 2
+              border: "3px solid white",
+              boxShadow: 2,
             }}
           />
+
           <Box sx={{ flex: 1 }}>
             <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
               {school.schoolName}
@@ -259,25 +486,18 @@ export default function SchoolDetails() {
               {school.branchName}
             </Typography>
           </Box>
+
           <Stack direction="row" spacing={1} alignItems="center">
             <Chip
               label="Active"
               color="success"
               variant="filled"
-              sx={{
-                fontWeight: 'bold',
-                px: 2,
-                py: 1
-              }}
+              sx={{ fontWeight: "bold", px: 2, py: 1 }}
             />
             <Button
               variant="outlined"
               onClick={() => setChangePasswordOpen(true)}
-              sx={{
-                fontWeight: 'bold',
-                px: 2,
-                py: 1
-              }}
+              sx={{ fontWeight: "bold", px: 2, py: 1 }}
             >
               Change Password
             </Button>
@@ -285,63 +505,31 @@ export default function SchoolDetails() {
         </Stack>
       </Paper>
 
-      {/* Main Content Grid */}
       <Grid container spacing={3}>
-        {/* School Information */}
         <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 3, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 3, color: 'primary.main', fontWeight: 'bold' }}>
-              {/* <BusinessIcon sx={{ mr: 1, verticalAlign: 'middle' }} /> */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 3, height: "100%" }}>
+            <Typography variant="h6" sx={{ mb: 3, color: "primary.main", fontWeight: "bold" }}>
               School Information
             </Typography>
+
             <Stack spacing={2}>
-              <DetailItem
-                label="School Name"
-                value={school.schoolName}
-                icon={<BusinessIcon />}
-              />
-              <DetailItem
-                label="Email"
-                value={school.schoolEmail}
-                icon={<EmailIcon />}
-              />
-              <DetailItem
-                label="Branch"
-                value={school.branchName}
-                icon={<LocationOnIcon />}
-              />
-              <DetailItem
-                label="Contact Number"
-                value={school.contactNumber}
-                icon={<PhoneIcon />}
-              />
-              <DetailItem
-                label="Address"
-                value={school.address}
-                icon={<LocationOnIcon />}
-              />
+              <DetailItem label="School Name" value={school.schoolName} icon={<BusinessIcon />} />
+              <DetailItem label="Email" value={school.schoolEmail} icon={<EmailIcon />} />
+              <DetailItem label="Branch" value={school.branchName} icon={<LocationOnIcon />} />
+              <DetailItem label="Contact Number" value={school.contactNumber} icon={<PhoneIcon />} />
             </Stack>
           </Paper>
         </Grid>
 
-        {/* Subscription Details */}
         <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 3, height: '100%' }}>
-            <Typography variant="h6" sx={{ mb: 3, color: 'primary.main', fontWeight: 'bold' }}>
-              {/* <CreditCardIcon sx={{ mr: 1, verticalAlign: 'middle' }} /> */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 3, height: "100%" }}>
+            <Typography variant="h6" sx={{ mb: 3, color: "primary.main", fontWeight: "bold" }}>
               Subscription Details
             </Typography>
+
             <Stack spacing={2}>
-              <DetailItem
-                label="Current Plan"
-                value={school.currentPlan}
-                icon={<CreditCardIcon />}
-              />
-              <DetailItem
-                label="Billing Cycle"
-                value={school.billingCycle}
-                icon={<CreditCardIcon />}
-              />
+              <DetailItem label="Current Plan" value={school.currentPlan} icon={<CreditCardIcon />} />
+              <DetailItem label="Billing Cycle" value={school.billingCycle} icon={<CreditCardIcon />} />
               <DetailItem
                 label="Auto Renew"
                 value={school.autoRenew ? "Enabled" : "Disabled"}
@@ -353,22 +541,17 @@ export default function SchoolDetails() {
                   />
                 }
               />
-              <DetailItem
-                label="Payment Method"
-                value={school.paymentMethod}
-                icon={<CreditCardIcon />}
-              />
+              <DetailItem label="Payment Method" value={school.paymentMethod} icon={<CreditCardIcon />} />
             </Stack>
           </Paper>
         </Grid>
 
-        {/* Usage Limits */}
         <Grid item xs={12}>
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 3, color: 'primary.main', fontWeight: 'bold' }}>
-              {/* <RouteIcon sx={{ mr: 1, verticalAlign: 'middle' }} /> */}
+            <Typography variant="h6" sx={{ mb: 3, color: "primary.main", fontWeight: "bold" }}>
               Usage Limits
             </Typography>
+
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={4}>
                 <DetailItem
@@ -395,29 +578,12 @@ export default function SchoolDetails() {
           </Paper>
         </Grid>
 
-        {/* Location */}
         <Grid item xs={12}>
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 3, color: 'primary.main', fontWeight: 'bold' }}>
-              {/* <LocationOnIcon sx={{ mr: 1, verticalAlign: 'middle' }} /> */}
-              Location
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <DetailItem
-                  label="Latitude"
-                  value={school.lat}
-                  icon={<LocationOnIcon />}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <DetailItem
-                  label="Longitude"
-                  value={school.long}
-                  icon={<LocationOnIcon />}
-                />
-              </Grid>
-            </Grid>
+            <LocationCard
+              title={`${school.schoolName} Campus`}
+              address={school.address}
+            />
           </Paper>
         </Grid>
       </Grid>
