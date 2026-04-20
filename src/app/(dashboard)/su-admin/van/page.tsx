@@ -29,7 +29,7 @@ import { useRouter } from "next/navigation";
 import { SUADMIN } from "@/api/endpoint";
 import axios from "@/api/axios";
 import { VanFilter, type VanFilters } from "./driverfilter";
-import { FormControl, InputLabel, Select, MenuItem as SelectMenuItem } from "@mui/material";
+import { FormControl, Select, MenuItem as SelectMenuItem } from "@mui/material";
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
@@ -42,88 +42,72 @@ export default function Page(): React.JSX.Element {
   const [selectedVan, setSelectedVan] = React.useState<any | null>(null);
   const isMenuOpen = Boolean(menuAnchorEl);
 
-  const [vans, setVans] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const [limit, setLimit] = React.useState(10);
   const [pagination, setPagination] = React.useState({ total: 0, totalPages: 1 });
   const [filters, setFilters] = React.useState<VanFilters>({});
-  const [selectedSchool, setSelectedSchool] = React.useState<string>('all');
+  const [selectedSchool, setSelectedSchool] = React.useState<string>("all");
   const [schools, setSchools] = React.useState<any[]>([]);
   const [routesModalOpen, setRoutesModalOpen] = React.useState(false);
   const [selectedRoutes, setSelectedRoutes] = React.useState<any[]>([]);
   const [localVans, setLocalVans] = React.useState<any[]>([]);
 
-  // Fetch vans data
   const fetchVans = React.useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(SUADMIN.GET_ALL_VAN_FOR_SUPERADMIN, {
-        params: { page, limit, schoolId: selectedSchool === 'all' ? undefined : selectedSchool, ...filters },
+        params: {
+          page,
+          limit,
+          schoolId: selectedSchool === "all" ? undefined : selectedSchool,
+          ...filters,
+        },
       });
-
       if (response.data?.data) {
-        setVans(response.data.data);
         setLocalVans(response.data.data);
         setPagination(response.data.pagination || { total: 0, totalPages: 1 });
       }
     } catch (error) {
       console.error("Error fetching vans:", error);
-      setVans([]);
+      setLocalVans([]);
     } finally {
       setLoading(false);
     }
   }, [page, limit, selectedSchool, filters]);
 
-  // Client-side filtering for carNumber, driverName, and status
   const filteredVans = React.useMemo(() => {
     let result = localVans;
     if (filters.carNumber?.trim()) {
       result = result.filter((v) =>
-        v?.van?.carNumber
-          ?.toLowerCase()
-          .includes(filters.carNumber.toLowerCase())
+        v?.van?.carNumber?.toLowerCase().includes(filters.carNumber.toLowerCase())
       );
     }
     if (filters.driverName?.trim()) {
       result = result.filter((v) =>
-        v?.driver?.fullname
-          ?.toLowerCase()
-          .includes(filters.driverName.toLowerCase())
+        v?.driver?.fullname?.toLowerCase().includes(filters.driverName.toLowerCase())
       );
     }
     if (filters.status?.trim()) {
-      result = result.filter((v) => {
-        const status = v?.van?.status?.toLowerCase();
-        return status === filters.status.toLowerCase();
-      });
+      result = result.filter((v) =>
+        v?.van?.status?.toLowerCase() === filters.status.toLowerCase()
+      );
     }
     return result;
   }, [localVans, filters]);
 
-  // Fetch schools for filter dropdown
   const fetchSchools = React.useCallback(async () => {
     try {
       const response = await axios.get(SUADMIN.GET_ALL_SCHOOL);
-      if (response.data?.data) {
-        setSchools(response.data.data);
-      }
+      if (response.data?.data) setSchools(response.data.data);
     } catch (error) {
-      console.error('Error fetching schools:', error);
+      console.error("Error fetching schools:", error);
     }
   }, []);
 
-  // Fetch vans on component mount and when page/limit/filters change
-  useEffect(() => {
-    fetchVans();
-  }, [fetchVans]);
+  useEffect(() => { fetchVans(); }, [fetchVans]);
+  useEffect(() => { fetchSchools(); }, [fetchSchools]);
 
-  // Fetch schools on component mount
-  useEffect(() => {
-    fetchSchools();
-  }, [fetchSchools]);
-
-  // ─── Menu Handlers ───
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>, van: any) => {
     setMenuAnchorEl(e.currentTarget);
     setSelectedVan(van);
@@ -133,39 +117,37 @@ export default function Page(): React.JSX.Element {
 
   const handleView = () => {
     if (selectedVan) {
-      router.push(`/su-admin/van/${selectedVan._id}`);
+      // ✅ API returns "id" not "_id"
+      const vanId = selectedVan?.van?.id;
+      if (vanId) {
+        router.push(`/su-admin/van/${vanId}`);
+      } else {
+        console.error("Van ID not found in selected row:", selectedVan);
+      }
     }
     handleMenuClose();
   };
 
   const handleViewRoutes = (row: any) => {
-    setSelectedRoutes(row.routes);
+    setSelectedRoutes(row.routes || []);
     setRoutesModalOpen(true);
   };
 
-  // ✅ Columns (Direct Nested Access)
   const columns: ColumnDef<any>[] = [
     {
       name: "S.No",
       formatter: (row, index) => (
-        <Typography fontWeight={500}>
-          {((page - 1) * limit) + index + 1}
-        </Typography>
+        <Typography fontWeight={500}>{(page - 1) * limit + index + 1}</Typography>
       ),
     },
     {
       name: "Driver",
       width: "240px",
       formatter: (row): React.JSX.Element => {
-        const name = row?.driver?.fullname || "No Driver Assigned";
+        const name = row?.driver?.fullname?.trim() || "No Driver Assigned";
         const image = row?.driver?.image;
         const phone = row?.driver?.phoneNo || "N/A";
-
-        // Inline initials generator
-        const initials = name
-          .split(" ")
-          .map((w: string) => w[0]?.toUpperCase())
-          .join("");
+        const initials = name.split(" ").map((w: string) => w[0]?.toUpperCase()).join("");
 
         return (
           <Stack direction="row" spacing={1} alignItems="center">
@@ -173,39 +155,23 @@ export default function Page(): React.JSX.Element {
               <img
                 src={image}
                 alt={name}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                }}
+                style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }}
               />
             ) : (
               <div
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  background: "#1976d2",
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 600,
-                  fontSize: 14,
+                  width: 40, height: 40, borderRadius: "50%",
+                  background: "#1976d2", color: "#fff",
+                  display: "flex", alignItems: "center",
+                  justifyContent: "center", fontWeight: 600, fontSize: 14,
                 }}
               >
                 {initials}
               </div>
             )}
-
             <Box>
-              <Typography color="text.primary" variant="body2">
-                {name}
-              </Typography>
-              <Typography color="text.secondary" variant="caption">
-                {phone}
-              </Typography>
+              <Typography color="text.primary" variant="body2">{name}</Typography>
+              <Typography color="text.secondary" variant="caption">{phone}</Typography>
             </Box>
           </Stack>
         );
@@ -214,7 +180,7 @@ export default function Page(): React.JSX.Element {
     {
       name: "Car Number",
       formatter: (row) => (
-        <Typography  color="text.secondary" variant="body2">
+        <Typography color="text.secondary" variant="body2">
           {row?.van?.carNumber || "N/A"}
         </Typography>
       ),
@@ -227,7 +193,6 @@ export default function Page(): React.JSX.Element {
         </Typography>
       ),
     },
-    
     {
       name: "Condition",
       formatter: (row) => (
@@ -236,30 +201,21 @@ export default function Page(): React.JSX.Element {
         </Typography>
       ),
     },
-   {
+    {
       name: "Routes",
       formatter: (row) => (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-start",
-            alignItems: "center",
-            height: "100%",
-            cursor: row.routes?.length ? "pointer" : "default",
-          }}
-        >
+        <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
           {row.routes?.length ? (
             <Typography
               variant="body2"
               color="primary"
+              sx={{ cursor: "pointer" }}
               onClick={() => handleViewRoutes(row)}
             >
-              View Routes
+              View Routes 
             </Typography>
           ) : (
-            <Typography color="text.secondary" variant="body2">
-              No routes assigned
-            </Typography>
+            <Typography color="text.secondary" variant="body2">No routes assigned</Typography>
           )}
         </Box>
       ),
@@ -267,12 +223,11 @@ export default function Page(): React.JSX.Element {
     {
       name: "Status",
       formatter: (row) => {
-        const status = row?.van?.status?.toLowerCase();
-
+        const isActive = row?.van?.status?.toLowerCase() === "active";
         return (
           <Chip
-            label={status === "active" ? "Active" : "Inactive"}
-            color={status === "active" ? "success" : "error"}
+            label={isActive ? "Active" : "Inactive"}
+            color={isActive ? "success" : "error"}
             size="small"
             variant="outlined"
           />
@@ -304,11 +259,7 @@ export default function Page(): React.JSX.Element {
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <Select
               value={selectedSchool}
-              label="Filter by School"
-              onChange={(e) => {
-                setSelectedSchool(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => { setSelectedSchool(e.target.value); setPage(1); }}
             >
               <SelectMenuItem value="all">All Schools</SelectMenuItem>
               {schools?.map((school: any) => (
@@ -337,18 +288,10 @@ export default function Page(): React.JSX.Element {
                 <CircularProgress />
               </Box>
             ) : filteredVans?.length ? (
-              <DataTable
-                columns={columns}
-                rows={filteredVans}
-                selectable={false}
-              />
+              <DataTable columns={columns} rows={filteredVans} selectable={false} />
             ) : (
               <Box sx={{ p: 3 }}>
-                <Typography
-                  color="text.secondary"
-                  sx={{ textAlign: "center" }}
-                  variant="body2"
-                >
+                <Typography color="text.secondary" sx={{ textAlign: "center" }} variant="body2">
                   No Vans Found
                 </Typography>
               </Box>
@@ -361,49 +304,30 @@ export default function Page(): React.JSX.Element {
             count={pagination?.total || 0}
             page={(page || 1) - 1}
             rowsPerPage={limit}
-            onPaginationChange={(_, newPage) => {
-              setPage(newPage + 1);
-            }}
+            onPaginationChange={(_, newPage) => setPage(newPage + 1)}
             onRowsPerPageChange={(event) => {
-              const newLimit = parseInt(event.target.value, 10);
-              setLimit(newLimit);
+              setLimit(parseInt(event.target.value, 10));
               setPage(1);
             }}
           />
         </Card>
 
         {/* Routes Modal */}
-        <Dialog
-          open={routesModalOpen}
-          onClose={() => setRoutesModalOpen(false)}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle
-            sx={{
-              backgroundColor: "#191970",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
+        <Dialog open={routesModalOpen} onClose={() => setRoutesModalOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ backgroundColor: "#191970", color: "white" }}>
             Routes Details
           </DialogTitle>
           <DialogContent>
             {selectedRoutes.length === 0 ? (
-              <Typography>No routes assigned</Typography>
+              <Typography mt={2}>No routes assigned</Typography>
             ) : (
-              <Stack spacing={1} mt={1}>
+              <Stack spacing={1} mt={2}>
                 {selectedRoutes.map((route) => (
                   <Box
                     key={route.id}
                     sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      border: "1px solid #eee",
-                      borderRadius: 1,
-                      p: 1,
+                      display: "flex", justifyContent: "space-between",
+                      border: "1px solid #eee", borderRadius: 1, p: 1.5,
                     }}
                   >
                     <Typography variant="body2">{route.title}</Typography>
@@ -419,15 +343,9 @@ export default function Page(): React.JSX.Element {
         </Dialog>
 
         {/* MENU */}
-        <Menu
-          anchorEl={menuAnchorEl}
-          open={isMenuOpen}
-          onClose={handleMenuClose}
-        >
+        <Menu anchorEl={menuAnchorEl} open={isMenuOpen} onClose={handleMenuClose}>
           <MenuItem onClick={handleView}>
-            <ListItemIcon>
-              <EyeIcon size={18} />
-            </ListItemIcon>
+            <ListItemIcon><EyeIcon size={18} /></ListItemIcon>
             View
           </MenuItem>
         </Menu>

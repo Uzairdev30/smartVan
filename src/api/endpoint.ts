@@ -88,7 +88,8 @@ export const SUADMIN={
 
     //vans
     GET_ALL_VAN_FOR_SUPERADMIN: `${BASE_URL}/admin/GetVansBySuperAdmin`,
-
+    GET_VAN_DETAIL_SUPERADMIN: `${BASE_URL}/van/getVanById`,
+    
     //student
     GET_ALL_STUDENT_SUPERADMIN: `${BASE_URL}/admin/GetStudentsBySuperAdmin`,
     GET_STUDENT_DETAIL_SUPERADMIN: `${BASE_URL}/Admin/getStudentByIdForSuperAdmin`
