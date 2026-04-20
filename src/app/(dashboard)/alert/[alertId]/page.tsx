@@ -18,7 +18,7 @@ import {
   LinearProgress,
   Link,
 } from "@mui/material";
-
+import dayjs from "dayjs";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
 import { useParams, useRouter } from "next/navigation";
@@ -92,8 +92,8 @@ export default function AlertDetailPage(): React.JSX.Element {
   return (
     <Box sx={{ p: 4 }}>
       {/* Back Button */}
-      <Button 
-        startIcon={<ArrowLeftIcon />} 
+      <Button
+        startIcon={<ArrowLeftIcon />}
         onClick={() => router.back()}
         sx={{ mb: 3 }}
       >
@@ -109,9 +109,9 @@ export default function AlertDetailPage(): React.JSX.Element {
               {/* Left: Avatar + Info */}
               <Box display="flex" alignItems="center" gap={2}>
                 <Avatar
-                  sx={{ 
-                    width: 56, 
-                    height: 56, 
+                  sx={{
+                    width: 56,
+                    height: 56,
                     bgcolor: '#1976d2',
                     color: '#fff'
                   }}
@@ -121,9 +121,6 @@ export default function AlertDetailPage(): React.JSX.Element {
                 <Box>
                   <Typography variant="h6" fontWeight="bold">
                     {alertDetail.alertType || 'Untitled Alert'}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Alert ID: {alertDetail._id}
                   </Typography>
                 </Box>
               </Box>
@@ -154,37 +151,21 @@ export default function AlertDetailPage(): React.JSX.Element {
 
         {/* Alert Information Card */}
         <Card>
-          <CardHeader 
-            title="Alert Information" 
-            // avatar={<BellIcon color="#1976d2" />}
+          <CardHeader
+            title="Alert Information"
+          // avatar={<BellIcon color="#1976d2" />}
           />
           <CardContent>
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Alert ID</Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>{alertDetail._id || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={4} md={4}>
                 <Typography variant="subtitle1" color="text.secondary">Alert Type</Typography>
                 <Typography variant="body1">{alertDetail.alertType || '—'}</Typography>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={4} md={4}>
                 <Typography variant="subtitle1" color="text.secondary">Recipient Type</Typography>
                 <Typography variant="body1">{formatLabel(alertDetail.recipientType) || '—'}</Typography>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">Status</Typography>
-                <Chip
-                  label={
-                    statusLabel
-                      ? statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)
-                      : "Pending"
-                  }
-                  color={getStatusColor(alertDetail.status)}
-                  size="small"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={4} md={4}>
                 <Typography variant="subtitle1" color="text.secondary">Message</Typography>
                 <Typography variant="body2" sx={{ mt: 1 }}>{alertDetail.message || '—'}</Typography>
               </Grid>
@@ -195,26 +176,42 @@ export default function AlertDetailPage(): React.JSX.Element {
 
         {/* School Information Card */}
         <Card>
-          <CardHeader 
-            title="School Information" 
-            // avatar={<SchoolIcon color="#1976d2" />}
+          <CardHeader
+            title="School Information"
+          // avatar={<SchoolIcon color="#1976d2" />}
           />
           <CardContent>
             <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle1" color="text.secondary">School ID</Typography>
-                <Typography variant="body1">{alertDetail.schoolId || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={6} md={6}>
                 <Typography variant="subtitle1" color="text.secondary">School Name</Typography>
                 <Typography variant="body1">{alertDetail.schoolName || '—'}</Typography>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={6} md={6}>
                 <Typography variant="subtitle1" color="text.secondary">Date/Time</Typography>
-                <Typography variant="body2">
-                  {alertDetail.date
-                    ? new Date(alertDetail.date).toLocaleString()
-                    : "—"}
+                <Typography variant="body2" sx={{ lineHeight: 1.4 }}>
+                  <Box component="span" sx={{ fontWeight: 600 }}>
+                    {alertDetail.date
+                      ? dayjs(alertDetail.date).format("DD MMM YYYY")
+                      : "—"}
+                  </Box>
+
+                  {alertDetail.date && (
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "inline-block",
+                        fontSize: "11px",
+                        color: "primary.main",
+                        backgroundColor: "action.hover",
+                        px: 1,
+                        py: 0.3,
+                        borderRadius: "8px",
+                        ml: 1,
+                      }}
+                    >
+                      {dayjs(alertDetail.date).format("hh:mm A")}
+                    </Box>
+                  )}
                 </Typography>
               </Grid>
             </Grid>

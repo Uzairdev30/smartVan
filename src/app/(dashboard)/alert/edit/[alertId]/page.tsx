@@ -17,6 +17,7 @@ import {
   Grid,
   CircularProgress,
 } from "@mui/material";
+import { config } from "@/config";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { getAlertById, updateAlert, clearAlertStatus } from "@/store/reducers/alert-slice";
@@ -105,12 +106,15 @@ export default function EditAlertPage(): React.JSX.Element {
     }
   }, [success, error, dispatch, router]);
 
-  const mappedVans = vans.map((v) => ({
-    _id: v.van.id,
-    vehicleType: v.van.vehicleType,
-    carNumber: v.van.carNumber,
-    driverName: v.driver?.fullname || "No driver",
-  }));
+  const mappedVans =
+    vans?.length
+      ? vans.map((v: any) => ({
+        _id: v?.van?.id || v?._id,
+        vehicleType: v?.van?.vehicleType || "N/A",
+        carNumber: v?.van?.carNumber || v?.van?.numberPlate || "N/A",
+        driverName: v?.driver?.fullname || "No driver",
+      }))
+      : [];
 
   return (
     <Box sx={{ p: 3 }}>
@@ -162,20 +166,16 @@ export default function EditAlertPage(): React.JSX.Element {
                       value={vanId}
                       onChange={(e) => setVanId(e.target.value)}
                       label="Select Van"
-                      MenuProps={{
-                        PaperProps: {
-                          style: {
-                            maxHeight: 300, // max height in px
-                            width: 250,     // optional, to control width of dropdown
-                          },
-                        },
-                      }}
                     >
-                      {mappedVans.map((v) => (
-                        <MenuItem key={v._id} value={v._id}>
-                          {v.vehicleType} - {v.carNumber} ({v.driverName})
-                        </MenuItem>
-                      ))}
+                      {mappedVans.length > 0 ? (
+                        mappedVans.map((v) => (
+                          <MenuItem key={v._id} value={v._id}>
+                            {v.vehicleType} - {v.carNumber} ({v.driverName})
+                          </MenuItem>
+                        ))
+                      ) : (
+                        <MenuItem disabled>No vans available</MenuItem>
+                      )}
                     </Select>
 
                   </FormControl>

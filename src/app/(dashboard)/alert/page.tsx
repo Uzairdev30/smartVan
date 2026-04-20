@@ -40,6 +40,7 @@ import {
 import dayjs from "dayjs";
 import { formatLabel } from "@/utils/data";
 import { paths } from "@/paths";
+import { AlertFilter, type Filters } from "./alertfilter";
 
 type AlertRecord = {
   _id: string;
@@ -50,7 +51,6 @@ type AlertRecord = {
   status: string;
 };
 
-// ─── Actions Component ─────────────────────────────
 const AlertActions = ({ row }: { row: AlertRecord }) => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -132,7 +132,7 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
             elevation: 0,
             sx: {
               boxShadow: "none",
-              border: "1px solid #e0e0e0", // optional, clean look ke liye
+              border: "1px solid #e0e0e0",
             },
           }}
         >
@@ -150,8 +150,8 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
             <ListItemText primary="Edit" />
           </MenuItem>
 
-          <MenuItem onClick={handleDelete} sx={{ color: "error.main" }}>
-            <ListItemIcon sx={{ color: "error.main" }}>
+          <MenuItem onClick={handleDelete}>
+            <ListItemIcon>
               <DeleteIcon size={18} />
             </ListItemIcon>
             <ListItemText primary="Delete" />
@@ -159,7 +159,6 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
         </Menu>
       </Stack>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleCancelDelete}
@@ -167,19 +166,16 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
         fullWidth
       >
         <DialogTitle>Delete Alert</DialogTitle>
-
         <DialogContent>
           <DialogContentText>
             Are you sure you want to delete this alert{" "}
             <strong>"{row.alertType}"</strong>?
           </DialogContentText>
         </DialogContent>
-
         <DialogActions>
           <Button onClick={handleCancelDelete} disabled={deleteAlertLoading}>
             Cancel
           </Button>
-
           <Button
             onClick={handleConfirmDelete}
             variant="contained"
@@ -187,7 +183,7 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
             disabled={deleteAlertLoading}
             startIcon={
               deleteAlertLoading ? (
-                <CircularProgress size={16} color="inherit" />
+                <CircularProgress size={16} />
               ) : (
                 <TrashIcon size={18} />
               )
@@ -201,7 +197,6 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
   );
 };
 
-// ─── Main Component ───────────────────────────────
 export default function AlertPage(): React.JSX.Element {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -217,15 +212,46 @@ export default function AlertPage(): React.JSX.Element {
   const [selectedAlerts, setSelectedAlerts] = React.useState<AlertRecord[]>([]);
   const [page, setPage] = React.useState<number>(1);
   const [limit, setLimit] = React.useState<number>(10);
+  const [filters, setFilters] = React.useState<Filters>({});
 
   React.useEffect(() => {
     dispatch(getAllAlerts({ page, limit }));
   }, [dispatch, page, limit]);
 
+  const filteredAlerts = React.useMemo(() => {
+    let result = alerts || [];
+
+    if (filters.alertTitle?.trim()) {
+      result = result.filter((a) =>
+        a?.alertType
+          ?.toLowerCase()
+          .includes(filters.alertTitle!.trim().toLowerCase())
+      );
+    }
+
+    if (filters.message?.trim()) {
+      result = result.filter((a) =>
+        a?.message
+          ?.toLowerCase()
+          .includes(filters.message!.trim().toLowerCase())
+      );
+    }
+
+    if (filters.sendTo?.trim()) {
+      result = result.filter((a) =>
+        formatLabel(a?.recipientType)
+          ?.toLowerCase()
+          .includes(filters.sendTo!.trim().toLowerCase())
+      );
+    }
+
+    return result;
+  }, [alerts, filters]);
+
   const columns: ColumnDef<AlertRecord>[] = [
     {
       name: "S.No",
-      width: "80px",
+      width: "100px",
       formatter: (row, index) => (
         <Typography variant="body2">
           {(page - 1) * limit + index + 1}
@@ -234,36 +260,17 @@ export default function AlertPage(): React.JSX.Element {
     },
     {
       name: "Alert Title",
-      width: "200px",
-      formatter: (row) => (
-        <Typography variant="body2">{row.alertType}</Typography>
-      ),
-    },
-    {
-      name: "Message",
-      width: "300px",
-      formatter: (row) => (
-        <Typography variant="body2">{row.message}</Typography>
-      ),
-    },
-    {
-      name: "Send To",
       width: "150px",
-      formatter: (row) => (
-        <Typography variant="body2">
-          {formatLabel(row.recipientType)}
-        </Typography>
-      ),
+      formatter: (row) => <Typography variant="body2">{row.alertType}</Typography>,
     },
     {
       name: "Date/Time",
-      width: "180px",
+      width: "150px",
       formatter: (row) => (
         <Typography variant="body2" sx={{ lineHeight: 1.4 }}>
           <Box component="span" sx={{ fontWeight: 600 }}>
             {dayjs(row.date).format("DD MMM YYYY")}
           </Box>
-
           <Box
             component="span"
             sx={{
@@ -283,8 +290,20 @@ export default function AlertPage(): React.JSX.Element {
       ),
     },
     {
+      name: "Receipt Type",
+      width: "180px",
+      formatter: (row) => (
+        <Typography variant="body2">{formatLabel(row.recipientType)}</Typography>
+      ),
+    },
+    {
+      name: "Message",
+      width: "150px",
+      formatter: (row) => <Typography variant="body2">{row.message}</Typography>,
+    },
+    {
       name: "Actions",
-      width: "100px",
+      width: "90px",
       align: "right",
       formatter: (row) => <AlertActions row={row} />,
     },
@@ -312,15 +331,24 @@ export default function AlertPage(): React.JSX.Element {
         </Box>
 
         <Card>
+          <AlertFilter
+            filters={filters}
+            setFilters={(updater) => {
+              setFilters((prev) =>
+                typeof updater === "function" ? updater(prev) : updater
+              );
+            }}
+          />
+
           <Box sx={{ overflowX: "auto" }}>
             {loading ? (
               <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
                 <CircularProgress />
               </Box>
-            ) : alerts?.length ? (
+            ) : filteredAlerts?.length ? (
               <DataTable<AlertRecord>
                 columns={columns}
-                rows={alerts}
+                rows={filteredAlerts}
                 selectable={false}
                 onSelectionChange={(_, rows) => setSelectedAlerts(rows)}
               />

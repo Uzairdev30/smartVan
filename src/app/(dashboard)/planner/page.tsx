@@ -20,6 +20,7 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
+import { config } from "@/config";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
   Eye as EyeIcon,
@@ -39,7 +40,6 @@ import {
 } from "@/store/reducers/route-slice";
 import { RouteFilter } from "./RouteFilter";
 import { paths } from "@/paths";
-import { config } from "@/config";
 // ✅ helper function (component se bahar)
 const formatTimeToAMPM = (time: string) => {
   if (!time) return "";
@@ -364,8 +364,8 @@ export default function RoutePlannerPage(): React.JSX.Element {
             Edit
           </MenuItem>
 
-          <MenuItem onClick={handleDeleteRoute} sx={{ color: "error.main" }}>
-            <ListItemIcon sx={{ color: "error.main" }}>
+          <MenuItem onClick={handleDeleteRoute}>
+            <ListItemIcon>
               <TrashIcon size={18} />
             </ListItemIcon>
             Delete
