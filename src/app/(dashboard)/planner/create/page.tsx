@@ -43,7 +43,7 @@ type FormValues = {
   driverId?: string;
   title: string;
   startTime: string;
-  tripType: "morning" | "evening";
+  tripType: "pick" | "drop";
   tripDays: Record<string, boolean>;
   startLat: string;
   startLong: string;
@@ -78,7 +78,7 @@ export default function AddRouteForm(): React.JSX.Element {
       driverId: "",
       title: "",
       startTime: "",
-      tripType: "morning",
+      tripType: "pick",
       tripDays: {
         monday: false,
         tuesday: false,
