@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   Box,
   Card,
@@ -20,11 +20,14 @@ import {
   Switch,
   FormControlLabel,
   CircularProgress,
+  Grid,
+  Paper,
+  Avatar,
+  Chip,
 } from "@mui/material";
-import Link from "next/link";
 import RouterLink from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft as ArrowLeftIcon, Building, MapPin, Clock, Users, CreditCard } from "@phosphor-icons/react";
+import { ArrowLeft as ArrowLeftIcon, Building, MapPin, Clock, Users, CreditCard, Upload, CaretDown as CaretDownIcon } from "@phosphor-icons/react";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { paths } from "@/paths";
 import { z } from "zod";
@@ -42,20 +45,11 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store";
 import { getSchoolById, editSchool } from "@/store/reducers/suadmin-slice";
 import MapComponent from "@/components/MapSelection";
-
-/* ===================== TABS ===================== */
-
-type TabKey = "profile" | "route_rules" | "limits" | "subscription";
-const tabsList: { key: TabKey; label: string; order: number }[] = [
-  { key: "profile", label: "Profile", order: 0 },
-  { key: "route_rules", label: "Route Rules", order: 1 },
-  { key: "limits", label: "Limits", order: 2 },
-  { key: "subscription", label: "Subscription & Billing", order: 3 },
-];
-
-/* ===================== ZOD SCHEMA ===================== */
+import { uploadImage } from "@/utils/uploadImage";
 
 const schema = z.object({
+  schoolImage: z.string().optional(),
+
   // Profile
   adminInfo: z.object({
     name: z.string().min(1, "Admin name is required"),
@@ -74,11 +68,13 @@ const schema = z.object({
   routeLatitude: z
     .coerce.number({ invalid_type_error: "Latitude must be a number" })
     .min(-90, "Min -90")
-    .max(90, "Max 90"),
+    .max(90, "Max 90")
+    .optional(),
   routeLongitude: z
     .coerce.number({ invalid_type_error: "Longitude must be a number" })
     .min(-180, "Min -180")
-    .max(180, "Max 180"),
+    .max(180, "Max 180")
+    .optional(),
 
   // Limits
   allowedVans: z.coerce.number().min(1, "Min 1"),
@@ -97,22 +93,6 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
-
-/* ===================== PER-TAB FIELD MAP ===================== */
-
-const fieldsByTab: Record<TabKey, (keyof FormValues)[]> = {
-  profile: ["adminInfo", "schoolName", "schoolEmail", "address", "contactNumber"],
-  route_rules: [
-    "pickupStartTime",
-    "dropoffStartTime",
-    "maxTripDuration",
-    "bufferTime",
-    "routeLatitude",
-    "routeLongitude",
-  ],
-  limits: ["allowedVans", "allowedRoutes", "allowedStudents"],
-  subscription: ["plan", "billingCycle", "nextInvoice", "paymentMethod", "pickDropExceptionsActive"],
-};
 
 /* ===================== RHF HELPERS ===================== */
 
@@ -273,6 +253,50 @@ function RHFTimePicker({
   );
 }
 
+function RHFSelectField({
+  name,
+  label,
+  children,
+  disabled,
+}: {
+  name: keyof FormValues;
+  label: string;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) {
+  const {
+    control,
+    formState: { errors },
+  } = useFormContext<FormValues>();
+  const err = (errors as any)[name]?.message as string | undefined;
+
+  return (
+    <Box>
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        {label}
+      </Typography>
+      <Controller
+        name={name}
+        control={control}
+        render={({ field }) => (
+          <TextField
+            fullWidth
+            size="small"
+            select
+            error={!!err}
+            helperText={err}
+            InputProps={{ sx: { borderRadius: 1, py: 1 } }}
+            disabled={disabled}
+            {...field}
+          >
+            {children}
+          </TextField>
+        )}
+      />
+    </Box>
+  );
+}
+
 function RHFSwitch({
   name,
   label,
@@ -312,17 +336,34 @@ export default function SchoolDetailEditPage() {
   const schoolId = String((params as any)?.id ?? (params as any)?.schoolId ?? "");
   const dispatch = useDispatch<AppDispatch>();
   const { school, loading } = useSelector((s: RootState) => s.suadmin);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTab, setActiveTab] = useState<TabKey>("profile");
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
 
   const methods = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {}, // prefill after fetch via reset()
+    defaultValues: {},
     mode: "onTouched",
   });
 
-  const { handleSubmit, trigger, reset } = methods;
+  const { handleSubmit, reset, watch, setValue } = methods;
+
+  // Logo upload handlers
+  const handleSelectImage = () => inputRef.current?.click();
+
+  const handleImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const url = await uploadImage(file);
+      setValue("schoolImage", url, { shouldValidate: true });
+    } catch (err) {
+      console.error("UPLOAD ERROR:", err);
+    }
+  };
 
   // fetch details once
   useEffect(() => {
@@ -348,15 +389,17 @@ export default function SchoolDetailEditPage() {
     ) as any;
 
     // Map DB payment methods to our two options
-    // e.g. "Credit Card" or "Bank Transfer" -> "bank"
+    // e.g. "Bank Transfer" or "Cash" -> "bank" or "cash"
     const paymentMethod: "cash" | "bank" = (() => {
       const pm = String(s.paymentMethod || "").toLowerCase();
       if (pm.includes("cash")) return "cash";
-      return "bank";
+      if (pm.includes("bank")) return "bank";
+      return "bank"; // default fallback
     })();
 
     reset({
       // Profile
+      schoolImage: s.schoolImage ?? "",
       adminInfo: {
         name: s.admin?.name ?? "",
         email: s.admin?.email ?? "",
@@ -367,8 +410,8 @@ export default function SchoolDetailEditPage() {
       contactNumber: s.contactNumber ?? "",
 
       // Route rules
-      pickupStartTime: toDateOrNull(s.startTime), // "07:30 AM"
-      dropoffStartTime: toDateOrNull(s.endTime),  // "01:30 PM"
+      pickupStartTime: toDateOrNull(s.startTime),
+      dropoffStartTime: toDateOrNull(s.endTime),
       maxTripDuration: s.maxTripDuration != null ? String(s.maxTripDuration) : "",
       bufferTime: s.bufferTime != null ? String(s.bufferTime) : "",
       routeLatitude: s.lat ?? ("" as any),
@@ -382,34 +425,15 @@ export default function SchoolDetailEditPage() {
       // Subscription & Billing
       plan,
       billingCycle,
-      nextInvoice: "", // not in payload you shared
+      nextInvoice: s.nextInvoice ? dayjs(s.nextInvoice).format("YYYY-MM-DD") : "",
       paymentMethod,
       pickDropExceptionsActive: !!s.autoRenew,
     });
 
-    setIsEditing(false); // start in view mode
+    // Form is already in edit mode
   }, [school, reset]);
 
-  const activeTabOrder = tabsList.find((t) => t.key === activeTab)?.order ?? 0;
-
-  const orderedTabs = useMemo(() => [...tabsList].sort((a, b) => a.order - b.order), []);
-  const goNext = async () => {
-    const current = orderedTabs.find((t) => t.key === activeTab);
-    if (!current) return;
-    const next = orderedTabs.find((t) => t.order === current.order + 1);
-    if (isEditing) {
-      const ok = await trigger(fieldsByTab[activeTab]);
-      if (!ok) return;
-    }
-    if (next) setActiveTab(next.key);
-  };
-  const goPrev = () => {
-    const current = orderedTabs.find((t) => t.key === activeTab);
-    if (!current) return;
-    const prev = orderedTabs.find((t) => t.order === current.order - 1);
-    if (prev) setActiveTab(prev.key);
-  };
-
+  
   const onSubmit = async (data: FormValues) => {
     if (!schoolId) return;
     const payload = {
@@ -419,6 +443,7 @@ export default function SchoolDetailEditPage() {
         email: data.adminInfo.email,
       },
       schoolInfo: {
+        schoolImage: data.schoolImage,
         contactPerson: data.adminInfo.name,
         startTime: data.pickupStartTime ? dayjs(data.pickupStartTime).format("hh:mm A") : "",
         endTime: data.dropoffStartTime ? dayjs(data.dropoffStartTime).format("hh:mm A") : "",
@@ -426,8 +451,9 @@ export default function SchoolDetailEditPage() {
         bufferTime: Number(data.bufferTime),
         currentPlan: data.plan === "premium" ? "Premium" : "Standard",
         billingCycle:
-          data.billingCycle.charAt(0).toUpperCase() + data.billingCycle.slice(1), // Monthly/Weekly/Quarterly
+          data.billingCycle.charAt(0).toUpperCase() + data.billingCycle.slice(1),
         paymentMethod: data.paymentMethod === "bank" ? "Bank Transfer" : "Cash",
+        nextInvoice: data.nextInvoice || undefined,
         allowedVans: Number(data.allowedVans),
         allowedStudents: Number(data.allowedStudents),
         allowedRoutes: Number(data.allowedRoutes),
@@ -440,217 +466,105 @@ export default function SchoolDetailEditPage() {
 
     try {
       await dispatch(editSchool(payload)).unwrap();
-      await dispatch(getSchoolById(schoolId));
-      setIsEditing(false);
+      router.push(paths.dashboard.superadmin.school);
     } catch (err) {
-      console.error("❌ Edit failed:", err);
+      console.error("Edit failed:", err);
     }
   };
 
-  const isLastStep = activeTab === "subscription";
+  const isLastStep = false;
 
   return (
     <FormProvider {...methods}>
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 3, bgcolor: "background.default" }}>
-        {/* Top bar */}
-        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 2 }}>
-          <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Link
-                color="text.primary"
-                component={RouterLink}
-                href={paths.dashboard.superadmin.school}
-                sx={{ alignItems: 'center', display: 'inline-flex', gap: 1 }}
-                variant="subtitle2"
-              >
-                <ArrowLeftIcon fontSize="var(--icon-fontSize-md)" />
-              </Link>
-            </Stack>
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: 3 }}>
 
-            {/* ENHANCED TABS (Same as Add School) */}
-            <Box sx={{ mt: 3 }}>
-              <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
-                {orderedTabs.map((tab, index) => {
-                  const isActive = tab.key === activeTab;
-                  const isCompleted = tab.order < activeTabOrder;
-
-                  const getTabIcon = (key: TabKey) => {
-                    switch (key) {
-                      case "profile":
-                        return <Building size={16} />;
-                      case "route_rules":
-                        return <MapPin size={16} />;
-                      case "limits":
-                        return <Users size={16} />;
-                      case "subscription":
-                        return <CreditCard size={16} />;
-                      default:
-                        return null;
-                    }
-                  };
-
-                  return (
-                    <Box
-                      key={tab.key}
-                      onClick={async () => {
-                        if (isEditing) {
-                          const current = orderedTabs.find((t) => t.key === activeTab);
-                          if (
-                            current &&
-                            tab.order > current.order &&
-                            !(await trigger(fieldsByTab[activeTab]))
-                          ) {
-                            return;
-                          }
-                        }
-                        setActiveTab(tab.key);
-                      }}
-                      sx={{
-                        position: "relative",
-                        px: 2,
-                        py: 1.5,
-                        borderRadius: 2,
-                        cursor: "pointer",
-                        background: isActive
-                          ? "linear-gradient(135deg, #1560BD 0%, #0D47A1 100%)"
-                          : isCompleted
-                            ? "linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)"
-                            : "#F5F5F5",
-                        color: isActive || isCompleted ? "#fff" : "#616161",
-                        fontSize: "14px",
-                        fontWeight: isActive ? 600 : 500,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5,
-                        transition: "all 0.3s ease",
-                        boxShadow: isActive
-                          ? "0 4px 12px rgba(21, 96, 189, 0.3)"
-                          : "none",
-                        "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: isActive
-                            ? "0 6px 16px rgba(21, 96, 189, 0.4)"
-                            : "0 4px 12px rgba(0,0,0,0.1)",
-                        },
-                      }}
-                    >
-                      {/* Step Number */}
-                      <Box
-                        sx={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: "50%",
-                          background:
-                            isActive || isCompleted
-                              ? "rgba(255,255,255,0.2)"
-                              : "#E0E0E0",
-                          color: isActive || isCompleted ? "#fff" : "#757575",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {index + 1}
-                      </Box>
-
-                      {getTabIcon(tab.key)}
-
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 600, lineHeight: 1.2 }}
-                        >
-                          {tab.label}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ opacity: 0.8, fontSize: "11px" }}
-                        >
-                          {isCompleted
-                            ? "Completed"
-                            : isActive
-                              ? "In Progress"
-                              : "Pending"}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  );
-                })}
-              </Box>
-            </Box>
-          </Stack>
-
-          <Stack direction="row" spacing={1}>
-            {!isEditing ? (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => setIsEditing(true)}
-                disabled={loading || !school}
-                sx={{
-                  textTransform: "none",
-                  px: 3,
-                  py: 1,
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  backgroundColor: "rgba(76, 175, 80, 0.1)",
-                }}
-              >
-                Edit Form
-              </Button>
-            ) : (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => {
-                  setIsEditing(false);
-                }}
-                sx={{
-                  textTransform: "none",
-                  px: 3,
-                  py: 1,
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  backgroundColor: "rgba(76, 175, 80, 0.1)",
-                }}
-              >
-                View Only
-              </Button>
-            )}
-          </Stack>
-        </Stack>
-
-        {/* Card + FORM wrapper */}
-        <Card variant="outlined" sx={{ borderRadius: 1.5, boxShadow: "0px 1px 3px rgba(0,0,0,0.06)" }}>
-          <CardContent sx={{ p: 2.5 }}>
-            <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-              {activeTab === "profile" && <ProfileSection disabled={!isEditing} />}
-              {activeTab === "route_rules" && <RouteRulesSection disabled={!isEditing} />}
-              {activeTab === "limits" && <LimitsSection disabled={!isEditing} />}
-              {activeTab === "subscription" && <SubscriptionBillingSection disabled={!isEditing} />}
-
-              <button type="submit" style={{ display: "none" }} />
-            </Box>
-          </CardContent>
-
-          <Divider />
-
-          {/* Footer: Prev/Next or Save */}
-          <Stack direction="row" justifyContent="space-between" sx={{ p: 2 }}>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={goPrev}
-              disabled={activeTab === "profile"}
-              sx={{ textTransform: "none" }}
+        {/* MAIN CONTENT AREA */}
+        <Grid container spacing={3} sx={{ mt: 1 }}>
+          {/* LOGO CARD - COL-4 */}
+          <Grid item xs={12} md={4}>
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                border: "1px solid #dee2e6",
+                height: "fit-content"
+              }}
             >
-              Previous
-            </Button>
+              <Stack spacing={4} alignItems="center">
+                {/* Logo Display - Clickable */}
+                <Box 
+                  sx={{ position: 'relative', cursor: isEditing ? 'pointer' : 'default' }}
+                  onClick={isEditing ? handleSelectImage : undefined}
+                >
+                  <Avatar
+                    src={watch("schoolImage") || undefined}
+                    sx={{
+                      width: 150,
+                      height: 150,
+                      borderRadius: 4,
+                      border: "2px dashed #1976d2",
+                      bgcolor: "#fafafa",
+                      transition: "all 0.3s ease",
+                      "&:hover": isEditing ? {
+                        borderColor: "#0d47a1",
+                        transform: "scale(1.02)",
+                        boxShadow: "0 4px 12px rgba(25, 118, 210, 0.2)",
+                      } : {},
+                      opacity: isEditing ? 1 : 0.8,
+                    }}
+                  >
+                    <Upload size={60} color="#1976d2" />
+                  </Avatar>
+                </Box>
 
-            {isEditing ? (
-              activeTab === "subscription" ? (
+                {/* Hidden File Input */}
+                <input
+                  hidden
+                  ref={inputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  disabled={!isEditing}
+                />
+              </Stack>
+            </Paper>
+          </Grid>
+
+          {/* FORM CARD - COL-8 */}
+          <Grid item xs={12} md={8}>
+            <Card sx={{ borderRadius: 3 }}>
+              <CardContent sx={{ p: 3 }}>
+                <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+                  <Stack spacing={4}>
+                    <ProfileSection disabled={!isEditing} />
+                    <Divider />
+                    <RouteRulesSection disabled={!isEditing} />
+                    <Divider />
+                    <LimitsSection disabled={!isEditing} />
+                    <Divider />
+                    <SubscriptionBillingSection disabled={!isEditing} />
+                  </Stack>
+
+                  <button type="submit" style={{ display: "none" }} />
+                </Box>
+              </CardContent>
+
+              <Divider />
+
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                sx={{ p: 3 }}
+              >
+                {/* <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => router.push(paths.dashboard.superadmin.school)}
+                  sx={{ textTransform: "none" }}
+                >
+                  Back to list
+                </Button> */}
+
                 <Button
                   variant="contained"
                   size="small"
@@ -661,37 +575,15 @@ export default function SchoolDetailEditPage() {
                     fontWeight: 500,
                     "&:hover": { bgcolor: "#e5a700" },
                   }}
-                  onClick={async () => {
-                    const ok = await trigger(fieldsByTab[activeTab]);
-                    if (!ok) return;
-                    handleSubmit(onSubmit)();
-                  }}
+                  onClick={handleSubmit(onSubmit)}
                   disabled={loading}
                 >
-                  Save changes
+                  Update Changes
                 </Button>
-              ) : (
-                <Button
-                  variant="contained"
-                  size="small"
-                  sx={{ textTransform: "none", bgcolor: "#1560BD", "&:hover": { bgcolor: "#0f4a94" } }}
-                  onClick={goNext}
-                >
-                  Next
-                </Button>
-              )
-            ) : (
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => router.push(paths.dashboard.superadmin.school)}
-                sx={{ textTransform: "none" }}
-              >
-                Back to list
-              </Button>
-            )}
-          </Stack>
-        </Card>
+              </Stack>
+            </Card>
+          </Grid>
+        </Grid>
       </Box>
     </FormProvider>
   );
@@ -701,25 +593,24 @@ export default function SchoolDetailEditPage() {
 
 function ProfileSection({ disabled }: { disabled?: boolean }) {
   return (
-    <Stack spacing={2}>
-      <Typography variant="subtitle2" fontWeight={600}>
-        Profile
+    <Stack spacing={3}>
+      <Typography variant="h6">
+        School Information
       </Typography>
 
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
-          columnGap: 2,
-          rowGap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)" },
+          gap: 3,
         }}
       >
-        <RHFNestedTextField name="adminInfo.name" label="Admin Name *" placeholder="Enter Admin name" disabled={disabled} />
-        <RHFNestedTextField name="adminInfo.email" label="Admin Email *" placeholder="Enter Admin Email" disabled={disabled} />
-        <RHFTextField name="schoolName" label="School Name *" placeholder="School name" disabled={disabled} />
-        <RHFTextField name="schoolEmail" label="School Email *" placeholder="Enter School Email" disabled={disabled} />
-        <RHFTextField name="address" label="Address *" placeholder="Address" disabled={disabled} />
-        <RHFTextField name="contactNumber" label="Contact Number *" placeholder="+92-300-1234567" disabled={disabled} />
+        <RHFNestedTextField name="adminInfo.name" label="Admin Name" placeholder="Enter admin name" disabled={disabled} />
+        <RHFNestedTextField name="adminInfo.email" label="Admin Email" placeholder="Enter admin email" disabled={disabled} />
+        <RHFTextField name="schoolName" label="School Name" placeholder="Enter school name" disabled={disabled} />
+        <RHFTextField name="schoolEmail" label="School Email" placeholder="Enter school email" disabled={disabled} />
+        <RHFTextField name="address" label="Address" placeholder="Enter address" disabled={disabled} />
+        <RHFTextField name="contactNumber" label="Contact Number" placeholder="+92-300-0000000" disabled={disabled} />
       </Box>
     </Stack>
   );
@@ -727,6 +618,7 @@ function ProfileSection({ disabled }: { disabled?: boolean }) {
 
 function RouteRulesSection({ disabled }: { disabled?: boolean }) {
   const { setValue, trigger, watch } = useFormContext<FormValues>();
+  const [showMap, setShowMap] = useState(false);
 
   const lat = watch("routeLatitude");
   const lng = watch("routeLongitude");
@@ -744,75 +636,69 @@ function RouteRulesSection({ disabled }: { disabled?: boolean }) {
 
   return (
     <Stack spacing={2}>
-      <Typography variant="subtitle2" fontWeight={600}>
-        Route Rules
-      </Typography>
+      <Typography variant="h6">Route Rules</Typography>
 
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
-          columnGap: 2,
-          rowGap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)" },
+          gap: 2,
         }}
       >
         <RHFTimePicker name="pickupStartTime" label="Pickup Start Time" disabled={disabled} />
         <RHFTimePicker name="dropoffStartTime" label="Dropoff Start Time" disabled={disabled} />
 
-        <RHFTextField name="maxTripDuration" label="Max Trip Duration *" select disabled={disabled}>
-          {["15", "30", "45", "60", "90", "120"].map((m) => (
-            <MenuItem key={m} value={m}>
-              {m} mins
-            </MenuItem>
-          ))}
-        </RHFTextField>
+        <RHFTextField name="maxTripDuration" label="Max Trip Duration" placeholder="e.g., 60" type="number" disabled={disabled} />
 
-        <RHFTextField name="bufferTime" label="Buffer Time *" select disabled={disabled}>
-          {["5", "10", "15", "20", "30"].map((m) => (
-            <MenuItem key={m} value={m}>
-              {m} mins
-            </MenuItem>
-          ))}
-        </RHFTextField>
-
-        <RHFTextField name="routeLatitude" label="Latitude *" placeholder="e.g., 24.8607" type="number" disabled={disabled} />
-        <RHFTextField name="routeLongitude" label="Longitude *" placeholder="e.g., 67.0011" type="number" disabled={disabled} />
+        <RHFTextField name="bufferTime" label="Buffer Time" placeholder="e.g., 15" type="number" disabled={disabled} />
       </Box>
 
-      {/* ✅ Open in Google Maps link */}
-      <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
-        <Typography variant="caption" color="text.secondary">
-          Open this location in Google Maps:
-        </Typography>
-
+      {/* ✅ Add School Location Button */}
+      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
         <Button
-          variant="outlined"
+          // variant="outlined"
           size="small"
-          disabled={!googleMapsLink || disabled}
-          onClick={() => window.open(googleMapsLink, "_blank")}
+          onClick={() => setShowMap(!showMap)}
+          disabled={disabled}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            textTransform: "none",
+            borderColor: "#1976d2",
+            color: "#1976d2",
+            "&:hover": {
+              borderColor: "#1565c0",
+              backgroundColor: "rgba(25, 118, 210, 0.04)",
+            },
+            "&:disabled": {
+              borderColor: "rgba(0, 0, 0, 0.26)",
+              color: "rgba(0, 0, 0, 0.38)",
+            },
+          }}
         >
-          Open in Google Maps
+          <Typography variant="body2">Add School Location</Typography>
+          <CaretDownIcon 
+            size={16} 
+            style={{ 
+              transform: showMap ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.2s ease"
+            }} 
+          />
         </Button>
 
-        {/* optional: show link text */}
-        {googleMapsLink ? (
-          <Typography variant="caption" sx={{ wordBreak: "break-all" }}>
-            {googleMapsLink}
-          </Typography>
-        ) : null}
-      </Box>
+              </Box>
 
-      {/* ✅ MapSelection component */}
-      {!disabled && (
+      {/* MapSelection component */}
+      {showMap && (
         <Box sx={{ mt: 1 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Pick location on map
-          </Typography>
-          <MapComponent
-            onPositionChange={handlePositionChange}
-            initialLat={lat}
-            initialLng={lng}
-          />
+          <Box sx={{ height: '400px', width: '100%', borderRadius: 2, overflow: 'hidden', border: '1px solid #e0e0e0' }}>
+            <MapComponent
+              onPositionChange={handlePositionChange}
+              initialLat={lat}
+              initialLng={lng}
+            />
+          </Box>
         </Box>
       )}
     </Stack>
@@ -822,21 +708,18 @@ function RouteRulesSection({ disabled }: { disabled?: boolean }) {
 function LimitsSection({ disabled }: { disabled?: boolean }) {
   return (
     <Stack spacing={2}>
-      <Typography variant="subtitle2" fontWeight={600}>
-        Limits
-      </Typography>
+      <Typography variant="h6">Limits</Typography>
 
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
-          columnGap: 2,
-          rowGap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)" },
+          gap: 2,
         }}
       >
-        <RHFTextField name="allowedVans" label="Allowed Vans *" placeholder="10" type="number" disabled={disabled} />
-        <RHFTextField name="allowedRoutes" label="Allowed Routes *" placeholder="25" type="number" disabled={disabled} />
-        <RHFTextField name="allowedStudents" label="Allowed Students *" placeholder="500" type="number" disabled={disabled} />
+        <RHFTextField name="allowedVans" label="Allowed Vans" type="number" placeholder="10" disabled={disabled} />
+        <RHFTextField name="allowedRoutes" label="Allowed Routes" type="number" placeholder="25" disabled={disabled} />
+        <RHFTextField name="allowedStudents" label="Allowed Students" type="number" placeholder="500" disabled={disabled} />
       </Box>
     </Stack>
   );
@@ -845,37 +728,34 @@ function LimitsSection({ disabled }: { disabled?: boolean }) {
 function SubscriptionBillingSection({ disabled }: { disabled?: boolean }) {
   return (
     <Stack spacing={2}>
-      <Typography variant="subtitle2" fontWeight={600}>
-        Subscription &amp; Billing
-      </Typography>
+      <Typography variant="h6">Subscription & Billing</Typography>
 
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
-          columnGap: 2,
-          rowGap: 2,
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)" },
+          gap: 2,
         }}
       >
-        <RHFTextField name="plan" label="Current Plan *" select disabled={disabled}>
+        <RHFSelectField name="plan" label="Current Plan" disabled={disabled}>
           <MenuItem value="premium">Premium</MenuItem>
           <MenuItem value="standard">Standard</MenuItem>
-        </RHFTextField>
+        </RHFSelectField>
 
-        <RHFTextField name="billingCycle" label="Billing Cycle *" select disabled={disabled}>
+        <RHFSelectField name="billingCycle" label="Billing Cycle" disabled={disabled}>
           <MenuItem value="weekly">Weekly</MenuItem>
           <MenuItem value="monthly">Monthly</MenuItem>
           <MenuItem value="quarterly">Quarterly</MenuItem>
-        </RHFTextField>
+        </RHFSelectField>
 
-        <RHFTextField name="nextInvoice" label="Next Invoice" type="date" disabled={disabled} />
+        <RHFTextField name="nextInvoice" type="date" label="Next Invoice" disabled={disabled} />
 
-        <RHFTextField name="paymentMethod" label="Payment Method *" select disabled={disabled}>
+        <RHFSelectField name="paymentMethod" label="Payment Method" disabled={disabled}>
           <MenuItem value="cash">Cash</MenuItem>
           <MenuItem value="bank">Bank</MenuItem>
-        </RHFTextField>
+        </RHFSelectField>
 
-        <Box sx={{ gridColumn: { xs: "auto", sm: "1 / -1" } }}>
+        <Box sx={{ gridColumn: "1 / -1" }}>
           <RHFSwitch name="pickDropExceptionsActive" label="Auto Renew" disabled={disabled} />
         </Box>
       </Box>

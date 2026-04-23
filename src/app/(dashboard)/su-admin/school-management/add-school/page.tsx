@@ -27,7 +27,7 @@ import {
 import Link from "next/link";
 import RouterLink from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft as ArrowLeftIcon, Building, MapPin, Clock, CreditCard, Users } from "@phosphor-icons/react/dist/ssr";
+import { ArrowLeft as ArrowLeftIcon, Building, MapPin, Clock, CreditCard, Users, Upload, CaretDown as CaretDownIcon } from "@phosphor-icons/react/dist/ssr";
 import { paths } from "@/paths";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { z } from "zod";
@@ -44,30 +44,11 @@ import dayjs from "dayjs";
 import { registerSchool } from "@/store/reducers/suadmin-slice";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
-import { uploadImage } from "@/utils/uploadImage"; // ⬅️ ADDED
-// import MapComponent from "@/components/MapSelection";
+import { uploadImage } from "@/utils/uploadImage"; 
+import MapComponent from "@/components/MapSelection";
 // import GoogleMapsProvider from "@/components/GoogleMapsProvider";
 
-/* ===================== TABS ===================== */
-
-type TabKey =
-  | "profile"
-  | "route_rules"
-  | "limits"
-  | "subscription"
-  | "admins"
-  | "access"
-  | "onboarding"
-  | "audit"
-  | "notes"
-  | "branches";
-
-const tabsList: { key: TabKey; label: string; order: number }[] = [
-  { key: "profile", label: "Profile", order: 0 },
-  { key: "route_rules", label: "Route Rules", order: 1 },
-  { key: "limits", label: "Limits", order: 2 },
-  { key: "subscription", label: "Subscription & Billing", order: 3 },
-];
+/* ===================== SECTIONS ===================== */
 
 /* ===================== ZOD SCHEMA (UPDATED) ===================== */
 
@@ -118,41 +99,6 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-/* ===================== PER-TAB FIELD MAP ===================== */
-
-const fieldsByTab: Record<TabKey, (keyof FormValues)[]> = {
-  profile: [
-    "schoolImage", // ⬅️ ADDED
-    "adminName",
-    "schoolName",
-    "address",
-    "adminEmail",
-    "schoolEmail",
-    "contactNumber",
-  ],
-  route_rules: [
-    "pickupStartTime",
-    "dropoffStartTime",
-    "maxTripDuration",
-    "bufferTime",
-    "routeLatitude",
-    "routeLongitude",
-  ],
-  limits: ["allowedVans", "allowedRoutes", "allowedStudents"],
-  subscription: [
-    "plan",
-    "billingCycle",
-    "nextInvoice",
-    "paymentMethod",
-    "pickDropExceptionsActive",
-  ],
-  admins: [],
-  access: [],
-  onboarding: [],
-  audit: [],
-  notes: [],
-  branches: [],
-};
 
 /* ===================== RHF HELPERS ===================== */
 
@@ -279,9 +225,6 @@ function RHFSwitch({
 export default function Page() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const [activeTab, setActiveTab] = useState<TabKey>("profile");
-  const activeTabOrder =
-    tabsList.find((t) => t.key === activeTab)?.order ?? 0;
   const inputRef = useRef<HTMLInputElement>(null);
 
   const methods = useForm<FormValues>({
@@ -317,41 +260,6 @@ export default function Page() {
     }
   };
 
-  /* Tab Error Logic */
-  const tabHasErrors = useMemo(() => {
-    const eKeys = Object.keys(errors) as (keyof FormValues)[];
-    const map: Partial<Record<TabKey, boolean>> = {};
-    (Object.keys(fieldsByTab) as TabKey[]).forEach((tab) => {
-      map[tab] = eKeys.some((k) => fieldsByTab[tab]?.includes(k));
-    });
-    return map;
-  }, [errors]);
-
-  const orderedTabs = useMemo(
-    () => [...tabsList].sort((a, b) => a.order - b.order),
-    []
-  );
-
-  /* Step navigation */
-  const goNext = async () => {
-    const current = orderedTabs.find((t) => t.key === activeTab);
-    if (!current) return;
-
-    const next = orderedTabs.find((t) => t.order === current.order + 1);
-
-    const valid = await trigger(fieldsByTab[activeTab]);
-    if (!valid) return;
-
-    if (next) setActiveTab(next.key);
-  };
-
-  const goPrev = () => {
-    const current = orderedTabs.find((t) => t.key === activeTab);
-    if (!current) return;
-
-    const prev = orderedTabs.find((t) => t.order === current.order - 1);
-    if (prev) setActiveTab(prev.key);
-  };
 
   /* Submit handler */
   const onSubmit = async (data: FormValues) => {
@@ -407,7 +315,6 @@ export default function Page() {
     }
   };
 
-  const isLastStep = activeTab === "subscription";
 
   return (
     <FormProvider {...methods}>
@@ -419,132 +326,6 @@ export default function Page() {
           p: 3,
         }}
       >
-        {/* TOP AREA */}
-        <Stack spacing={4}>
-          <Stack spacing={2}>
-            <Link
-              color="text.primary"
-              component={RouterLink}
-              href={paths.dashboard.superadmin.school}
-              sx={{ alignItems: 'center', display: 'inline-flex', gap: 1 }}
-              variant="subtitle2"
-            >
-              <ArrowLeftIcon fontSize="var(--icon-fontSize-md)" />
-            </Link>
-
-            {/* ENHANCED TABS */}
-            <Box sx={{ mt: 3 }}>
-              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                {orderedTabs.map((tab, index) => {
-                  const isActive = tab.key === activeTab;
-                  const isCompleted = tab.order < activeTabOrder;
-                  const hasError = tabHasErrors[tab.key];
-
-                  const getTabIcon = (key: TabKey) => {
-                    switch (key) {
-                      case 'profile': return <Building size={16} />;
-                      case 'route_rules': return <MapPin size={16} />;
-                      case 'limits': return <Users size={16} />;
-                      case 'subscription': return <CreditCard size={16} />;
-                      default: return null;
-                    }
-                  };
-
-                  return (
-                    <Box
-                      key={tab.key}
-                      onClick={async () => {
-                        const current = orderedTabs.find(
-                          (t) => t.key === activeTab
-                        );
-                        if (
-                          current &&
-                          tab.order > current.order &&
-                          !(await trigger(fieldsByTab[activeTab]))
-                        ) {
-                          return;
-                        }
-                        setActiveTab(tab.key);
-                      }}
-                      sx={{
-                        position: 'relative',
-                        px: 2,
-                        py: 1.5,
-                        borderRadius: 2,
-                        cursor: "pointer",
-                        background: isActive
-                          ? "linear-gradient(135deg, #1560BD 0%, #0D47A1 100%)"
-                          : isCompleted
-                            ? "linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)"
-                            : "#F5F5F5",
-                        color: isActive || isCompleted ? "#fff" : "#616161",
-                        fontSize: "14px",
-                        fontWeight: isActive ? 600 : 500,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5,
-                        transition: "all 0.3s ease",
-                        boxShadow: isActive ? "0 4px 12px rgba(21, 96, 189, 0.3)" : "none",
-                        border: hasError ? "2px solid #E53935" : "none",
-                        "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: isActive ? "0 6px 16px rgba(21, 96, 189, 0.4)" : "0 4px 12px rgba(0, 0, 0, 0.1)",
-                        }
-                      }}
-                    >
-                      {/* Step Number */}
-                      <Box
-                        sx={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: "50%",
-                          background: isActive || isCompleted ? "rgba(255, 255, 255, 0.2)" : "#E0E0E0",
-                          color: isActive || isCompleted ? "#fff" : "#757575",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {index + 1}
-                      </Box>
-
-                      {/* Tab Icon */}
-                      {getTabIcon(tab.key)}
-
-                      {/* Tab Label */}
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                          {tab.label}
-                        </Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.8, fontSize: "11px" }}>
-                          {isCompleted ? "Completed" : isActive ? "In Progress" : "Pending"}
-                        </Typography>
-                      </Box>
-
-                      {/* Error Indicator */}
-                      {hasError && (
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            top: -4,
-                            right: -4,
-                            width: 12,
-                            height: 12,
-                            borderRadius: "50%",
-                            background: "#E53935",
-                            border: "2px solid #fff",
-                          }}
-                        />
-                      )}
-                    </Box>
-                  );
-                })}
-              </Box>
-            </Box>
-          </Stack>
-        </Stack>
 
         {/* MAIN CONTENT AREA */}
         <Grid container spacing={3} sx={{ mt: 1 }}>
@@ -560,47 +341,30 @@ export default function Page() {
               }}
             >
               <Stack spacing={4} alignItems="center">
-                {/* Logo Display */}
-                <Box sx={{ position: 'relative' }}>
+                {/* Logo Display - Clickable */}
+                <Box 
+                  sx={{ position: 'relative', cursor: 'pointer' }}
+                  onClick={handleSelectImage}
+                >
                   <Avatar
                     src={watch("schoolImage") || undefined}
                     sx={{
                       width: 150,
                       height: 150,
                       borderRadius: 4,
-                      border: "1px solid",
-                      // boxShadow: "0 16px 40px rgba(0, 0, 0, 0.18)",
+                      border: "2px dashed #1976d2",
                       bgcolor: "#fafafa",
+                      transition: "all 0.3s ease",
+                      "&:hover": {
+                        borderColor: "#0d47a1",
+                        transform: "scale(1.02)",
+                        boxShadow: "0 4px 12px rgba(25, 118, 210, 0.2)",
+                      }
                     }}
                   >
-                    <Building size={60} color="#757575" />
+                    <Upload size={60} color="#1976d2" />
                   </Avatar>
-
                 </Box>
-
-                {/* Upload Button */}
-                <Button
-                  variant="contained"
-                  onClick={handleSelectImage}
-                  size="large"
-                  sx={{
-                    px: 4,
-                    py: 2,
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    borderRadius: 2,
-                    background: "linear-gradient(135deg, #1976d2, #0d47a1)",
-                    textTransform: "none",
-                    boxShadow: "0 4px 12px rgba(25, 118, 210, 0.3)",
-                    "&:hover": {
-                      // background: "linear-gradient(135deg, #0d47a1, #1976d2)",
-                      boxShadow: "0 6px 20px rgba(25, 118, 210, 0.5)",
-                      // transform: "translateY(-2px)",
-                    }
-                  }}
-                >
-                  Upload School Logo
-                </Button>
 
                 {/* Hidden File Input */}
                 <input
@@ -618,74 +382,38 @@ export default function Page() {
           <Grid item xs={12} md={8}>
             <Card sx={{ borderRadius: 3 }}>
               <CardContent sx={{ p: 3 }}>
-                {activeTab === "profile" && <ProfileSection />}
-                {activeTab === "route_rules" && <RouteRulesSection />}
-                {activeTab === "limits" && <LimitsSection />}
-                {activeTab === "subscription" && (
+                <Stack spacing={4}>
+                  <ProfileSection />
+                  <Divider />
+                  <RouteRulesSection />
+                  <Divider />
+                  <LimitsSection />
+                  <Divider />
                   <SubscriptionBillingSection />
-                )}
+                </Stack>
               </CardContent>
 
               <Divider />
 
               <Stack
                 direction="row"
-                justifyContent="space-between"
+                justifyContent="flex-end"
                 sx={{ p: 3 }}
               >
                 <Button
-                  variant="outlined"
-                  onClick={goPrev}
-                  disabled={activeTab === "profile"}
+                  variant="contained"
+                  onClick={handleSubmit(onSubmit)}
                   sx={{
-                    px: 3,
+                    px: 4,
                     py: 1,
-                    borderColor: "#FFA500",
-                    color: "#FFA500",
+                    background: "#FFA500",
                     "&:hover": {
-                      borderColor: "#FF8C00",
-                      color: "#FF8C00",
-                      bgcolor: "rgba(255, 165, 0, 0.04)"
+                      background: "#FF8C00",
                     }
                   }}
                 >
-                  Previous
+                  Submit
                 </Button>
-
-                {isLastStep ? (
-                  <Button
-                    variant="contained"
-                    onClick={async () => {
-                      if (!(await trigger(fieldsByTab[activeTab]))) return;
-                      handleSubmit(onSubmit)();
-                    }}
-                    sx={{
-                      px: 4,
-                      py: 1,
-                      background: "#FFA500",
-                      "&:hover": {
-                        background: "#FF8C00",
-                      }
-                    }}
-                  >
-                    Submit
-                  </Button>
-                ) : (
-                  <Button
-                    variant="contained"
-                    onClick={goNext}
-                    sx={{
-                      px: 4,
-                      py: 1,
-                      background: "#FFA500",
-                      "&:hover": {
-                        background: "#FF8C00",
-                      }
-                    }}
-                  >
-                    Next
-                  </Button>
-                )}
               </Stack>
             </Card>
           </Grid>
@@ -700,7 +428,7 @@ export default function Page() {
 function ProfileSection() {
   return (
     <Stack spacing={3}>
-      <Typography variant="h6" sx={{ fontWeight: 600, color: "#1560BD" }}>
+      <Typography variant="h6">
         School Information
       </Typography>
 
@@ -713,32 +441,32 @@ function ProfileSection() {
       >
         <RHFTextField
           name="adminName"
-          label="Admin Name *"
+          label="Admin Name"
           placeholder="Enter admin name"
         />
         <RHFTextField
           name="schoolName"
-          label="School Name *"
+          label="School Name"
           placeholder="Enter school name"
         />
         <RHFTextField
           name="address"
-          label="Address *"
+          label="Address"
           placeholder="Enter address"
         />
         <RHFTextField
           name="adminEmail"
-          label="Admin Email *"
+          label="Admin Email"
           placeholder="Enter admin email"
         />
         <RHFTextField
           name="schoolEmail"
-          label="School Email *"
+          label="School Email"
           placeholder="Enter school email"
         />
         <RHFTextField
           name="contactNumber"
-          label="Contact Number *"
+          label="Contact Number"
           placeholder="+92-300-0000000"
         />
       </Box>
@@ -750,6 +478,7 @@ function ProfileSection() {
 
 function RouteRulesSection() {
   const { setValue, trigger, watch } = useFormContext<FormValues>();
+  const [showMap, setShowMap] = useState(false);
 
   const lat = watch("routeLatitude");
   const lng = watch("routeLongitude");
@@ -767,7 +496,7 @@ function RouteRulesSection() {
 
   return (
     <Stack spacing={2}>
-      <Typography variant="subtitle2">Route Rules</Typography>
+      <Typography variant="h6">Route Rules</Typography>
 
       <Box
         sx={{
@@ -779,47 +508,56 @@ function RouteRulesSection() {
         <RHFTimePicker name="pickupStartTime" label="Pickup Start Time" />
         <RHFTimePicker name="dropoffStartTime" label="Dropoff Start Time" />
 
-        <RHFTextField name="maxTripDuration" label="Max Trip Duration" placeholder="45 mins" />
-        <RHFTextField name="bufferTime" label="Buffer Time" placeholder="10 mins" />
+        <RHFTextField name="maxTripDuration" label="Max Trip Duration" placeholder="e.g., 60" type="number" />
+        <RHFTextField name="bufferTime" label="Buffer Time" placeholder="e.g., 15" type="number" />
 
         {/* <RHFTextField name="routeLatitude" label="Latitude" type="number" placeholder="24.8607" />
         <RHFTextField name="routeLongitude" label="Longitude" type="number" placeholder="67.0011" /> */}
       </Box>
 
-      {/* ✅ Open in Google Maps link */}
+      {/* ✅ Add School Location Button */}
       <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-        <Typography variant="caption" color="text.secondary">
-          Open this location in Google Maps:
-        </Typography>
-
         <Button
           variant="outlined"
           size="small"
-          disabled={!googleMapsLink}
-          onClick={() => window.open(googleMapsLink, "_blank")}
+          onClick={() => setShowMap(!showMap)}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            textTransform: "none",
+            borderColor: "#1976d2",
+            color: "#1976d2",
+            "&:hover": {
+              borderColor: "#1565c0",
+              backgroundColor: "rgba(25, 118, 210, 0.04)",
+            },
+          }}
         >
-          Open in Google Maps
+          <Typography variant="body2">Add School Location</Typography>
+          <CaretDownIcon 
+            size={16} 
+            style={{ 
+              transform: showMap ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.2s ease"
+            }} 
+          />
         </Button>
-
-        {/* optional: show link text */}
-        {googleMapsLink ? (
-          <Typography variant="caption" sx={{ wordBreak: "break-all" }}>
-            {googleMapsLink}
-          </Typography>
-        ) : null}
       </Box>
 
-      {/* ✅ MapSelection component (unchanged) */}
-      <Box sx={{ mt: 1 }}>
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>
-          Pick location on map
-        </Typography>
-        {/* <GoogleMapsProvider> */}
-        {/* <MapComponent onPositionChange={handlePositionChange} /> */}
-        {/* </GoogleMapsProvider> */}
+      {/* MapSelection component */}
+      {showMap && (
+        <Box sx={{ mt: 1 }}>
+          <Box sx={{ height: '400px', width: '100%', borderRadius: 2, overflow: 'hidden', border: '1px solid #e0e0e0' }}>
+            <MapComponent
+              onPositionChange={handlePositionChange}
+              initialLat={lat}
+              initialLng={lng}
+            />
+          </Box>
+        </Box>
+      )}
 
-        {/* <MapComponent onPositionChange={handlePositionChange} /> */}
-      </Box>
     </Stack>
   );
 }
@@ -828,7 +566,7 @@ function RouteRulesSection() {
 function LimitsSection() {
   return (
     <Stack spacing={2}>
-      <Typography variant="subtitle2">Limits</Typography>
+      <Typography variant="h6">Limits</Typography>
 
       <Box
         sx={{
@@ -841,19 +579,16 @@ function LimitsSection() {
           name="allowedVans"
           label="Allowed Vans"
           type="number"
-          placeholder="50"
         />
         <RHFTextField
           name="allowedRoutes"
           label="Allowed Routes"
           type="number"
-          placeholder="20"
         />
         <RHFTextField
           name="allowedStudents"
           label="Allowed Students"
           type="number"
-          placeholder="1000"
         />
       </Box>
     </Stack>
@@ -863,7 +598,7 @@ function LimitsSection() {
 function SubscriptionBillingSection() {
   return (
     <Stack spacing={2}>
-      <Typography variant="subtitle2">Subscription & Billing</Typography>
+      <Typography variant="h6">Subscription & Billing</Typography>
 
       <Box
         sx={{

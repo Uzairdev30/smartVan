@@ -29,6 +29,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store";
 import { getAllSchools, getSchoolById, changeSchoolStatus } from "@/store/reducers/suadmin-slice";
 import { PlusIcon } from "@/components/icons";
+import { SchoolManagementFilter, type Filters } from "./school-management-fiter";
 
 type UiSchoolRow = {
   _id: string;            // backend id (for routes)
@@ -55,10 +56,16 @@ export default function Page(): React.JSX.Element {
   const [limit, setLimit] = React.useState(10);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [selectedRow, setSelectedRow] = React.useState<UiSchoolRow | null>(null);
+  const [filters, setFilters] = React.useState<Filters>({});
 
   React.useEffect(() => {
     dispatch(getAllSchools({ page, limit }));
   }, [dispatch, page, limit]);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [filters]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, row: UiSchoolRow) => {
     setAnchorEl(event.currentTarget);
@@ -86,7 +93,7 @@ export default function Page(): React.JSX.Element {
     router.push(`/su-admin/school-management/edit/${selectedRow._id}`);
   };
   // map API -> UI
-  const rows: UiSchoolRow[] = React.useMemo(() => {
+  const allRows: UiSchoolRow[] = React.useMemo(() => {
     return (schools ?? []).map((s: any) => ({
       _id: s?._id,
       name: s?.schoolName ?? s?.name ?? "—",
@@ -101,6 +108,26 @@ export default function Page(): React.JSX.Element {
           : "inActive",
     }));
   }, [schools]);
+
+  // Client-side filtering like van page
+  const rows: UiSchoolRow[] = React.useMemo(() => {
+    let result = allRows;
+    if (filters.schoolName?.trim()) {
+      result = result.filter((school) =>
+        school.name
+          ?.toLowerCase()
+          .includes(filters.schoolName!.trim().toLowerCase())
+      );
+    }
+    if (filters.status?.trim()) {
+      result = result.filter((school) =>
+        school.status
+          ?.toLowerCase()
+          === filters.status!.trim().toLowerCase()
+      );
+    }
+    return result;
+  }, [allRows, filters]);
 
   const columns: ColumnDef<UiSchoolRow>[] = [
     {
@@ -305,33 +332,34 @@ export default function Page(): React.JSX.Element {
           </Button>
         </Stack>
 
-
         <Card>
-          {/* TABLE */}
-          <Box sx={{ overflowX: "auto" }}>
-            {listLoading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-                <CircularProgress />
-              </Box>
-            ) : listError ? (
-              <Box sx={{ p: 3 }}>
-                <Typography color="error" variant="body2" sx={{ textAlign: "center" }}>
-                  {listError}
-                </Typography>
-              </Box>
-            ) : schools && rows.length ? (
-              <DataTable<UiSchoolRow>
-                columns={columns}
-                rows={rows}
-              />
-            ) : (
-              <Box sx={{ p: 3 }}>
-                <Typography color="text.secondary" variant="body2" sx={{ textAlign: "center" }}>
-                  No Data found
-                </Typography>
-              </Box>
-            )}
-          </Box>
+          <SchoolManagementFilter 
+            filters={filters} 
+            setFilters={setFilters} 
+          />
+
+          {listLoading ? (
+            <Box sx={{ textAlign: "center", p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : listError ? (
+            <Box sx={{ p: 3 }}>
+              <Typography color="error" variant="body2" sx={{ textAlign: "center" }}>
+                {listError}
+              </Typography>
+            </Box>
+          ) : schools && rows.length ? (
+            <DataTable<UiSchoolRow>
+              columns={columns}
+              rows={rows}
+            />
+          ) : (
+            <Box sx={{ p: 3 }}>
+              <Typography color="text.secondary" variant="body2" sx={{ textAlign: "center" }}>
+                No Data found
+              </Typography>
+            </Box>
+          )}
 
           <Divider />
 

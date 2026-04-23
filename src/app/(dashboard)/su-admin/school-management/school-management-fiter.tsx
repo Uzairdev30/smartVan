@@ -1,44 +1,23 @@
 'use client';
 import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from 'next/navigation';
 import Button from '@mui/material/Button';
-import dayjs from 'dayjs';
-import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
+import Stack from '@mui/material/Stack';
 import FormControl from '@mui/material/FormControl';
 import OutlinedInput from '@mui/material/OutlinedInput';
-import Select from '@mui/material/Select';
-import Stack from '@mui/material/Stack';
-import Tab from '@mui/material/Tab';
-import Tabs from '@mui/material/Tabs';
-import Typography from '@mui/material/Typography';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { paths } from '@/paths';
 import { FilterButton, FilterPopover, useFilterContext } from '@/components/core/filter-button';
-import { Option } from '@/components/core/option';
-import { Trash } from '@phosphor-icons/react';
-import { deleteStudents } from "@/store/reducers/student-slice";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/store";
 
 export interface Filters {
-  email?: string;
-  route?: string;
-  school?: string;
-  categoryId?: string;
-  createdAt?: string;
-  sort?: string;
+  schoolName?: string;
+  status?: string;
 }
 
-export function StudentFilter({ filters, setFilters, selected }: any): React.JSX.Element {
-  const [categoryForms, setCategoryForms] = useState([]);
-  const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>()
+export function SchoolManagementFilter({ filters, setFilters }: any): React.JSX.Element {
 
   const handleFilterChange = useCallback((key: keyof Filters, value?: string) => {
     setFilters((prev: Filters) => {
       const newFilters = { ...prev };
-      if (!value) {
+      if (!value || value.trim() === '') {
         delete newFilters[key];
       } else {
         newFilters[key] = value;
@@ -52,88 +31,33 @@ export function StudentFilter({ filters, setFilters, selected }: any): React.JSX
   }, []);
 
   const hasFilters = Object.values(filters || {}).some((val) => !!val);
-  const handleBulkDelete = async () => {
-    const studentIds = selected.map((item: any) => item.student.id);
-    dispatch(deleteStudents(studentIds));
-
-
-  }
   return (
     <div>
-      {/* <Tabs
-        onChange={(_, value) => {
-          setSelectedTab(value);
-          handleFilterChange('categoryId', value === '' ? null : value);
-        }}
-        sx={{ px: 3 }}
-        value={selectedTab}
-        variant="scrollable"
-      >
-        <Tab key="all" label="All" value="" sx={{ minHeight: 'auto' }} />
-        {categoryForms?.map((tab) => (
-          <Tab
-            key={tab.id}
-            label={tab.name}
-            sx={{ minHeight: 'auto' }}
-            value={tab.id}
-          />
-        ))}
-      </Tabs> */}
 
       <Divider />
 
       <Stack direction="row" spacing={2} sx={{ alignItems: 'center', flexWrap: 'wrap', px: 3, py: 2 }}>
         <Stack direction="row" spacing={2} sx={{ alignItems: 'center', flex: '1 1 auto', flexWrap: 'wrap' }}>
-          {/* <FilterButton
-            displayValue={filters?.email || ""}
-            label="Van"
-            onFilterApply={(value) => handleFilterChange('email', value as string)}
-            onFilterDelete={() => handleFilterChange('email', '')}
-            popover={<GenericFilterPopover field="Email" />}
-            value={filters?.email || ""}
+          <FilterButton
+            displayValue={filters?.schoolName || ""}
+            label="School Name"
+            onFilterApply={(value) => handleFilterChange('schoolName', value as string)}
+            onFilterDelete={() => handleFilterChange('schoolName')}
+            popover={<GenericFilterPopover field="School Name" />}
+            value={filters?.schoolName || ""}
           />
 
           <FilterButton
-            displayValue={filters?.route || ""}
-            label="Route"
-            onFilterApply={(value) => handleFilterChange('route', value as string)}
-            onFilterDelete={() => handleFilterChange('route', '')}
-            popover={<GenericFilterPopover field="Route" />}
-            value={filters?.route || ""}
+            displayValue={filters?.status || ""}
+            label="Status"
+            onFilterApply={(value) => handleFilterChange('status', value as string)}
+            onFilterDelete={() => handleFilterChange('status')}
+            popover={<GenericFilterPopover field="Status" />}
+            value={filters?.status || ""}
           />
 
-          <FilterButton
-            displayValue={filters?.school || ""}
-            label="Class"
-            onFilterApply={(value) => handleFilterChange('school', value as string)}
-            onFilterDelete={() => handleFilterChange('school', '')}
-            popover={<GenericFilterPopover field="School" />}
-            value={filters?.school || ""}
-          />
-
-          {hasFilters ? <Button onClick={handleClearFilters}>Clear filters</Button> : null} */}
+          {hasFilters ? <Button onClick={() => setFilters({})}>Clear filters</Button> : null}
         </Stack>
-
-       
-
-        <Button
-          variant="contained"
-          color="error"
-          startIcon={<Trash weight="fill" />}
-          onClick={() => handleBulkDelete()}
-        >
-          Delete
-        </Button>
-        {/* 🔃 Sort Select */}
-        {/* <Select
-          name="sort"
-          onChange={(e) => handleFilterChange('sort', e.target.value)}
-          sx={{ maxWidth: '100%', width: '120px' }}
-          value={filters?.sort || "desc"}
-        >
-          <Option value="desc">Newest</Option>
-          <Option value="asc">Oldest</Option>
-        </Select> */}
       </Stack>
     </div>
   );
@@ -148,42 +72,21 @@ function GenericFilterPopover({ field }: { field: string }) {
     setValue(initialValue || '');
   }, [initialValue]);
 
+  const handleApply = () => {
+    onApply(value);
+  };
+
   return (
     <FilterPopover anchorEl={anchorEl} onClose={onClose} open={open} title={`Filter by ${field}`}>
       <FormControl>
         <OutlinedInput
           onChange={(e) => setValue(e.target.value)}
-          onKeyUp={(e) => e.key === 'Enter' && onApply(value)}
+          onKeyUp={(e) => e.key === 'Enter' && handleApply()}
           value={value}
         />
       </FormControl>
-      <Button onClick={() => onApply(value)} variant="contained">Apply</Button>
+      <Button onClick={handleApply} variant="contained">Apply</Button>
     </FilterPopover>
   );
 }
 
-// 📅 Date Filter Popover
-// function DateFilterPopover() {
-//   const { anchorEl, onApply, onClose, open, value: initialValue } = useFilterContext();
-//   const [value, setValue] = useState(initialValue ? dayjs(initialValue) : null);
-
-//   useEffect(() => {
-//     setValue(initialValue ? dayjs(initialValue) : null);
-//   }, [initialValue]);
-
-//   return (
-//     <FilterPopover anchorEl={anchorEl} onClose={onClose} open={open} title="Filter by Date">
-//       <DatePicker
-//         value={value}
-//         onChange={(newDate) => setValue(newDate)}
-//         format="DD/MM/YYYY"
-//       />
-//       <Button
-//         onClick={() => onApply(value ? value.format('DD/MM/YYYY') : '')}
-//         variant="contained"
-//       >
-//         Apply
-//       </Button>
-//     </FilterPopover>
-//   );
-// }

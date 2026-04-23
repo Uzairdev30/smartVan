@@ -19,12 +19,9 @@ import {
   Select,
   MenuItem,
   FormHelperText,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  IconButton,
 } from "@mui/material";
-import CloseIcon from '@mui/icons-material/Close';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { config } from '@/config';
 
 import { useDispatch, useSelector } from "react-redux";
@@ -50,6 +47,8 @@ type FormValues = {
   endLat: string;
   endLong: string;
 };
+
+type Location = { lat: number; lng: number } | null;
 
 export default function AddRouteForm(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
@@ -97,7 +96,10 @@ export default function AddRouteForm(): React.JSX.Element {
 
   const tripDays = watch("tripDays");
 
-  const [openPicker, setOpenPicker] = React.useState<null | "start" | "end">(null);
+  const [showStartMap, setShowStartMap] = React.useState(false);
+  const [showEndMap, setShowEndMap] = React.useState(false);
+  const [startLocation, setStartLocation] = React.useState<Location>(null);
+  const [endLocation, setEndLocation] = React.useState<Location>(null);
 
   React.useEffect(() => {
     // Fetch the vans and log them to check if the data is being fetched correctly
@@ -111,6 +113,32 @@ export default function AddRouteForm(): React.JSX.Element {
     const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
     return new Date(`${today}T${time}`).toISOString();
   };
+
+  // Update locations when form values change
+  React.useEffect(() => {
+    const startLat = watch('startLat');
+    const startLong = watch('startLong');
+    const endLat = watch('endLat');
+    const endLong = watch('endLong');
+
+    if (startLat && startLong) {
+      setStartLocation({
+        lat: parseFloat(startLat),
+        lng: parseFloat(startLong)
+      });
+    } else {
+      setStartLocation(null);
+    }
+
+    if (endLat && endLong) {
+      setEndLocation({
+        lat: parseFloat(endLat),
+        lng: parseFloat(endLong)
+      });
+    } else {
+      setEndLocation(null);
+    }
+  }, [watch('startLat'), watch('startLong'), watch('endLat'), watch('endLong')]);
 
   const onSubmit = async (data: FormValues) => {
     const payload = {
@@ -318,17 +346,69 @@ export default function AddRouteForm(): React.JSX.Element {
 
               {/* Start Location */}
               <Grid item xs={12} sm={6}>
-                <Button variant="outlined" onClick={() => setOpenPicker("start")}>
-                  Pick Start Location on Map
+                <Button 
+                  variant="text" 
+                  color="primary"
+                  onClick={() => setShowStartMap(!showStartMap)}
+                  sx={{ mb: showStartMap ? 2 : 0, justifyContent: 'space-between' }}
+                  endIcon={showStartMap ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                >
+                  {showStartMap ? 'Hide Start Location Map' : 'Pick Start Location on Map'}
                 </Button>
               </Grid>
 
               {/* End Location */}
               <Grid item xs={12} sm={6}>
-                <Button variant="outlined" onClick={() => setOpenPicker("end")}>
-                  Pick End Location on Map
+                <Button 
+                  variant="text" 
+                  color="primary"
+                  onClick={() => setShowEndMap(!showEndMap)}
+                  sx={{ mb: showEndMap ? 2 : 0, justifyContent: 'space-between' }}
+                  endIcon={showEndMap ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                >
+                  {showEndMap ? 'Hide End Location Map' : 'Pick End Location on Map'}
                 </Button>
               </Grid>
+
+              {/* Start Location Map */}
+              {showStartMap && (
+                <Grid item xs={12} md={showEndMap ? 6 : 12}>
+                  <Card sx={{ height: '400px', mb: 2 }}>
+                    <MapComponent
+                      onPositionChange={(lat, lng) => {
+                        setValue("startLat", lat.toString());
+                        setValue("startLong", lng.toString());
+                      }}
+                      onLocationSelect={() => {}}
+                      initialLat={watch('startLat')}
+                      initialLng={watch('startLong')}
+                      startLocation={startLocation}
+                      endLocation={endLocation}
+                      showRoute={showStartMap && showEndMap}
+                    />
+                  </Card>
+                </Grid>
+              )}
+
+              {/* End Location Map */}
+              {showEndMap && (
+                <Grid item xs={12} md={showStartMap ? 6 : 12}>
+                  <Card sx={{ height: '400px', mb: 2 }}>
+                    <MapComponent
+                      onPositionChange={(lat, lng) => {
+                        setValue("endLat", lat.toString());
+                        setValue("endLong", lng.toString());
+                      }}
+                      onLocationSelect={() => {}}
+                      initialLat={watch('endLat')}
+                      initialLng={watch('endLong')}
+                      startLocation={startLocation}
+                      endLocation={endLocation}
+                      showRoute={showStartMap && showEndMap}
+                    />
+                  </Card>
+                </Grid>
+              )}
 
               {/* Submit */}
               <Grid item xs={12} sx={{ display: "flex", justifyContent: "flex-end" }}>
@@ -346,62 +426,6 @@ export default function AddRouteForm(): React.JSX.Element {
           </form>
         </Stack>
       </Card>
-
-      {/* Map Picker Dialog */}
-      <Dialog
-        open={!!openPicker}
-        onClose={() => setOpenPicker(null)}
-        maxWidth={false}
-        fullWidth
-        PaperProps={{
-          style: {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            right: '0',
-            bottom: '0',
-            margin: '0',
-            width: '100vw',
-            height: '100vh',
-            maxWidth: 'none',
-            maxHeight: 'none',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }
-        }}
-      >
-        <DialogContent sx={{
-          width: '90%',
-          height: '80%',
-          maxWidth: '1000px',
-          maxHeight: '700px',
-          margin: 'auto',
-          backgroundColor: 'transparent',
-          borderRadius: 0,
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow: 'none'
-        }}>
-          <MapComponent
-            onPositionChange={(lat, lng) => {
-              if (openPicker === "start") {
-                setValue("startLat", lat.toString());
-                setValue("startLong", lng.toString());
-              } else {
-                setValue("endLat", lat.toString());
-                setValue("endLong", lng.toString());
-              }
-            }}
-            onLocationSelect={() => setOpenPicker(null)}
-            initialLat={openPicker === 'start' ? watch('startLat') : watch('endLat')}
-            initialLng={openPicker === 'start' ? watch('startLong') : watch('endLong')}
-          />
-        </DialogContent>
-      </Dialog>
     </Box>
   );
 }
