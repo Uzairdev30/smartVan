@@ -39,7 +39,7 @@ type UiSchoolRow = {
   routesLimit: number;    // allowedRoutes
   students: number;       // allowedStudents
   status: "active" | "inActive";
-  schoolLogo?: any
+  image?: any
 };
 
 export default function Page(): React.JSX.Element {
@@ -97,7 +97,7 @@ export default function Page(): React.JSX.Element {
     return (schools ?? []).map((s: any) => ({
       _id: s?.schoolId ?? s?._id,
       name: s?.schoolName ?? s?.name ?? "—",
-      schoolLogo: s?.schoolImage,
+      image: s?.schoolImage,
       contact: s?.contactPerson ?? s?.admin?.name ?? "—",
       vansLimit: Number(s?.totalVans ?? 0),
       routesLimit: Number(s?.totalRoutes ?? 0),
@@ -159,9 +159,9 @@ export default function Page(): React.JSX.Element {
               color: "text.secondary",
             }}
           >
-            {row.schoolLogo ? (
+            {row.image ? (
               <img
-                src={row.schoolLogo}
+                src={row.image}
                 style={{
                   width: "100%",
                   height: "100%",
