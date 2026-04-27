@@ -190,7 +190,7 @@ export default function Page(): React.JSX.Element {
     },
     {
       name: "Student Name",
-      width: "240px",
+      width: "200px",
       formatter: (row): React.JSX.Element => {
         const name = row?.student?.fullname || "No Name";
         const image = row?.student?.image;
@@ -293,6 +293,7 @@ export default function Page(): React.JSX.Element {
     },
     {
       name: "Status",
+      width: "80px",
       formatter: (row) => {
         const status = row?.student?.status?.toLowerCase();
 

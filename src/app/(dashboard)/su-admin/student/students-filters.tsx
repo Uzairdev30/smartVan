@@ -79,6 +79,17 @@ export function StudentFilter({
           />
           
           <FilterButton
+            displayValue={filters?.parentName || ""}
+            label="Parent Name"
+            onFilterApply={(value) =>
+              handleFilterChange("parentName", value as string)
+            }
+            onFilterDelete={() => handleFilterChange("parentName", "")}
+            popover={<GenericFilterPopover field="Parent Name" />}
+            value={filters?.parentName || ""}
+          />
+          
+          <FilterButton
             displayValue={filters?.age || ""}
             label="Age"
             onFilterApply={(value) =>
@@ -98,17 +109,6 @@ export function StudentFilter({
             onFilterDelete={() => handleFilterChange("status", "")}
             popover={<GenericFilterPopover field="Status" />}
             value={filters?.status || ""}
-          />
-
-          <FilterButton
-            displayValue={filters?.parentName || ""}
-            label="Parent Name"
-            onFilterApply={(value) =>
-              handleFilterChange("parentName", value as string)
-            }
-            onFilterDelete={() => handleFilterChange("parentName", "")}
-            popover={<GenericFilterPopover field="Parent Name" />}
-            value={filters?.parentName || ""}
           />
 
           {hasFilters && (
