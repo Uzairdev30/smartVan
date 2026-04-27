@@ -291,7 +291,7 @@ export default function AddRouteForm(): React.JSX.Element {
                       p: 2,
                     }}
                   >
-                    {Object.keys(tripDays).map((day) => (
+                    {Object.keys(tripDays).filter(day => day !== '_id').map((day) => (
                       <Box
                         key={day}
                         sx={{

@@ -102,7 +102,7 @@ export default function MapComponent({
   useEffect(() => {
     if (showRoute && startLocation && endLocation && directionsServiceRef.current && directionsRendererRef.current) {
       calculateRoute(startLocation, endLocation);
-    } else if (!showRoute && directionsRendererRef.current && window.google?.maps && window.google.maps.TravelMode) {
+    } else if (!showRoute && directionsRendererRef.current) {
       clearRoute();
     }
   }, [startLocation, endLocation, showRoute]);
@@ -162,14 +162,17 @@ export default function MapComponent({
 
   // Clear route
   const clearRoute = useCallback(() => {
-    if (directionsRendererRef.current && 
-        directionsRendererRef.current.setDirections && 
-        window.google?.maps && 
-        window.google.maps.DirectionsService && 
-        window.google.maps.TravelMode) {
-      directionsRendererRef.current.setDirections({ routes: [] } as any);
+    try {
+      if (directionsRendererRef.current && 
+          directionsRendererRef.current.setDirections && 
+          window.google?.maps) {
+        directionsRendererRef.current.setDirections({ routes: [] } as any);
+      }
+    } catch (error) {
+      console.error('Error clearing route:', error);
+    } finally {
+      setRouteInfo(null);
     }
-    setRouteInfo(null);
   }, []);
 
   // Search functionality with TRUE Google Maps level quality

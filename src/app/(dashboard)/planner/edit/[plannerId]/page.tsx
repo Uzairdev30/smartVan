@@ -19,12 +19,9 @@ import {
   Select,
   MenuItem,
   FormHelperText,
-  Dialog,
-  DialogContent,
-  IconButton,
 } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import CloseIcon from '@mui/icons-material/Close';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import {
@@ -51,8 +48,9 @@ type FormValues = {
   startLong: string;
   endLat: string;
   endLong: string;
-  routeId: string;
 };
+
+type Location = { lat: number; lng: number } | null;
 
 export default function UpdateRouteForm(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
@@ -107,7 +105,10 @@ export default function UpdateRouteForm(): React.JSX.Element {
 
   const tripDays = watch("tripDays");
 
-  const [openPicker, setOpenPicker] = React.useState<null | "start" | "end">(null);
+  const [showStartMap, setShowStartMap] = React.useState(false);
+  const [showEndMap, setShowEndMap] = React.useState(false);
+  const [startLocation, setStartLocation] = React.useState<Location>(null);
+  const [endLocation, setEndLocation] = React.useState<Location>(null);
 
   // Fetch vans and route details
   React.useEffect(() => {
@@ -144,11 +145,35 @@ export default function UpdateRouteForm(): React.JSX.Element {
     }
   }, [routeDetails, reset]);
 const formatToISO = (time: string) => {
-  if (!time) return "";
-
-  const today = new Date().toISOString().split("T")[0];
-  return new Date(`${today}T${time}:00`).toISOString();
+  const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+  return new Date(`${today}T${time}`).toISOString();
 };
+
+  // Update locations when form values change
+  React.useEffect(() => {
+    const startLat = watch('startLat');
+    const startLong = watch('startLong');
+    const endLat = watch('endLat');
+    const endLong = watch('endLong');
+
+    if (startLat && startLong) {
+      setStartLocation({
+        lat: parseFloat(startLat),
+        lng: parseFloat(startLong)
+      });
+    } else {
+      setStartLocation(null);
+    }
+
+    if (endLat && endLong) {
+      setEndLocation({
+        lat: parseFloat(endLat),
+        lng: parseFloat(endLong)
+      });
+    } else {
+      setEndLocation(null);
+    }
+  }, [watch('startLat'), watch('startLong'), watch('endLat'), watch('endLong')]);
   const onSubmit = async (data: FormValues) => {
     const payload = {
       routeId: routeDetails?._id,
@@ -191,13 +216,7 @@ const formatToISO = (time: string) => {
     <Box sx={{ p: 3 }}>
       <Card sx={{ p: 3 }}>
         <Stack spacing={3}>
-          {/* ✅ Back arrow with title */}
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <IconButton onClick={() => router.back()}>
-              <ArrowBackIcon />
-            </IconButton>
-            <Typography variant="h5">Update Route</Typography>
-          </Stack>
+          <Typography variant="h5">Update Route</Typography>
 
           <form onSubmit={handleSubmit(onSubmit)}>
             <Grid container spacing={2}>
@@ -216,16 +235,17 @@ const formatToISO = (time: string) => {
                         label="Select Van"
                         MenuProps={{ PaperProps: { style: { maxHeight: 300 } } }}
                       >
-                        {vans?.map((v) => (
-                          <MenuItem key={v.van?.id} value={v.van?.id}>
-                            {v.van.vehicleType} - {v.van.carNumber} (
-                            {v.driver.fullname || "No driver"})
-                          </MenuItem>
-                        ))}
+                        {vans?.length > 0 ? (
+                          vans.map((v) => (
+                            <MenuItem key={v.van?.id} value={v.van?.id}>
+                              {v.van.vehicleType} - {v.van.carNumber} ({v.driver.fullname || "No driver"})
+                            </MenuItem>
+                          ))
+                        ) : (
+                          <MenuItem disabled>No vans available</MenuItem>
+                        )}
                       </Select>
-                      {errors.vanId && (
-                        <FormHelperText>{errors.vanId.message}</FormHelperText>
-                      )}
+                      {errors.vanId && <FormHelperText>{errors.vanId.message}</FormHelperText>}
                     </FormControl>
                   )}
                 />
@@ -274,17 +294,13 @@ const formatToISO = (time: string) => {
                 <Controller
                   name="tripType"
                   control={control}
-                  rules={{ required: "Trip Type is required" }}
                   render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.tripType}>
-                      <InputLabel id="trip-type-label">Trip Type</InputLabel>
-                      <Select labelId="trip-type-label" {...field} label="Trip Type">
+                    <FormControl fullWidth>
+                      <InputLabel>Trip Type</InputLabel>
+                      <Select {...field} label="Trip Type">
                         <MenuItem value="pick">Pick</MenuItem>
                         <MenuItem value="drop">Drop</MenuItem>
                       </Select>
-                      {errors.tripType && (
-                        <FormHelperText>{errors.tripType.message}</FormHelperText>
-                      )}
                     </FormControl>
                   )}
                 />
@@ -293,11 +309,11 @@ const formatToISO = (time: string) => {
               {/* Trip Days */}
               <Grid item xs={12}>
                 <FormControl component="fieldset" fullWidth>
-                    <InputLabel>Trip Days</InputLabel> 
+                  <InputLabel>Trip Days</InputLabel>
                   <Typography
                     variant="h6"
-                    sx={{ 
-                      mb: 2, 
+                    sx={{
+                      mb: 2,
                       fontWeight: 600,
                       color: '#2c3e50',
                       display: 'flex',
@@ -369,17 +385,69 @@ const formatToISO = (time: string) => {
 
               {/* Start Location */}
               <Grid item xs={12} sm={6}>
-                <Button variant="outlined" onClick={() => setOpenPicker("start")}>
-                  Pick Start Location on Map
+                <Button 
+                  variant="text" 
+                  color="primary"
+                  onClick={() => setShowStartMap(!showStartMap)}
+                  sx={{ mb: showStartMap ? 2 : 0, justifyContent: 'space-between' }}
+                  endIcon={showStartMap ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                >
+                  {showStartMap ? 'Hide Start Location Map' : 'Pick Start Location on Map'}
                 </Button>
               </Grid>
 
               {/* End Location */}
               <Grid item xs={12} sm={6}>
-                <Button variant="outlined" onClick={() => setOpenPicker("end")}>
-                  Pick End Location on Map
+                <Button 
+                  variant="text" 
+                  color="primary"
+                  onClick={() => setShowEndMap(!showEndMap)}
+                  sx={{ mb: showEndMap ? 2 : 0, justifyContent: 'space-between' }}
+                  endIcon={showEndMap ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                >
+                  {showEndMap ? 'Hide End Location Map' : 'Pick End Location on Map'}
                 </Button>
               </Grid>
+
+              {/* Start Location Map */}
+              {showStartMap && (
+                <Grid item xs={12} md={showEndMap ? 6 : 12}>
+                  <Card sx={{ height: '400px', mb: 2 }}>
+                    <MapComponent
+                      onPositionChange={(lat, lng) => {
+                        setValue("startLat", lat.toString());
+                        setValue("startLong", lng.toString());
+                      }}
+                      onLocationSelect={() => {}}
+                      initialLat={watch('startLat')}
+                      initialLng={watch('startLong')}
+                      startLocation={startLocation}
+                      endLocation={endLocation}
+                      showRoute={showStartMap && showEndMap}
+                    />
+                  </Card>
+                </Grid>
+              )}
+
+              {/* End Location Map */}
+              {showEndMap && (
+                <Grid item xs={12} md={showStartMap ? 6 : 12}>
+                  <Card sx={{ height: '400px', mb: 2 }}>
+                    <MapComponent
+                      onPositionChange={(lat, lng) => {
+                        setValue("endLat", lat.toString());
+                        setValue("endLong", lng.toString());
+                      }}
+                      onLocationSelect={() => {}}
+                      initialLat={watch('endLat')}
+                      initialLng={watch('endLong')}
+                      startLocation={startLocation}
+                      endLocation={endLocation}
+                      showRoute={showStartMap && showEndMap}
+                    />
+                  </Card>
+                </Grid>
+              )}
 
               {/* Submit */}
               <Grid item xs={12} sx={{ display: "flex", justifyContent: "flex-end" }}>
@@ -390,73 +458,13 @@ const formatToISO = (time: string) => {
                   sx={{ minWidth: 150 }}
                   disabled={loading || vansLoading}
                 >
-                  {loading ? (
-                    <CircularProgress size={22} color="inherit" />
-                  ) : (
-                    "Update"
-                  )}
+                  {loading ? <CircularProgress size={22} color="inherit" /> : "Update"}
                 </Button>
               </Grid>
             </Grid>
           </form>
         </Stack>
       </Card>
-
-      {/* Map Picker Dialog */}
-      <Dialog 
-        open={!!openPicker} 
-        onClose={() => setOpenPicker(null)} 
-        maxWidth={false}
-        fullWidth
-        PaperProps={{
-          style: {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            right: '0',
-            bottom: '0',
-            margin: '0',
-            width: '100vw',
-            height: '100vh',
-            maxWidth: 'none',
-            maxHeight: 'none',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }
-        }}
-      >
-        <DialogContent sx={{ 
-          width: '90%', 
-          height: '80%', 
-          maxWidth: '1000px',
-          maxHeight: '700px',
-          margin: 'auto',
-          backgroundColor: 'transparent',
-          borderRadius: 0,
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow: 'none'
-        }}>
-          <MapComponent
-            onPositionChange={(lat, lng) => {
-              if (openPicker === "start") {
-                setValue("startLat", lat.toString());
-                setValue("startLong", lng.toString());
-              } else {
-                setValue("endLat", lat.toString());
-                setValue("endLong", lng.toString());
-              }
-            }}
-            onLocationSelect={() => setOpenPicker(null)}
-            initialLat={openPicker === 'start' ? watch('startLat') : watch('endLat')}
-            initialLng={openPicker === 'start' ? watch('startLong') : watch('endLong')}
-          />
-        </DialogContent>
-      </Dialog>
     </Box>
   );
 }
