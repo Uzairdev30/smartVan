@@ -95,13 +95,13 @@ export default function Page(): React.JSX.Element {
   // map API -> UI
   const allRows: UiSchoolRow[] = React.useMemo(() => {
     return (schools ?? []).map((s: any) => ({
-      _id: s?._id,
+      _id: s?.schoolId ?? s?._id,
       name: s?.schoolName ?? s?.name ?? "—",
       schoolLogo: s?.schoolImage,
       contact: s?.contactPerson ?? s?.admin?.name ?? "—",
-      vansLimit: Number(s?.allowedVans ?? 0),
-      routesLimit: Number(s?.allowedRoutes ?? 0),
-      students: Number(s?.allowedStudents ?? 0),
+      vansLimit: Number(s?.totalVans ?? 0),
+      routesLimit: Number(s?.totalRoutes ?? 0),
+      students: Number(s?.totalKids ?? 0),
       status:
         String(s?.status ?? "active").toLowerCase() === "active"
           ? "active"

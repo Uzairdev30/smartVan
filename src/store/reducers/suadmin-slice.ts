@@ -36,22 +36,23 @@ export const getAllSchools = createAsyncThunk<
       search: params?.search ?? undefined,
       status: params?.status ?? undefined,
     };
-    const { data } = await api.get(SUADMIN.GET_ALL_SCHOOL, { params: query });
+    const { data } = await api.get(SUADMIN.GET_ALL_SCHOOL_BY_SUPERADMIN, { params: query });
 
     const root = data?.data ?? data;
     const items =
+      root.data ??
       root.items ??
       root.schools ??
       root.results ??
       root.list ??
       (Array.isArray(root) ? root : []);
-    const total = root.total ?? root.count ?? items.length ?? 0;
+    const total = root.pagination?.total ?? root.total ?? root.count ?? items.length ?? 0;
 
     return {
       items,
       total,
-      page: root.page ?? 1,
-      limit: root.limit ?? 10,
+      page: root.pagination?.page ?? root.page ?? 1,
+      limit: root.pagination?.limit ?? root.limit ?? 10,
     };
   } catch (err: any) {
     const msg =
