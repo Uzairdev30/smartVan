@@ -68,7 +68,7 @@ export const SUADMIN={
     REGISTER_SCHOOL:'/Admin/create-admin-school',
     SCHOOL_BY_ID:'/Admin/getSchoolById',
     EDIT_SCHOOL:'/Admin/edit-admin-school' ,
-    // GET_ALL_SCHOOL:'/Admin/getAllSchools',
+    GET_ALL_SCHOOL:'/Admin/getAllSchools',
     GET_ALL_SCHOOL_BY_SUPERADMIN: 'Admin/getAllSchoolsBySuperAdmin',
     CHANGE_SCHOOL_STATUS:'/school/changeSchoolStatus',
     

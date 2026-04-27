@@ -41,14 +41,14 @@ const initialState: TripState = {
 // ✅ Get All Trips
 export const getAllTrips = createAsyncThunk<
   any, // response type
-  { page?: number; limit?: number; status?: string; date?: string }, // args
+  { page?: number; limit?: number; status?: string; date?: string; schoolId?: string }, // args
   { rejectValue: string }
 >(
   "trip/getAllTrips",
-  async ({ page = 1, limit = 10, status = "", date = "" } = {}, { rejectWithValue }) => {
+  async ({ page = 1, limit = 10, status = "", date = "", schoolId = "" } = {}, { rejectWithValue }) => {
     try {
       const response = await api.get(TRIP.GET_ALL_TRIP, {
-        params: { page, limit, status, date }, // 🔥 include status & date param
+        params: { page, limit, status, date, schoolId }, // 🔥 include status, date & schoolId param
       });
       return response.data; // expected { message, data, pagination }
     } catch (error: any) {

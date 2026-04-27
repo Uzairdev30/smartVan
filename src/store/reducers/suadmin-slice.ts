@@ -23,7 +23,7 @@ export const registerSchool = createAsyncThunk<any, any, { rejectValue: string }
   }
 );
 
-// ✅ Get All Schools
+// ✅ Get All Schools (for School Management)
 export const getAllSchools = createAsyncThunk<
   { items: any[]; total: number; page: number; limit: number },
   { page?: number; limit?: number; search?: string; status?: string } | void,
@@ -37,6 +37,47 @@ export const getAllSchools = createAsyncThunk<
       status: params?.status ?? undefined,
     };
     const { data } = await api.get(SUADMIN.GET_ALL_SCHOOL_BY_SUPERADMIN, { params: query });
+
+    const root = data?.data ?? data;
+    const items =
+      root.data ??
+      root.items ??
+      root.schools ??
+      root.results ??
+      root.list ??
+      (Array.isArray(root) ? root : []);
+    const total = root.pagination?.total ?? root.total ?? root.count ?? items.length ?? 0;
+
+    return {
+      items,
+      total,
+      page: root.pagination?.page ?? root.page ?? 1,
+      limit: root.pagination?.limit ?? root.limit ?? 10,
+    };
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Request failed";
+    return rejectWithValue(msg);
+  }
+});
+
+// ✅ Get All Schools for Tracking (uses different endpoint)
+export const getAllSchoolsForTracking = createAsyncThunk<
+  { items: any[]; total: number; page: number; limit: number },
+  { page?: number; limit?: number; search?: string; status?: string } | void,
+  { rejectValue: string }
+>("superAdmin/getAllSchoolsForTracking", async (params, { rejectWithValue }) => {
+  try {
+    const query = {
+      page: params?.page ?? 1,
+      limit: params?.limit ?? 10,
+      search: params?.search ?? undefined,
+      status: params?.status ?? undefined,
+    };
+    const { data } = await api.get(SUADMIN.GET_ALL_SCHOOL, { params: query });
 
     const root = data?.data ?? data;
     const items =

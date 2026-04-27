@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getAllTrips } from '@/store/reducers/trip-slice';
-import { getAllSchools } from '@/store/reducers/suadmin-slice';
+import { getAllSchoolsForTracking } from '@/store/reducers/suadmin-slice';
 import { RootState, AppDispatch } from '@/store';
 import { TrackingView } from '@/components/tracking';
 import GoogleMapsProvider from '@/components/GoogleMapsProvider';
@@ -35,7 +35,7 @@ export default function Page(): React.JSX.Element {
   const { schools } = useSelector((state: RootState) => state.suadmin);
 console.log("trips",trips)
   useEffect(() => {
-    dispatch(getAllSchools({ page: 1, limit: 100 }));
+    dispatch(getAllSchoolsForTracking({ page: 1, limit: 100 }));
   }, [dispatch]);
 
   useEffect(() => {
