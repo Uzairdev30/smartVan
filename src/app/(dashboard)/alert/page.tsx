@@ -27,6 +27,7 @@ import { Pencil as EditIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { Trash as DeleteIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { config } from "@/config";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
 import { useRouter } from "next/navigation";
@@ -159,40 +160,16 @@ const AlertActions = ({ row }: { row: AlertRecord }) => {
         </Menu>
       </Stack>
 
-      <Dialog
+      <ConfirmationDialog
         open={deleteDialogOpen}
-        onClose={handleCancelDelete}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Delete Alert</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this alert{" "}
-            <strong>"{row.alertType}"</strong>?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelDelete} disabled={deleteAlertLoading}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmDelete}
-            variant="contained"
-            color="error"
-            disabled={deleteAlertLoading}
-            startIcon={
-              deleteAlertLoading ? (
-                <CircularProgress size={16} />
-              ) : (
-                <TrashIcon size={18} />
-              )
-            }
-          >
-            {deleteAlertLoading ? "Deleting..." : "Delete Alert"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title="Delete Alert"
+        message={`Are you sure you want to delete this alert "${row.alertType}"?`}
+        confirmText="Delete Alert"
+        confirmColor="error"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        loading={deleteAlertLoading}
+      />
     </>
   );
 };

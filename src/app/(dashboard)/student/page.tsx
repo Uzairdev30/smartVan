@@ -28,6 +28,7 @@ import {
   ListItem,
 } from "@mui/material";
 import { config } from "@/config";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
 import { CustomersPagination } from "@/components/dashboard/customer/customers-pagination";
 import {
@@ -41,6 +42,8 @@ import { Van as VanIcon } from "@phosphor-icons/react/dist/ssr/Van";
 import { CheckCircle as CheckIcon } from "@phosphor-icons/react/dist/ssr/CheckCircle";
 import { Warning as WarningIcon } from "@phosphor-icons/react/dist/ssr/Warning";
 import { XCircle as XIcon } from "@phosphor-icons/react/dist/ssr/XCircle";
+import { Pencil as EditIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
+import { Trash as DeleteIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import {
@@ -49,6 +52,7 @@ import {
   verifyStudentByAdmin,
   deleteStudentsAndRefetch,
   bulkUpdateStudentStatus,
+  deleteStudents,
 } from "@/store/reducers/student-slice";
 import { assignVanToStudent, getAllSchoolVans, removeVanFromStudent } from "@/store/reducers/van-slice";
 import type { StudentRecord } from "@/types/student";
@@ -81,6 +85,8 @@ export default function Page(): React.JSX.Element {
   const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
   const [headerActionAnchor, setHeaderActionAnchor] = React.useState<null | HTMLElement>(null);
   const [selectedStudent, setSelectedStudent] = React.useState<StudentRecord | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [deleteLoading, setDeleteLoading] = React.useState(false);
 
   
   const isMenuOpen = Boolean(menuAnchorEl);
@@ -120,6 +126,33 @@ export default function Page(): React.JSX.Element {
       router.push(`/student/${selectedStudent.student.id}`);
     }
     handleMenuClose();
+  };
+
+  
+  const handleDelete = () => {
+    setDeleteDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedStudent) return;
+    
+    try {
+      setDeleteLoading(true);
+      await dispatch(deleteStudents([selectedStudent.student.id])).unwrap();
+      setDeleteDialogOpen(false);
+      
+      // Refresh the student list
+      dispatch(getAllStudents({ page, limit, ...filters }));
+    } catch (error) {
+      console.error("Failed to delete student:", error);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
   };
 
   // Refresh function to reload student data
@@ -566,7 +599,26 @@ export default function Page(): React.JSX.Element {
           </ListItemIcon>
           View
         </MenuItem>
+
+        <MenuItem onClick={handleDelete}>
+          <ListItemIcon>
+            <DeleteIcon size={18} />
+          </ListItemIcon>
+          Delete
+        </MenuItem>
       </Menu>
+
+      {/* ─── DELETE CONFIRMATION DIALOG ─── */}
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        title="Delete Student"
+        message={`Are you sure you want to delete this student "${selectedStudent?.student?.fullname}"?`}
+        confirmText="Delete Student"
+        confirmColor="error"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        loading={deleteLoading}
+      />
 
       {/* ─── VAN ASSIGNMENT MODAL ─── */}
       <Modal open={vanModalOpen} onClose={() => {

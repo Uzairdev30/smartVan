@@ -23,6 +23,7 @@ import { AppDispatch, RootState } from "@/store";
 import { deleteStudentsAndRefetch, bulkUpdateStudentStatus } from "@/store/reducers/student-slice";
 import { assignVanToStudent, getAllSchoolVans, removeVanFromStudent } from "@/store/reducers/van-slice";
 import { CheckCircle as CheckIcon, Warning as WarningIcon, XCircle as XIcon } from "@phosphor-icons/react/dist/ssr";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 
 export interface Filters {
   carNumber?: string;
@@ -63,6 +64,9 @@ export function StudentFilter({
   const [removalResult, setRemovalResult] = useState<any>(null);
   const [showRemovalResult, setShowRemovalResult] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   // ✅ ADD THIS HERE
 const getReasonMessage = (reason: string) => {
   switch (reason) {
@@ -185,7 +189,7 @@ const getReasonMessage = (reason: string) => {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     console.log('Selected data structure for delete:', selected);
     const ids = selected
       ?.map((item: any) => item?.student?.id || item?.id)
@@ -198,21 +202,29 @@ const getReasonMessage = (reason: string) => {
       return;
     }
 
-    const confirmMessage = ids.length === 1
-      ? 'Are you sure you want to delete this student?'
-      : `Are you sure you want to delete ${ids.length} students?`;
+    // Open confirmation dialog instead of window.confirm
+    setDeleteDialogOpen(true);
+  };
 
-    if (window.confirm(confirmMessage)) {
-      try {
-        setBulkUpdating(true);
-        setActionAnchor(null);
-        await dispatch(deleteStudentsAndRefetch(ids));
-      } catch (error) {
-        console.error("Failed to delete students:", error);
-      } finally {
-        setBulkUpdating(false);
-      }
+  const handleConfirmDelete = async () => {
+    const ids = selected
+      ?.map((item: any) => item?.student?.id || item?.id)
+      .filter(Boolean);
+
+    try {
+      setBulkUpdating(true);
+      setActionAnchor(null);
+      setDeleteDialogOpen(false);
+      await dispatch(deleteStudentsAndRefetch(ids));
+    } catch (error) {
+      console.error("Failed to delete students:", error);
+    } finally {
+      setBulkUpdating(false);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
   };
 
   const handleBulkActivate = async () => {
@@ -698,6 +710,22 @@ const getReasonMessage = (reason: string) => {
             </Stack>
           </Box>
         </Modal>
+
+        {/* ─── DELETE CONFIRMATION DIALOG ─── */}
+        <ConfirmationDialog
+          open={deleteDialogOpen}
+          title={selected.length === 1 ? 'Delete Student' : 'Delete Students'}
+          message={
+            selected.length === 1
+              ? 'Are you sure you want to delete this student?'
+              : `Are you sure you want to delete ${selected.length} students?`
+          }
+          confirmText={selected.length === 1 ? 'Delete' : `Delete ${selected.length}`}
+          confirmColor="error"
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          loading={bulkUpdating}
+        />
       </Stack>
     </div>
   );

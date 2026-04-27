@@ -34,6 +34,7 @@ import {
   changeDriverStatus,
   removeDriverFromSchool,
 } from "@/services/driver.api";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 
 export default function Page(): React.JSX.Element {
   const router = useRouter();
@@ -61,6 +62,8 @@ export default function Page(): React.JSX.Element {
   const [selectedDrivers, setSelectedDrivers] = React.useState<any[]>([]);
   const [filters, setFilters] = React.useState<Filters>({});
   const [updatingStatus, setUpdatingStatus] = React.useState<string | null>(null);
+  const [bulkUpdating, setBulkUpdating] = React.useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false);
 
   const fetchDrivers = async () => {
     setLoading(true);
@@ -146,6 +149,30 @@ export default function Page(): React.JSX.Element {
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setSelectedDriver(null);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedDrivers.length === 0) return;
+    setBulkDeleteDialogOpen(true);
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    try {
+      setBulkUpdating(true);
+      const driverIds = selectedDrivers.map(driver => driver?._id || driver?.id).filter(Boolean);
+      await removeDriverFromSchool({ driverIds });
+      setBulkDeleteDialogOpen(false);
+      setSelectedDrivers([]);
+      fetchDrivers();
+    } catch (err) {
+      console.error("Bulk delete failed:", err);
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
+  const handleBulkDeleteCancel = () => {
+    setBulkDeleteDialogOpen(false);
   };
 
   const handleStatusToggle = async (driver: any) => {
@@ -357,7 +384,7 @@ export default function Page(): React.JSX.Element {
             View
           </MenuItem>
           <MenuItem onClick={handleDeleteClick}>
-            <ListItemIcon sx={{ color: "error.main" }}>
+            <ListItemIcon>
               <Trash weight="fill" />
 
             </ListItemIcon>
@@ -365,26 +392,32 @@ export default function Page(): React.JSX.Element {
           </MenuItem>
         </Menu>
 
-        <Dialog
+        {/* Single Delete Confirmation Dialog */}
+        <ConfirmationDialog
           open={deleteDialogOpen}
-          onClose={handleDeleteCancel}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogContent sx={{ pb: 2 }}>
-            <Box sx={{ textAlign: "center", py: 2 }}>
-              <Typography variant="body1" color="text.primary" fontSize="1.1rem">
-                Are you sure you want to remove this driver?
-              </Typography>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleDeleteCancel}>Cancel</Button>
-            <Button onClick={handleDeleteConfirm} variant="contained" color="error">
-              Remove Driver
-            </Button>
-          </DialogActions>
-        </Dialog>
+          title="Remove Driver"
+          message="Are you sure you want to remove this driver?"
+          confirmText="Remove Driver"
+          confirmColor="error"
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
+
+        {/* Bulk Delete Confirmation Dialog */}
+        <ConfirmationDialog
+          open={bulkDeleteDialogOpen}
+          title={selectedDrivers.length === 1 ? 'Remove Driver' : 'Remove Drivers'}
+          message={
+            selectedDrivers.length === 1
+              ? 'Are you sure you want to remove this driver?'
+              : `Are you sure you want to remove ${selectedDrivers.length} drivers?`
+          }
+          confirmText={selectedDrivers.length === 1 ? 'Remove' : `Remove ${selectedDrivers.length}`}
+          confirmColor="error"
+          onConfirm={handleBulkDeleteConfirm}
+          onCancel={handleBulkDeleteCancel}
+          loading={bulkUpdating}
+        />
       </Stack>
     </Box>
   );

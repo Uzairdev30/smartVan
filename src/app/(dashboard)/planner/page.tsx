@@ -21,6 +21,7 @@ import {
   DialogActions,
 } from "@mui/material";
 import { config } from "@/config";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
   Eye as EyeIcon,
@@ -139,6 +140,10 @@ export default function RoutePlannerPage(): React.JSX.Element {
       setRoutesModalOpen(false);
       setSelectedVan(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
   };
 
   // ─── Columns ───
@@ -372,26 +377,17 @@ export default function RoutePlannerPage(): React.JSX.Element {
           </MenuItem>
         </Menu>
 
-        {/* ─── DELETE DIALOG ─── */}
-        <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-          <DialogContent>
-            <Typography>Are you sure you want to delete this route?</Typography>
-          </DialogContent>
-
-          <DialogActions>
-            <Button onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              color="error"
-              variant="contained"
-              onClick={handleConfirmDelete}
-              disabled={deleteRouteLoading}
-            >
-              {deleteRouteLoading ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogActions>
-        </Dialog>
+        {/* ─── DELETE CONFIRMATION DIALOG ─── */}
+        <ConfirmationDialog
+          open={deleteDialogOpen}
+          title="Delete Route"
+          message="Are you sure you want to delete this route?"
+          confirmText="Delete Route"
+          confirmColor="error"
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          loading={deleteRouteLoading}
+        />
       </Stack>
     </Box>
   );

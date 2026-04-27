@@ -64,7 +64,7 @@ const NotificationCard: React.FC<Notification> = ({
       }}
       onClick={handleClick}
     >
-      <Avatar sx={{ bgcolor: '#2D9CDB' }}>{driverName[0]}</Avatar>
+      <Avatar sx={{ bgcolor: '#2D9CDB' }}>{driverName?.[0] || 'D'}</Avatar>
 
       <Box sx={{ flexGrow: 1 }}>
         <Typography variant="subtitle1" fontWeight="bold">
@@ -74,7 +74,7 @@ const NotificationCard: React.FC<Notification> = ({
           {description}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {driverName} - {vanCarNumber} | {new Date(createdAt).toLocaleString()}
+          {driverName || 'Unknown Driver'} - {vanCarNumber || 'N/A'} | {new Date(createdAt).toLocaleString()}
         </Typography>
       </Box>
 

@@ -16,6 +16,7 @@ import {
   useFilterContext,
 } from "@/components/core/filter-button";
 import { changeDriverStatus, removeDriverFromSchool } from "@/services/driver.api";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 
 export interface Filters {
   driverName?: string;
@@ -37,6 +38,7 @@ export function DriverFilter({
 }: DriverFilterProps): React.JSX.Element {
   const [actionAnchor, setActionAnchor] = useState<null | HTMLElement>(null);
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleFilterChange = useCallback(
     (key: keyof Filters, value?: string) => {
@@ -89,28 +91,32 @@ export function DriverFilter({
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     const ids = selected?.map((item: any) => item?._id || item?.id).filter(Boolean);
     if (!ids.length) {
       alert("Please select at least one driver to delete");
       return;
     }
-    const confirmMessage =
-      ids.length === 1
-        ? "Are you sure you want to delete this driver?"
-        : `Are you sure you want to delete ${ids.length} drivers?`;
-    if (window.confirm(confirmMessage)) {
-      try {
-        setBulkUpdating(true);
-        setActionAnchor(null);
-        await removeDriverFromSchool({ driverIds: ids });
-        if (onRefresh) onRefresh();
-      } catch (error) {
-        console.error("Failed to bulk delete drivers:", error);
-      } finally {
-        setBulkUpdating(false);
-      }
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    const ids = selected?.map((item: any) => item?._id || item?.id).filter(Boolean);
+    try {
+      setBulkUpdating(true);
+      setActionAnchor(null);
+      setDeleteDialogOpen(false);
+      await removeDriverFromSchool({ driverIds: ids });
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error("Failed to bulk delete drivers:", error);
+    } finally {
+      setBulkUpdating(false);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
   };
 
   return (
@@ -194,6 +200,22 @@ export function DriverFilter({
             <ListItemText>Delete All</ListItemText>
           </MenuItem>
         </Menu>
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmationDialog
+          open={deleteDialogOpen}
+          title={selected.length === 1 ? 'Remove Driver' : 'Remove Drivers'}
+          message={
+            selected.length === 1
+              ? 'Are you sure you want to remove this driver?'
+              : `Are you sure you want to remove ${selected.length} drivers?`
+          }
+          confirmText={selected.length === 1 ? 'Remove' : `Remove ${selected.length}`}
+          confirmColor="error"
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          loading={bulkUpdating}
+        />
       </Stack>
     </div>
   );

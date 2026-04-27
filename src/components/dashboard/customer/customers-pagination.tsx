@@ -9,13 +9,13 @@ interface CustomersPaginationProps {
   onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function CustomersPagination({ 
+export const CustomersPagination = ({ 
   count, 
   page, 
   rowsPerPage, 
   onPaginationChange, 
   onRowsPerPageChange 
-}: CustomersPaginationProps): React.JSX.Element {
+}: CustomersPaginationProps): React.JSX.Element => {
   return (
     <TablePagination
       component="div"

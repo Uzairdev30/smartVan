@@ -47,6 +47,7 @@ import { Pencil as EditIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { Trash as DeleteIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { CheckCircleIcon, MinusIcon } from "@/components/icons";
 import { config } from "@/config";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 
 export default function Page(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
@@ -237,6 +238,7 @@ export default function Page(): React.JSX.Element {
     setRoutesModalOpen(true);
   };
 
+  
   const baseColumns: ColumnDef<any>[] = [
     {
       name: "Van",
@@ -519,27 +521,16 @@ export default function Page(): React.JSX.Element {
           />
         </Card>
 
-        {/* Delete Dialog */}
-        <Dialog
+        {/* Delete Confirmation Dialog */}
+        <ConfirmationDialog
           open={deleteDialogOpen}
-          onClose={handleCancelDelete}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogContent sx={{ pb: 2 }}>
-            <Box sx={{ textAlign: "center", py: 2 }}>
-              <Typography variant="body1" color="text.primary" fontSize="1.1rem">
-                Are you sure you want to delete this van?
-              </Typography>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCancelDelete}>Cancel</Button>
-            <Button onClick={handleConfirmDelete} variant="contained" color="error">
-              Delete Van
-            </Button>
-          </DialogActions>
-        </Dialog>
+          title="Delete Van"
+          message="Are you sure you want to delete this van?"
+          confirmText="Delete Van"
+          confirmColor="error"
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+        />
 
         {/* Routes Modal */}
         <Dialog
