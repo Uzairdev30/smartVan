@@ -656,27 +656,22 @@ function RouteRulesSection({ disabled }: { disabled?: boolean }) {
       {/* ✅ Add School Location Button */}
       <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
         <Button
-          // variant="outlined"
-          size="small"
-          onClick={() => setShowMap(!showMap)}
-          disabled={disabled}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            textTransform: "none",
-            borderColor: "#1976d2",
-            color: "#1976d2",
-            "&:hover": {
-              borderColor: "#1565c0",
-              backgroundColor: "rgba(25, 118, 210, 0.04)",
-            },
-            "&:disabled": {
-              borderColor: "rgba(0, 0, 0, 0.26)",
-              color: "rgba(0, 0, 0, 0.38)",
-            },
-          }}
-        >
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setShowMap(!showMap)}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    textTransform: "none",
+                    borderColor: "#1976d2",
+                    color: "#1976d2",
+                    "&:hover": {
+                      borderColor: "#1565c0",
+                      backgroundColor: "rgba(25, 118, 210, 0.04)",
+                    },
+                  }}
+                >
           <Typography variant="body2">Add School Location</Typography>
           <CaretDownIcon 
             size={16} 

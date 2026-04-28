@@ -77,7 +77,7 @@ export const SUADMIN={
     GET_ALL_INVOICE:'/Invoice/getAllInvoicesBySuperAdmin',
 
     // banner
-    CREATE_BANNER:'/promotion-banner',
+    CREATE_BANNER:'/promotion-banner/create',
     GET_ALL_BANNERS:'/promotion-banner/findAll',
     GET_BANNER_BY_ID:'/promotion-banner',
     UPDATE_BANNER:'/promotion-banner',
