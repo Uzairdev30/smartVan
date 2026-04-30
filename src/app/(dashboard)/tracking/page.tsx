@@ -61,14 +61,19 @@ console.log("trips",trips)
         status: trip.status || 'unknown',
         latitude: lastLocation?.lat || 0,
         longitude: lastLocation?.long || 0,
-        tripStart: trip?.tripStart?.startTime ? new Date(trip?.tripStart?.startTime) : undefined,
+        tripStart: trip?.tripStart || null,
+        tripEnd: trip?.tripEnd || null,
+        schoolName: trip?.schoolName || '',
+        driver: trip?.driver || null,
         driverId: trip?.driver?._id || trip?.driverId,
         tripId: trip?._id,
         driverName: trip.driver?.fullname || trip?.driverName,
         locations:trip?.locations || [],
         carName:trip.van?.vehicleType || trip?.carName || '',
         routeTitle:trip.route?.title || trip?.routeTitle || '',
-        routeTripType:trip.route?.tripType || trip?.routeTripType || ''
+        routeTripType:trip.route?.tripType || trip?.routeTripType || '',
+        type: trip?.type || '',
+        kids: trip?.kids || []
       };
     });
   }, [trips]);

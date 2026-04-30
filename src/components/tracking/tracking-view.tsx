@@ -27,7 +27,7 @@ import {
   TextField
 } from '@mui/material';
 
-import { Phone as PhoneIcon } from '@mui/icons-material';
+import { Phone as PhoneIcon, Search as SearchIcon } from '@mui/icons-material';
 import AirportShuttleIcon from '@mui/icons-material/AirportShuttle';
 import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
@@ -45,7 +45,7 @@ export function TrackingView({ vehicles, status, onStatusChange, selectedDate, o
   const { user, userProfile } = useSelector((state: any) => state.auth);
 
   const [kidsModalOpen, setKidsModalOpen] = React.useState(false);
-  const [selectedLocations,setSelectedLocations]=React.useState([])
+  const [selectedLocations, setSelectedLocations] = React.useState([])
   const { tripKids, tripKidsLoading } = useSelector((state) => state.trip);
   const kidsArray = tripKids?.kids ?? [];
 
@@ -55,7 +55,7 @@ export function TrackingView({ vehicles, status, onStatusChange, selectedDate, o
   const currentUser = user || userProfile;
   const isSuperAdmin = currentUser?.role === 'superadmin' || currentUser?.userType === 'superadmin';
   const isSchoolAdmin = currentUser?.role === 'admin' || currentUser?.userType === 'admin';
-  
+
   // Debug logging
   console.log("Auth Debug:", {
     user,
@@ -67,17 +67,17 @@ export function TrackingView({ vehicles, status, onStatusChange, selectedDate, o
     userType: currentUser?.userType,
     currentUserString: JSON.stringify(currentUser, null, 2)
   });
-  
+
   console.log("Schools Debug:", {
     schools,
     schoolsLength: schools?.length,
     selectedSchool
   });
-
+  console.log("selectedSchool:", selectedSchool);
   const [currentVehicleId, setCurrentVehicleId] = React.useState<string | undefined>(
     vehicles[0] ? String(vehicles[0].id) : undefined
   );
-console.log("vehicles",vehicles)
+  console.log("vehicles", vehicles)
   // ⭐ Always auto-select first vehicle when list updates
   React.useEffect(() => {
     if (vehicles.length === 0) {
@@ -95,7 +95,25 @@ console.log("vehicles",vehicles)
     vehicles.length === 0
       ? null
       : vehicles.find((v: any) => String(v.id) === currentVehicleId) ||
-        vehicles[0];
+      vehicles[0];
+  const hasTrips = vehicles?.length > 0 && !!currentVehicle;
+  const pickedCount =
+    currentVehicle?.kids?.filter((k: any) => k.picked)?.length || 0;
+
+  const notPickedCount =
+    (currentVehicle?.kids?.length || 0) - pickedCount;
+  // Debug logging for currentVehicle
+  console.log("Current Vehicle Debug:", {
+    currentVehicle,
+    currentVehicleId,
+    vehiclesLength: vehicles.length,
+    vehicles: vehicles.map(v => ({
+      id: v.id,
+      name: v.name,
+      tripStart: v.tripStart,
+      status: v.status
+    }))
+  });
 
   const rawStatus =
     currentVehicle?.status ?? currentVehicle?.tripStatus ?? 'unknown';
@@ -148,7 +166,7 @@ console.log("vehicles",vehicles)
       })
     );
   };
-console.log("selec",selectedLocations)
+  console.log("selec", selectedLocations)
   return (
     <>
       <Box sx={{ display: 'flex', height: '100%' }}>
@@ -162,6 +180,8 @@ console.log("selec",selectedLocations)
           open={openSidebar}
           vehicles={vehicles}
           setSelectedLocations={setSelectedLocations}
+          isSuperAdmin={isSuperAdmin}
+          selectedSchool={selectedSchool}
         />
 
         <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -178,7 +198,31 @@ console.log("selec",selectedLocations)
             }}
           >
             <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="h6">Driver Details</Typography>
+              <Stack spacing={0.5}>
+                <Typography variant="h6">Driver Details</Typography>
+
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<SearchIcon />}
+                  onClick={() => setOpenSidebar(!openSidebar)}
+                  sx={{
+                    mt: 1,
+                    backgroundColor: 'primary',
+                    // color: '#fff',
+                    display: {
+                      xs: 'flex',
+                      sm: 'flex',
+                      md: 'none', // 👈 hide on >= 900px
+                    },
+                    '&:hover': {
+                      backgroundColor: 'primary',
+                    },
+                  }}
+                >
+                  By Driver Name
+                </Button>
+              </Stack>
 
               {/* DATE PICKER AND FILTER */}
               <Stack direction="row" spacing={1} alignItems="center">
@@ -191,7 +235,7 @@ console.log("selec",selectedLocations)
                     sx={{ minWidth: 200, background: 'white', borderRadius: 1 }}
                     displayEmpty
                   >
-                    <MenuItem value="">All Schools</MenuItem>
+                    <MenuItem value="">Select Schools</MenuItem>
                     {schools?.map((school: any) => (
                       <MenuItem key={school._id} value={school._id}>
                         {school.schoolName || school.name}
@@ -199,7 +243,7 @@ console.log("selec",selectedLocations)
                     ))}
                   </Select>
                 )}
-                
+
                 {/* Show date and trips filters for school admin OR for super admin after school selection */}
                 {(isSchoolAdmin || (isSuperAdmin && selectedSchool)) && (
                   <>
@@ -227,7 +271,7 @@ console.log("selec",selectedLocations)
                       <MenuItem value="ongoing">Ongoing</MenuItem>
                       <MenuItem value="end">Completed</MenuItem>
                     </Select>
-                    
+
                     {/* Clear button for super admin */}
                     {isSuperAdmin && (
                       <Button
@@ -244,13 +288,15 @@ console.log("selec",selectedLocations)
               </Stack>
             </Stack>
 
-            {/* No Vehicle State */}
-            {!currentVehicle && (
-              <Typography sx={{ opacity: 0.6 }}>No trips found</Typography>
+            {/* No Vehicle or School Selection State */}
+            {(!currentVehicle || (isSuperAdmin && (!selectedSchool || selectedSchool === ''))) && (
+              <Typography sx={{ opacity: 0.6 }}>
+                {isSuperAdmin && (!selectedSchool || selectedSchool === '') ? 'Please Select School First' : 'No trips found'}
+              </Typography>
             )}
 
-            {/* When vehicle exists */}
-            {currentVehicle && (
+            {/* When vehicle exists and school is selected */}
+            {currentVehicle && !(isSuperAdmin && (!selectedSchool || selectedSchool === '')) && (
               <>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Stack direction="row" spacing={2} alignItems="center">
@@ -279,146 +325,394 @@ console.log("selec",selectedLocations)
 
                 <Divider />
 
-                <Stack direction="row" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold" color="#191970">
-                      Trip started on:
-                    </Typography>
-                    <Typography variant="body2">
-                      {currentVehicle.tripStart
-                        ? new Date(currentVehicle.tripStart).toLocaleString()
-                        : 'N/A'}
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold" color="#191970">
-                      School Route:
-                      </Typography>
-                    <Typography variant="body2">{currentVehicle.routeTitle || 'N/A'}</Typography>
-                  </Box>
-
-                  <Tooltip title={` ${currentVehicle.driver?.phoneNo || currentVehicle.phoneNo || 'N/A'}`} arrow placement="top">
-                    <Button
-                      variant="contained"
-                      startIcon={<PhoneIcon sx={{ color: 'white' }} />}
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.3,
+                      px: 1.5,
+                      py: 1,
+                      backgroundColor: '#FFFFFF',
+                      flex: 1
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
                       sx={{
-                        backgroundColor: '#1FA959',
-                        color: 'white',
-                        '&:hover': { backgroundColor: '#178a48' },
-                      }}
-                      onClick={() => {
-                        const phoneNo = currentVehicle.driver?.phoneNo || currentVehicle.phoneNo;
-                        if (phoneNo) {
-                          window.open(`tel:${phoneNo}`);
-                        }
+                        color: '#6B7280',
+                        fontWeight: 600,
+                        letterSpacing: 0.3,
+                        textTransform: 'uppercase',
                       }}
                     >
-                      Call Driver
-                    </Button>
-                  </Tooltip>
+                      School Name
+                    </Typography>
+
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 600,
+                        color: '#191970',
+                      }}
+                    >
+                      {currentVehicle.schoolName || 'N/A'}
+                    </Typography>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.5,
+                      px: 1.5,
+                      py: 1,
+                      backgroundColor: '#FFFFFF',
+                      flex: 1
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: '#6B7280',
+                        fontWeight: 600,
+                        letterSpacing: 0.3,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Trip Started
+                    </Typography>
+
+                    <Chip
+                      label={
+                        currentVehicle.tripStart?.startTime
+                          ? new Date(currentVehicle.tripStart.startTime).toLocaleString('en-US', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                          : 'N/A'
+                      }
+                      sx={{
+                        width: 'fit-content',
+                        fontWeight: 600,
+                        backgroundColor: '#E6F7EC',
+                        color: '#1FA959',
+                        borderRadius: '8px',
+                        px: 1,
+                        height: 24,
+                        fontSize: 11,
+                      }}
+                    />
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.5,
+                      px: 1.5,
+                      py: 1,
+                      backgroundColor: '#FFFFFF',
+                      flex: 1
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: '#6B7280',
+                        fontWeight: 600,
+                        letterSpacing: 0.3,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Trip Ended
+                    </Typography>
+
+                    <Chip
+                      label={
+                        currentVehicle.tripEnd?.endTime
+                          ? new Date(currentVehicle.tripEnd.endTime).toLocaleString('en-US', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                          : 'N/A'
+                      }
+                      sx={{
+                        width: 'fit-content',
+                        fontWeight: 600,
+                        backgroundColor: '#FDECEC',
+                        color: '#D32F2F',
+                        borderRadius: '8px',
+                        px: 1,
+                        height: 24,
+                        fontSize: 11,
+                      }}
+                    />
+                  </Box>
+
+
                 </Stack>
               </>
             )}
           </Box>
 
-          {/* =================== TRIP DETAILS =================== */}
-          <Box
-            sx={{
-              border: '1px solid #e0e0e0',
-              borderRadius: 2,
-              p: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
-            }}
-          >
-            <Typography variant="h6">Trip Details</Typography>
-              
-            {!currentVehicle && (
-              <Typography sx={{ opacity: 0.6 }}>No trip data available</Typography>
-            )}
+          {/* =================== ROUTE DETAILS =================== */}
+          {currentVehicle && !(isSuperAdmin && (!selectedSchool || selectedSchool === '')) && (
+            <Box
+              sx={{
+                border: '1px solid #e0e0e0',
+                borderRadius: 2,
+                backgroundColor: '#FFFFFF',
+                p: 2,
+              }}
+            >
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                Trip Details
+              </Typography>
 
-            {currentVehicle && (
-              <>
-                <Box sx={{display:'flex',gap:20}}>
-                     <Typography variant="body2" color="text.secondary">
-                 <span style={{fontWeight:'bold'}}> Route Name: </span> {currentVehicle?.routeTitle}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                   <span style={{fontWeight:'bold'}}> Route Trip Type: </span> 
-                    {currentVehicle?.routeTripType}
-                </Typography> 
-                  
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.3,
+                    px: 1.5,
+                    py: 1,
+                    backgroundColor: '#FFFFFF',
+                    flex: 1
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: '#6B7280',
+                      fontWeight: 600,
+                      letterSpacing: 0.3,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Route Name
+                  </Typography>
+
+                  <Typography
+                    variant="caption"
+                    sx={{ fontWeight: 600, color: '#191970' }}
+                  >
+                    {currentVehicle?.routeTitle || 'No Route Assigned'}
+                  </Typography>
                 </Box>
-                <Typography variant="body2" color="text.secondary">
-                  {statusLabel}
-                </Typography>
 
-                {/* Student Details */}
-                <Typography variant="h6">Student Details</Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.3,
+                    px: 1.5,
+                    py: 1,
+                    backgroundColor: '#FFFFFF',
+                    flex: 1
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: '#6B7280',
+                      fontWeight: 600,
+                      letterSpacing: 0.3,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Route Trip Type
+                  </Typography>
+
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 700,
+                      width: 'fit-content',
+                      px: 1,
+                      py: 0.2,
+                      borderRadius: '6px',
+                      display: 'inline-block',
+                      backgroundColor:
+                        currentVehicle?.routeTripType === 'pick'
+                          ? '#E6F7EC'
+                          : currentVehicle?.routeTripType === 'drop'
+                            ? '#E3F2FD'
+                            : '#F3F4F6',
+                      color:
+                        currentVehicle?.routeTripType === 'pick'
+                          ? '#1FA959'
+                          : currentVehicle?.routeTripType === 'drop'
+                            ? '#1976D2'
+                            : '#666',
+                    }}
+                  >
+                    {currentVehicle?.routeTripType === 'pick'
+                      ? 'Pick'
+                      : currentVehicle?.routeTripType === 'drop'
+                        ? 'Drop'
+                        : 'No Trip'}
+                  </Typography>
+                </Box>
 
                 <Stack direction="row" justifyContent="space-between">
-                  {/* <Stack direction="row" alignItems="center" gap={1}>
-                    <Typography variant="body2" color="#008000">Students Picked</Typography>
-                    <AvatarGroup max={3}>
-                      {[1, 2].map((i) => (
-                        <Avatar key={i} src={`/assets/avatar-${i}.png`} />
-                      ))}
-                    </AvatarGroup>
-                  </Stack> */}
-
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    gap={1}
-                    sx={{ cursor: 'pointer' }}
+                  <Button
+                    size="small"
                     onClick={handleGetTripKids}
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      flexDirection: "column",
+                      gap: 0.8,
+                      px: 1.5,
+                      py: 1,
+                      textTransform: "none",
+                      backgroundColor: "#FFFFFF",
+                      flex: 1,
+                      borderRadius: 2,
+                      "&:hover": {
+                        backgroundColor: "rgba(25, 118, 210, 0.04)",
+                      },
+                    }}
                   >
-                    <Typography variant="body2" color="#008000">Students to be Picked</Typography>
-                    {/* <AvatarGroup max={3}>
-                      {[3, 4, 5].map((i) => (
-                        <Avatar key={i} src={`/assets/avatar-${i}.png`} />
-                      ))}
-                    </AvatarGroup> */}
-                  </Stack>
-                </Stack>
-              </>
-            )}
-          </Box>
 
-          {/* MAP ALWAYS SHOW */}
-          <Box sx={{ flex: 1, borderRadius: 2, overflow: 'hidden', minHeight: '500px' }}>
-            <Map
-            status={status}
-            currentVehicle={currentVehicle}
-              currentVehicleId={currentVehicleId}
-              vehicles={vehicles}
-              onVehicleSelect={(id) => setCurrentVehicleId(id)}
-              selectedLocations={selectedLocations}
-            />
-          </Box>
+                    {/* Title */}
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: '#6B7280',
+                        fontWeight: 600,
+                        letterSpacing: 0.3,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Students to be Picked
+                    </Typography>
+
+                    {/* BADGES ROW */}
+                    <Stack direction="row" spacing={1} flexWrap="wrap">
+
+                      <Chip
+                        label={`Total: ${tripKids?.totalKids || 0}`}
+                        size="small"
+                        sx={{
+                          height: 22,
+                          fontSize: 11,
+                          backgroundColor: "#E3F2FD",
+                          color: "#1976D2",
+                          fontWeight: 600,
+                        }}
+                      />
+
+                      <Chip
+                        label={`Picked: ${tripKids?.pickedCount || 0}`}
+                        size="small"
+                        sx={{
+                          height: 22,
+                          fontSize: 11,
+                          backgroundColor: "#E6F7EC",
+                          color: "#1FA959",
+                          fontWeight: 600,
+                        }}
+                      />
+
+                      <Chip
+                        label={`Not Picked: ${(tripKids?.totalKids || 0) - (tripKids?.pickedCount || 0)}`}
+                        size="small"
+                        sx={{
+                          height: 22,
+                          fontSize: 11,
+                          backgroundColor: "#FDECEC",
+                          color: "#D32F2F",
+                          fontWeight: 600,
+                        }}
+                      />
+
+                    </Stack>
+
+                  </Button>
+                </Stack>
+              </Stack>
+            </Box>
+          )}
+
+          {/* MAP - SHOW ONLY WHEN VEHICLE EXISTS AND SCHOOL SELECTED */}
+          {currentVehicle && !(isSuperAdmin && (!selectedSchool || selectedSchool === '')) && (
+            <Box sx={{ flex: 1, borderRadius: 2, overflow: 'hidden', minHeight: '500px' }}>
+              <Map
+                status={status}
+                currentVehicle={currentVehicle}
+                currentVehicleId={currentVehicleId}
+                vehicles={vehicles}
+                onVehicleSelect={(id) => setCurrentVehicleId(id)}
+                selectedLocations={selectedLocations}
+              />
+            </Box>
+          )}
         </Box>
       </Box>
 
       {/* STUDENTS MODAL */}
-      <Dialog 
-        open={kidsModalOpen} 
-        onClose={() => setKidsModalOpen(false)} 
-        fullWidth 
+      <Dialog
+        open={kidsModalOpen}
+        onClose={() => setKidsModalOpen(false)}
+        fullWidth
         maxWidth="sm"
       >
-        <DialogTitle sx={{ 
-          backgroundColor: '#191970', 
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
-        }}>
-          <SchoolIcon />
-          Students to be Picked ({kidsArray.length})
+
+        {/* ================= HEADER ================= */}
+        <DialogTitle
+          sx={{
+            backgroundColor: '#191970',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SchoolIcon />
+            Students to be Picked ({tripKids?.totalKids || 0})
+          </Box>
+
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Typography variant="body2" sx={{ color: '#34C759', fontWeight: 600 }}>
+              Picked: {tripKids?.pickedCount || 0}
+            </Typography>
+
+            <Typography variant="body2" sx={{ color: '#D32F2F', fontWeight: 600 }}>
+              Not Picked: {(tripKids?.totalKids || 0) - (tripKids?.pickedCount || 0)}
+            </Typography>
+          </Stack>
         </DialogTitle>
-        <DialogContent sx={{ p: 2, backgroundColor: '#ffffff' }}>
+
+        {/* ================= CONTENT ================= */}
+        <DialogContent 
+          sx={{ 
+            p: 2, 
+            backgroundColor: '#ffffff',
+            overflowY: 'auto',
+            scrollbarWidth: 'none', // Firefox
+            msOverflowStyle: 'none', // IE and Edge
+            '&::-webkit-scrollbar': {
+              display: 'none', // Chrome, Safari, Opera
+            },
+            '&': {
+              scrollbarWidth: 'none', // Firefox
+              msOverflowStyle: 'none', // IE and Edge
+            }
+          }}
+        >
+
           {tripKidsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
               <Typography>Loading students...</Typography>
@@ -429,57 +723,81 @@ console.log("selec",selectedLocations)
             </Box>
           ) : (
             <List sx={{ p: 0 }}>
+
               {kidsArray.map((kid: any, index: number) => (
-                <React.Fragment key={kid._id}>
-                  <ListItem 
-                    sx={{ 
-                      px: 2,
-                      py: 1.5,
-                      borderBottom: index < kidsArray.length - 1 ? '1px solid #e0e0e0' : 'none',
-                      '&:hover': { backgroundColor: '#f8f9fa' }
-                    }}
-                  >
-                    <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: '#1FA959' }}>
-                        {kid.name?.charAt(0)?.toUpperCase()}
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={
-                        <Typography variant="subtitle1" fontWeight="bold" color="#191970">
-                          {kid.name}
-                        </Typography>
-                      }
-                      secondary={
+                <ListItem
+                  key={kid._id}
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    borderBottom:
+                      index < kidsArray.length - 1 ? '1px solid #e0e0e0' : 'none',
+                    '&:hover': { backgroundColor: '#f8f9fa' }
+                  }}
+                >
+
+                  <Grid container alignItems="center">
+
+                    {/* ================= S.NO ================= */}
+                    <Grid item xs={1}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 600, color: '#191970' }}
+                      >
+                        {index + 1}
+                      </Typography>
+                    </Grid>
+
+                    {/* ================= KID INFO ================= */}
+                    <Grid item xs={7}>
+                      <Stack direction="row" spacing={1.5} alignItems="flex-start">
+
+                        <Avatar src={kid.image} sx={{ bgcolor: '#1FA959' }}>
+                          {!kid.image && kid.name?.charAt(0)?.toUpperCase()}
+                        </Avatar>
+
                         <Box>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                            📍 {kid.parent?.address || 'Address not available'}
+                          <Typography fontWeight="bold" color="#191970">
+                            {kid.name}
                           </Typography>
-                          {kid.parent?.name && (
-                            <Typography variant="body2" color="text.secondary">
-                              👤 Parent: {kid.parent.name}
-                            </Typography>
-                          )}
+
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            <strong>Address:</strong> {kid.parent?.address || 'N/A'}
+                          </Typography>
+
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            <strong>Phone:</strong> {kid.parent?.phone || 'N/A'}
+                          </Typography>
                         </Box>
-                      }
-                    />
-                    {kid.parent?.phone && (
-                      <Tooltip title={`Call parent: ${kid.parent.phone}`}>
-                        <IconButton 
-                          sx={{ 
-                            bgcolor: '#1FA959',
-                            color: 'white',
-                            '&:hover': { bgcolor: '#178a48' }
-                          }}
-                          onClick={() => window.open(`tel:${kid.parent.phone}`)}
-                        >
-                          <PhoneIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </ListItem>
-                </React.Fragment>
+
+                      </Stack>
+                    </Grid>
+
+                    {/* ================= STATUS (RIGHT CORNER FIX) ================= */}
+                    <Grid
+                      item
+                      xs={4}
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'flex-end'
+                      }}
+                    >
+                      <Chip
+                        label={kid.picked ? 'Picked' : 'Not Picked'}
+                        size="small"
+                        sx={{
+                          backgroundColor: kid.picked ? '#E6F7EC' : '#FDECEC',
+                          color: kid.picked ? '#1FA959' : '#D32F2F',
+                          fontWeight: 600,
+                        }}
+                      />
+                    </Grid>
+
+                  </Grid>
+
+                </ListItem>
               ))}
+
             </List>
           )}
         </DialogContent>

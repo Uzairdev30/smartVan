@@ -84,7 +84,9 @@ export function TripCard({
           <Button
             color="secondary"
             size="small"
-            onClick={() => router.push(trackingPath)}
+            // onClick={() => router.push(trackingPath)}
+            onClick={() => router.push('/tracking')}
+
           >
             View All
           </Button>

@@ -574,6 +574,23 @@ const superAdminSlice = createSlice({
         state.error = (action.payload as string) ?? "Failed to change school status";
       })
 
+      // Get All Schools for Tracking
+      .addCase(getAllSchoolsForTracking.pending, (state) => {
+        state.listLoading = true;
+        state.listError = null;
+      })
+      .addCase(getAllSchoolsForTracking.fulfilled, (state, action) => {
+        state.listLoading = false;
+        state.schools = action.payload.items;
+        state.total = action.payload.total;
+        state.page = action.payload.page;
+        state.limit = action.payload.limit;
+      })
+      .addCase(getAllSchoolsForTracking.rejected, (state, action) => {
+        state.listLoading = false;
+        state.listError = (action.payload as string) ?? "Request failed";
+      })
+
       /* ✅ Invoices list */
       .addCase(getAllInvoices.pending, (state) => {
         state.invoicesLoading = true;
