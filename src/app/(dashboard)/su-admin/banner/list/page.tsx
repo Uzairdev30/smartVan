@@ -18,15 +18,26 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Menu,
+  MenuItem,
+  ListItemIcon,
 } from "@mui/material";
+
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+
 import { DataTable, type ColumnDef } from "@/components/core/data-table";
+
 import { Pencil as PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
 import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
 import { Plus as PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
 
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store";
-import { getAllBanners, deleteBanner } from "@/store/reducers/suadmin-slice";
+
+import {
+  getAllBanners,
+  deleteBanner,
+} from "@/store/reducers/suadmin-slice";
 
 type BannerRow = {
   _id: string;
@@ -44,30 +55,74 @@ export default function BannerListPage(): React.JSX.Element {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { banners, bannersLoading, bannersError, bannerDeleteLoading } = useSelector(
-    (s: RootState) => s.suadmin
-  );
+  const {
+    banners,
+    bannersLoading,
+    bannersError,
+    bannerDeleteLoading,
+  } = useSelector((s: RootState) => s.suadmin);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [bannerToDelete, setBannerToDelete] = React.useState<BannerRow | null>(null);
+
+  const [bannerToDelete, setBannerToDelete] =
+    React.useState<BannerRow | null>(null);
+
+  // 3 dots menu states
+  const [menuAnchorEl, setMenuAnchorEl] =
+    React.useState<null | HTMLElement>(null);
+
+  const [selectedBanner, setSelectedBanner] =
+    React.useState<BannerRow | null>(null);
+
+  const isMenuOpen = Boolean(menuAnchorEl);
 
   React.useEffect(() => {
     dispatch(getAllBanners());
   }, [dispatch]);
 
-  const handleDeleteClick = (row: BannerRow) => {
-    setBannerToDelete(row);
-    setDeleteDialogOpen(true);
+  // Menu handlers
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    banner: BannerRow
+  ) => {
+    setMenuAnchorEl(event.currentTarget);
+    setSelectedBanner(banner);
   };
 
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setSelectedBanner(null);
+  };
+
+  // Edit
+  const handleEdit = () => {
+    if (selectedBanner) {
+      router.push(`/su-admin/banner/edit/${selectedBanner._id}`);
+    }
+
+    handleMenuClose();
+  };
+
+  // Delete click from menu
+  const handleDeleteClick = () => {
+    if (selectedBanner) {
+      setBannerToDelete(selectedBanner);
+      setDeleteDialogOpen(true);
+    }
+
+    setMenuAnchorEl(null);
+  };
+
+  // Confirm delete
   const handleDeleteConfirm = async () => {
     if (!bannerToDelete) return;
-    
+
     try {
       await dispatch(deleteBanner(bannerToDelete._id)).unwrap();
+
       setDeleteDialogOpen(false);
       setBannerToDelete(null);
-      // Refresh the list
+
       dispatch(getAllBanners());
     } catch (err) {
       console.error("Delete error:", err);
@@ -79,7 +134,7 @@ export default function BannerListPage(): React.JSX.Element {
     setBannerToDelete(null);
   };
 
-  // Map API -> UI
+  // Map API data
   const rows: BannerRow[] = React.useMemo(() => {
     return (banners ?? []).map((b: any) => ({
       _id: b?._id ?? b?.id,
@@ -97,7 +152,7 @@ export default function BannerListPage(): React.JSX.Element {
   const columns: ColumnDef<BannerRow>[] = [
     {
       name: "Banner",
-      width: "300px",
+      width: "320px",
       formatter: (row) => (
         <Stack direction="row" spacing={2} alignItems="center">
           <Avatar
@@ -111,10 +166,12 @@ export default function BannerListPage(): React.JSX.Element {
           >
             No Image
           </Avatar>
+
           <Stack>
-            <Typography variant="body2" fontWeight={500}>
+            <Typography variant="body2" fontWeight={600}>
               {row.title}
             </Typography>
+
             <Typography variant="caption" color="text.secondary">
               Priority: {row.priority}
             </Typography>
@@ -122,15 +179,21 @@ export default function BannerListPage(): React.JSX.Element {
         </Stack>
       ),
     },
+
     {
       name: "Redirect URL",
-      width: "200px",
+      width: "220px",
       formatter: (row) => (
-        <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-all" }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ wordBreak: "break-all" }}
+        >
           {row.redirectUrl || "—"}
         </Typography>
       ),
     },
+
     {
       name: "Deep Link",
       width: "180px",
@@ -140,21 +203,25 @@ export default function BannerListPage(): React.JSX.Element {
         </Typography>
       ),
     },
+
     {
       name: "Date Range",
-      width: "200px",
+      width: "220px",
       formatter: (row) => (
-        <Stack>
+        <Stack spacing={0.5}>
           {row.startDate && (
             <Typography variant="caption" color="text.secondary">
-              Start: {new Date(row.startDate).toLocaleDateString()}
+              Start:{" "}
+              {new Date(row.startDate).toLocaleDateString()}
             </Typography>
           )}
+
           {row.endDate && (
             <Typography variant="caption" color="text.secondary">
               End: {new Date(row.endDate).toLocaleDateString()}
             </Typography>
           )}
+
           {!row.startDate && !row.endDate && (
             <Typography variant="caption" color="text.secondary">
               No date range
@@ -163,6 +230,7 @@ export default function BannerListPage(): React.JSX.Element {
         </Stack>
       ),
     },
+
     {
       name: "Status",
       width: "120px",
@@ -175,33 +243,21 @@ export default function BannerListPage(): React.JSX.Element {
         />
       ),
     },
+
     {
       name: "Actions",
-      width: "120px",
+      width: "80px",
       align: "right",
-      formatter: (row) => {
-        const handleEdit = () => {
-          router.push(`/su-admin/banner/edit/${row._id}`);
-        };
-        return (
-          <Stack direction="row" spacing={0} sx={{ justifyContent: "flex-end" }}>
-            <IconButton 
-              size="small" 
-              onClick={handleEdit}
-              sx={{ color: "primary.main" }}
-            >
-              <PencilIcon />
-            </IconButton>
-            <IconButton 
-              size="small" 
-              onClick={() => handleDeleteClick(row)}
-              sx={{ color: "error.main" }}
-            >
-              <TrashIcon />
-            </IconButton>
-          </Stack>
-        );
-      },
+      formatter: (row) => (
+        <Stack direction="row" sx={{ justifyContent: "flex-end" }}>
+          <IconButton
+            size="small"
+            onClick={(e) => handleMenuOpen(e, row)}
+          >
+            <MoreVertIcon />
+          </IconButton>
+        </Stack>
+      ),
     },
   ];
 
@@ -217,10 +273,15 @@ export default function BannerListPage(): React.JSX.Element {
     >
       <Stack spacing={3}>
         {/* Header */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
           <Typography variant="h5" fontWeight={600}>
             Banner Management
           </Typography>
+
           <Button
             variant="contained"
             startIcon={<PlusIcon />}
@@ -231,19 +292,30 @@ export default function BannerListPage(): React.JSX.Element {
           </Button>
         </Stack>
 
-        {/* Table Card */}
+        {/* Table */}
         <Card variant="outlined">
           {bannersLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                p: 4,
+              }}
+            >
               <CircularProgress />
             </Box>
           ) : bannersError ? (
             <Box sx={{ p: 4, textAlign: "center" }}>
-              <Typography color="error">{bannersError}</Typography>
+              <Typography color="error">
+                {bannersError}
+              </Typography>
             </Box>
           ) : rows.length === 0 ? (
             <Box sx={{ p: 4, textAlign: "center" }}>
-              <Typography color="text.secondary">No banners found</Typography>
+              <Typography color="text.secondary">
+                No banners found
+              </Typography>
+
               <Button
                 variant="outlined"
                 startIcon={<PlusIcon />}
@@ -256,10 +328,16 @@ export default function BannerListPage(): React.JSX.Element {
           ) : (
             <>
               <DataTable columns={columns} rows={rows} />
+
               <Divider />
+
               <Box sx={{ p: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Total: {rows.length} banner{rows.length !== 1 ? "s" : ""}
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  Total: {rows.length} banner
+                  {rows.length !== 1 ? "s" : ""}
                 </Typography>
               </Box>
             </>
@@ -267,7 +345,38 @@ export default function BannerListPage(): React.JSX.Element {
         </Card>
       </Stack>
 
-      {/* Delete Confirmation Dialog */}
+      {/* 3 dots menu */}
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={isMenuOpen}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+      >
+        <MenuItem onClick={handleEdit}>
+          <ListItemIcon>
+            <PencilIcon size={18} />
+          </ListItemIcon>
+
+          Edit
+        </MenuItem>
+
+        <MenuItem onClick={handleDeleteClick}>
+          <ListItemIcon>
+            <TrashIcon size={18} />
+          </ListItemIcon>
+
+          Delete
+        </MenuItem>
+      </Menu>
+
+      {/* Delete Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
@@ -277,20 +386,25 @@ export default function BannerListPage(): React.JSX.Element {
         <DialogTitle id="delete-dialog-title">
           Delete Banner?
         </DialogTitle>
+
         <DialogContent>
           <DialogContentText id="delete-dialog-description">
-            Are you sure you want to delete the banner "{bannerToDelete?.title}"? 
+            Are you sure you want to delete the banner "
+            {bannerToDelete?.title}"?
+            <br />
             This action cannot be undone.
           </DialogContentText>
         </DialogContent>
+
         <DialogActions>
-          <Button 
+          <Button
             onClick={handleDeleteCancel}
             disabled={bannerDeleteLoading}
             sx={{ textTransform: "none" }}
           >
             Cancel
           </Button>
+
           <Button
             onClick={handleDeleteConfirm}
             color="error"
@@ -305,4 +419,3 @@ export default function BannerListPage(): React.JSX.Element {
     </Box>
   );
 }
-
