@@ -83,7 +83,7 @@ export const paths = {
       billing:'/su-admin/billing',
       createbilling:'/su-admin/billing/create',
       banner:'/su-admin/banner',
-      link:'/su-admin/supportLink/create',
+      link:'/su-admin/supportLink',
     },
     marketing: {
       campaign: '/marketing/campaigns',

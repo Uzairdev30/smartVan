@@ -349,6 +349,44 @@ export const updateBanner = createAsyncThunk<
   }
 });
 
+// ✅ Get All Support Links
+export const getAllSupportLinks = createAsyncThunk<
+  any[],
+  void,
+  { rejectValue: string }
+>("superAdmin/getAllSupportLinks", async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await api.get(SUADMIN.GET_ALL_SUPPORT_LINK);
+    return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Request failed";
+    return rejectWithValue(msg);
+  }
+});
+
+// ✅ Delete Support Link
+export const deleteSupportLink = createAsyncThunk<
+  any,
+  string,
+  { rejectValue: string }
+>("superAdmin/deleteSupportLink", async (id, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post(SUADMIN.DELETE_SUPPORT_LINK, { id });
+    return data?.data ?? data;
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Request failed";
+    return rejectWithValue(msg);
+  }
+});
+
 // ✅ Create Support Link
 export const createSupportLink = createAsyncThunk<
   any,
@@ -425,10 +463,39 @@ type SuperAdminState = {
   bannerCreateSuccess: boolean;
   bannerCreateError: string | null;
 
+  // Banners list
+  banners: any[];
+  bannersLoading: boolean;
+  bannersError: string | null;
+
+  // Single banner
+  banner: any | null;
+  bannerLoading: boolean;
+  bannerError: string | null;
+
+  // Banner update
+  bannerUpdateLoading: boolean;
+  bannerUpdateSuccess: boolean;
+  bannerUpdateError: string | null;
+
+  // Banner delete
+  bannerDeleteLoading: boolean;
+  bannerDeleteSuccess: boolean;
+  bannerDeleteError: string | null;
+
   // Support link create
   supportLinkCreateLoading: boolean;
   supportLinkCreateSuccess: boolean;
   supportLinkCreateError: string | null;
+
+  // Support links list
+  supportLinks: any[];
+  supportLinksLoading: boolean;
+  supportLinksError: string | null;
+
+  // Support link delete
+  supportLinkDeleteLoading: boolean;
+  supportLinkDeleteError: string | null;
 };
 
 const initialState: SuperAdminState = {
@@ -485,6 +552,15 @@ const initialState: SuperAdminState = {
   bannerDeleteLoading: false,
   bannerDeleteSuccess: false,
   bannerDeleteError: null,
+
+  // Support links list
+  supportLinks: [],
+  supportLinksLoading: false,
+  supportLinksError: null,
+
+  // Support link delete
+  supportLinkDeleteLoading: false,
+  supportLinkDeleteError: null,
 };
 
 const superAdminSlice = createSlice({
@@ -731,6 +807,36 @@ const superAdminSlice = createSlice({
         state.bannerDeleteLoading = false;
         state.bannerDeleteSuccess = false;
         state.bannerDeleteError = (action.payload as string) ?? "Request failed";
+      })
+
+      // Get All Support Links
+      .addCase(getAllSupportLinks.pending, (state) => {
+        state.supportLinksLoading = true;
+        state.supportLinksError = null;
+      })
+      .addCase(getAllSupportLinks.fulfilled, (state, action) => {
+        state.supportLinksLoading = false;
+        state.supportLinks = action.payload;
+      })
+      .addCase(getAllSupportLinks.rejected, (state, action) => {
+        state.supportLinksLoading = false;
+        state.supportLinksError = (action.payload as string) ?? "Request failed";
+      })
+
+      // Delete Support Link
+      .addCase(deleteSupportLink.pending, (state) => {
+        state.supportLinkDeleteLoading = true;
+        state.supportLinkDeleteError = null;
+      })
+      .addCase(deleteSupportLink.fulfilled, (state, action) => {
+        state.supportLinkDeleteLoading = false;
+        state.supportLinks = state.supportLinks.filter(
+          (l: any) => (l._id ?? l.id) !== action.meta.arg
+        );
+      })
+      .addCase(deleteSupportLink.rejected, (state, action) => {
+        state.supportLinkDeleteLoading = false;
+        state.supportLinkDeleteError = (action.payload as string) ?? "Request failed";
       });
   },
 });

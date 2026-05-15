@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import RouterLink from "next/link";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "@mui/material/Link";
 import {
   Box,
   Card,
@@ -23,7 +22,7 @@ import {
 import { LoadingButton } from "@mui/lab";
 import { useForm, Controller } from "react-hook-form";
 import { z as zod } from "zod";
-import { ArrowLeft as ArrowLeftIcon } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
+import { config } from "@/config";
 import { Link as LinkIcon } from "@phosphor-icons/react/dist/ssr/Link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store";
@@ -59,6 +58,12 @@ const defaultValues: Values = {
 
 export default function CreateSupportLinkPage(): React.JSX.Element {
   const router = useRouter();
+
+  // Set document title
+    useEffect(() => {
+      document.title = `${config.site.name} | Create Link`;
+    }, []);
+
   const dispatch = useDispatch<AppDispatch>();
   const { supportLinkCreateLoading, supportLinkCreateError } = useSelector(
     (state: RootState) => state.suadmin
@@ -77,7 +82,7 @@ export default function CreateSupportLinkPage(): React.JSX.Element {
   const onSubmit = async (values: Values) => {
     try {
       await dispatch(createSupportLink(values)).unwrap();
-      router.push("/su-admin/supportLink/create");
+      router.push("/su-admin/supportLink");
     } catch {
       // error shown via Redux state
     }
@@ -167,7 +172,7 @@ export default function CreateSupportLinkPage(): React.JSX.Element {
                   placeholder="Enter Your Value"
                   {...register("value")}
                   error={!!errors.value}
-                  helperText={errors.value?.message ?? "Display name or handle for this link"}
+                  // helperText={errors.value?.message ?? "Display name or handle for this link"}
                 />
 
                 {/* URL */}
@@ -177,11 +182,13 @@ export default function CreateSupportLinkPage(): React.JSX.Element {
                   placeholder="Enter Your URL"
                   {...register("url")}
                   error={!!errors.url}
-                  helperText={errors.url?.message ?? "Full URL including https://"}
-                  InputProps={{
-                    startAdornment: (
-                      <LinkIcon style={{ marginRight: 8, opacity: 0.5 }} />
-                    ),
+                  // helperText={errors.url?.message ?? "Full URL including https://"}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <LinkIcon style={{ marginRight: 8, opacity: 0.5 }} />
+                      ),
+                    },
                   }}
                 />
               </Stack>
