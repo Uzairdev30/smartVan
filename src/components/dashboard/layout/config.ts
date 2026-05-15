@@ -105,6 +105,12 @@ export const layoutConfig = {
             { key: "parent", title: "Complaint Management", href: paths.dashboard.parents.parents, icon: "file" },
           ],
         },
+        {
+          key: "link",
+          items: [
+            { key: "link", title: "Support Links", href: paths.dashboard.superadmin.link, icon: "file" },
+          ],
+        },
       ];
     }
 

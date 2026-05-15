@@ -82,8 +82,8 @@ export const paths = {
       student:'/su-admin/student',
       billing:'/su-admin/billing',
       createbilling:'/su-admin/billing/create',
-      banner:'/su-admin/banner'
-
+      banner:'/su-admin/banner',
+      link:'/su-admin/supportLink/create',
     },
     marketing: {
       campaign: '/marketing/campaigns',

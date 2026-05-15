@@ -349,6 +349,28 @@ export const updateBanner = createAsyncThunk<
   }
 });
 
+// ✅ Create Support Link
+export const createSupportLink = createAsyncThunk<
+  any,
+  { type: string; title: string; value: string; url: string },
+  { rejectValue: string }
+>("superAdmin/createSupportLink", async (payload, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post(SUADMIN.CREATE_ADD_SUPPORT_LINK, {
+      ...payload,
+      status: "active",
+    });
+    return data?.data ?? data;
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Request failed";
+    return rejectWithValue(msg);
+  }
+});
+
 // ✅ Delete Banner
 export const deleteBanner = createAsyncThunk<
   any,
@@ -402,6 +424,11 @@ type SuperAdminState = {
   bannerCreateLoading: boolean;
   bannerCreateSuccess: boolean;
   bannerCreateError: string | null;
+
+  // Support link create
+  supportLinkCreateLoading: boolean;
+  supportLinkCreateSuccess: boolean;
+  supportLinkCreateError: string | null;
 };
 
 const initialState: SuperAdminState = {
@@ -433,6 +460,11 @@ const initialState: SuperAdminState = {
   bannerCreateLoading: false,
   bannerCreateSuccess: false,
   bannerCreateError: null,
+
+  // Support link create
+  supportLinkCreateLoading: false,
+  supportLinkCreateSuccess: false,
+  supportLinkCreateError: null,
 
   // Banners list
   banners: [],
@@ -665,6 +697,22 @@ const superAdminSlice = createSlice({
         state.bannerUpdateLoading = false;
         state.bannerUpdateSuccess = false;
         state.bannerUpdateError = (action.payload as string) ?? "Request failed";
+      })
+
+      // Create Support Link
+      .addCase(createSupportLink.pending, (state) => {
+        state.supportLinkCreateLoading = true;
+        state.supportLinkCreateError = null;
+        state.supportLinkCreateSuccess = false;
+      })
+      .addCase(createSupportLink.fulfilled, (state) => {
+        state.supportLinkCreateLoading = false;
+        state.supportLinkCreateSuccess = true;
+      })
+      .addCase(createSupportLink.rejected, (state, action) => {
+        state.supportLinkCreateLoading = false;
+        state.supportLinkCreateSuccess = false;
+        state.supportLinkCreateError = (action.payload as string) ?? "Request failed";
       })
 
       // Delete Banner

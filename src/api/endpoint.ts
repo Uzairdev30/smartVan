@@ -93,7 +93,11 @@ export const SUADMIN={
     
     //student
     GET_ALL_STUDENT_SUPERADMIN: `${BASE_URL}/admin/GetStudentsBySuperAdmin`,
-    GET_STUDENT_DETAIL_SUPERADMIN: `${BASE_URL}/Admin/getStudentByIdForSuperAdmin`
+    GET_STUDENT_DETAIL_SUPERADMIN: `${BASE_URL}/Admin/getStudentByIdForSuperAdmin`,
+
+    GET_ALL_SUPPORT_LINK: `${BASE_URL}/alert/getSupportLinks`,
+    CREATE_ADD_SUPPORT_LINK: `${BASE_URL}/alert/addSupportLink`,
+    DELETE_SUPPORT_LINK: `${BASE_URL}/alert/deleteSupportLink`,
 }
 
 export const DASHBOARD ={
