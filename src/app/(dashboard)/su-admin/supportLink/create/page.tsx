@@ -18,6 +18,7 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
+  InputAdornment,
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 import { useForm, Controller } from "react-hook-form";
@@ -31,20 +32,62 @@ import { createSupportLink } from "@/store/reducers/suadmin-slice";
 const LINK_TYPES = [
   { value: "facebook", label: "Facebook" },
   { value: "instagram", label: "Instagram" },
-  { value: "twitter", label: "Twitter" },
-  { value: "youtube", label: "YouTube" },
   { value: "whatsapp", label: "WhatsApp" },
-  { value: "website", label: "Website" },
   { value: "email", label: "Email" },
-  { value: "phone", label: "Phone" },
-  { value: "other", label: "Other" },
+  { value: "phone", label: "Phone Call" },
+  { value: "website", label: "Website" },
 ];
+
+const LINK_TYPE_META: Record<
+  string,
+  {
+    label: string;
+    placeholder: string;
+    helperText: string;
+  }
+> = {
+  facebook: {
+    label: "Facebook URL",
+    placeholder: "https://facebook.com/yourpage",
+    helperText: "Paste your Facebook page or profile URL",
+  },
+
+  instagram: {
+    label: "Instagram Username or URL",
+    placeholder: "@yourusername or https://instagram.com/yourusername",
+    helperText: "Enter Instagram username or full profile URL",
+  },
+
+  whatsapp: {
+    label: "WhatsApp Number",
+    placeholder: "923001234567",
+    helperText: "Enter number with country code without +",
+  },
+
+  email: {
+    label: "Email Address",
+    placeholder: "support@example.com",
+    helperText: "Enter a valid support email address",
+  },
+
+  phone: {
+    label: "Phone Number",
+    placeholder: "+92 300 1234567",
+    helperText: "Enter support contact number",
+  },
+
+  website: {
+    label: "Website URL",
+    placeholder: "https://yourwebsite.com",
+    helperText: "Enter full website URL including https://",
+  },
+};
 
 const schema = zod.object({
   type: zod.string().min(1, "Type is required"),
   title: zod.string().min(1, "Title is required"),
   value: zod.string().min(1, "Value is required"),
-  url: zod.string().url("Enter a valid URL").min(1, "URL is required"),
+  target: zod.string().min(1, "Target is required"),
 });
 
 type Values = zod.infer<typeof schema>;
@@ -53,18 +96,18 @@ const defaultValues: Values = {
   type: "",
   title: "",
   value: "",
-  url: "",
+  target: "",
 };
 
 export default function CreateSupportLinkPage(): React.JSX.Element {
   const router = useRouter();
 
-  // Set document title
-    useEffect(() => {
-      document.title = `${config.site.name} | Create Link`;
-    }, []);
+  useEffect(() => {
+    document.title = `${config.site.name} | Create Link`;
+  }, []);
 
   const dispatch = useDispatch<AppDispatch>();
+
   const { supportLinkCreateLoading, supportLinkCreateError } = useSelector(
     (state: RootState) => state.suadmin
   );
@@ -73,18 +116,27 @@ export default function CreateSupportLinkPage(): React.JSX.Element {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<Values>({
     defaultValues,
     resolver: zodResolver(schema),
   });
 
+  const selectedType = watch("type");
+
+  const currentMeta = LINK_TYPE_META[selectedType] || {
+    label: "Target",
+    placeholder: "Enter value",
+    // helperText: "Enter link, username, number or identifier",
+  };
+
   const onSubmit = async (values: Values) => {
     try {
       await dispatch(createSupportLink(values)).unwrap();
       router.push("/su-admin/supportLink");
     } catch {
-      // error shown via Redux state
+      // handled in redux state
     }
   };
 
@@ -98,41 +150,28 @@ export default function CreateSupportLinkPage(): React.JSX.Element {
       }}
     >
       <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-        <Card sx={{ borderRadius: 2, boxShadow: "0px 1px 3px rgba(0,0,0,0.06)" }}>
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: "0px 2px 10px rgba(0,0,0,0.06)",
+          }}
+        >
           <CardContent sx={{ p: 4 }}>
             <Stack spacing={4}>
               {/* Header */}
-              <Stack spacing={2}>
-                {/* <Link
-                  color="text.primary"
-                  component={RouterLink}
-                  href="/su-admin/school-management"
-                  sx={{
-                    alignItems: "center",
-                    display: "inline-flex",
-                    gap: 1,
-                    textDecoration: "none",
-                    "&:hover": { textDecoration: "underline" },
-                  }}
-                  variant="subtitle2"
-                >
-                  <ArrowLeftIcon fontSize="var(--icon-fontSize-md)" />
-                  Back
-                </Link> */}
+              <Stack spacing={0.5}>
+                <Typography variant="h4" fontWeight={700}>
+                  Add Support Link
+                </Typography>
 
-                <Stack spacing={0.5}>
-                  <Typography variant="h4" fontWeight={700}>
-                    Add Support Link
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Add a new support link that will be visible to app users.
-                  </Typography>
-                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  Create a support contact or social link for app users.
+                </Typography>
               </Stack>
 
               <Divider />
 
-              {/* Form Fields */}
+              {/* Form */}
               <Stack spacing={3}>
                 {/* Type */}
                 <Controller
@@ -141,6 +180,7 @@ export default function CreateSupportLinkPage(): React.JSX.Element {
                   render={({ field }) => (
                     <FormControl fullWidth error={!!errors.type}>
                       <InputLabel>Type</InputLabel>
+
                       <Select {...field} label="Type">
                         {LINK_TYPES.map((opt) => (
                           <MenuItem key={opt.value} value={opt.value}>
@@ -148,8 +188,11 @@ export default function CreateSupportLinkPage(): React.JSX.Element {
                           </MenuItem>
                         ))}
                       </Select>
+
                       {errors.type && (
-                        <FormHelperText>{errors.type.message}</FormHelperText>
+                        <FormHelperText>
+                          {errors.type.message}
+                        </FormHelperText>
                       )}
                     </FormControl>
                   )}
@@ -159,7 +202,7 @@ export default function CreateSupportLinkPage(): React.JSX.Element {
                 <TextField
                   fullWidth
                   label="Title"
-                  placeholder="Enter Your Title"
+                  placeholder="Customer Support"
                   {...register("title")}
                   error={!!errors.title}
                   helperText={errors.title?.message}
@@ -168,27 +211,32 @@ export default function CreateSupportLinkPage(): React.JSX.Element {
                 {/* Value */}
                 <TextField
                   fullWidth
-                  label="Value"
-                  placeholder="Enter Your Value"
+                  label="Display Value"
+                  placeholder="24/7 Customer Care"
                   {...register("value")}
                   error={!!errors.value}
-                  // helperText={errors.value?.message ?? "Display name or handle for this link"}
+                  // helperText={
+                  //   errors.value?.message ||
+                  //   "Visible text shown to users"
+                  // }
                 />
 
-                {/* URL */}
+                {/* Dynamic Target Field */}
                 <TextField
                   fullWidth
-                  label="URL"
-                  placeholder="Enter Your URL"
-                  {...register("url")}
-                  error={!!errors.url}
-                  // helperText={errors.url?.message ?? "Full URL including https://"}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <LinkIcon style={{ marginRight: 8, opacity: 0.5 }} />
-                      ),
-                    },
+                  label={currentMeta.label}
+                  placeholder={currentMeta.placeholder}
+                  {...register("target")}
+                  error={!!errors.target}
+                  helperText={
+                    errors.target?.message || currentMeta.helperText
+                  }
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LinkIcon size={18} opacity={0.5} />
+                      </InputAdornment>
+                    ),
                   }}
                 />
               </Stack>
@@ -203,7 +251,11 @@ export default function CreateSupportLinkPage(): React.JSX.Element {
               <Divider />
 
               {/* Actions */}
-              <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Stack
+                direction="row"
+                spacing={2}
+                justifyContent="flex-end"
+              >
                 <LoadingButton
                   type="submit"
                   variant="contained"
