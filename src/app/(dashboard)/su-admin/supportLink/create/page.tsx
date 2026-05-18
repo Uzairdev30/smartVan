@@ -87,7 +87,7 @@ const schema = zod.object({
   type: zod.string().min(1, "Type is required"),
   title: zod.string().min(1, "Title is required"),
   value: zod.string().min(1, "Value is required"),
-  target: zod.string().min(1, "Target is required"),
+  url: zod.string().min(1, "Target is required"),
 });
 
 type Values = zod.infer<typeof schema>;
@@ -96,7 +96,7 @@ const defaultValues: Values = {
   type: "",
   title: "",
   value: "",
-  target: "",
+  url: "",
 };
 
 export default function CreateSupportLinkPage(): React.JSX.Element {
@@ -226,10 +226,10 @@ export default function CreateSupportLinkPage(): React.JSX.Element {
                   fullWidth
                   label={currentMeta.label}
                   placeholder={currentMeta.placeholder}
-                  {...register("target")}
-                  error={!!errors.target}
+                  {...register("url")}
+                  error={!!errors.url}
                   helperText={
-                    errors.target?.message || currentMeta.helperText
+                    errors.url?.message || currentMeta.helperText
                   }
                   InputProps={{
                     startAdornment: (
